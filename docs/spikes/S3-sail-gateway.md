@@ -181,3 +181,20 @@ size/hash verification, signing-key fingerprints, RPM signatures and provenance
 checks remain unchanged. No owner checkout or lockfile is modified. This changes
 artifact acquisition transport, not any acceptance assertion or shipped image
 input. The workaround is evaluation-only, not a general dependency mirror.
+
+### Sail builder transport stall
+
+The cancelled second run's
+[actual arm64 log](https://github.com/datopsis/datopsis-authz/actions/runs/43886130893/job/133364641119)
+shows Sail's Docker buildx export complete at 14:35:38 UTC, but its build command
+remained alive until cancellation at 14:45:14. This is an observed builder stall,
+not a Sail query failure or a diagnosed Docker root cause. That superseded run
+was cancelled; it supplies no S3 runtime pass.
+
+`evaluation/s3/owner_build.py` composes the unmodified pinned Sail build script's
+supported `CONTAINER_RUNTIME=podman` path, then transfers its Docker archive into
+Docker for the original fixture. It intercepts only that exact Sail build command,
+asserts the full source pin and expected image, and leaves all owner provenance,
+architecture, combined lock-hash and clean-source assertions intact. All other
+owner builds and all acceptance assertions are unchanged. The transport choice
+is recorded in sanitized S3 build evidence. No upstream source is patched.

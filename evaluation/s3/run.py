@@ -42,6 +42,8 @@ def case(name, fn):
 
 
 def build():
+    from owner_build import configure
+    configure(INTEGRATION, common.OUT)
     import build as owner
     results = {}
     for repo in ('postgresql-lakekeeper-ubi', 'sail-ubi'):
