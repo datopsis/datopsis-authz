@@ -58,7 +58,7 @@ def main():
     # Actual runtime inventory of the unmodified pin, not just the lockfile claim.
     docker('run','--rm','--entrypoint','/bin/bash',BASE,'-c','test ! -d /opt/trino/plugin/opa && test -d /opt/trino/plugin/iceberg')
     print('Unmodified trino-ubi pin: OPA unavailable (FAIL); Iceberg present', flush=True)
-    subprocess.run(['docker','build','--build-arg','SOURCE_REVISION='+os.environ['GITHUB_SHA'],'-t',IMAGE,str(context)],check=True)
+    subprocess.run(['docker','build','-f',str(context / 'Containerfile'),'--build-arg','SOURCE_REVISION='+os.environ['GITHUB_SHA'],'-t',IMAGE,str(context)],check=True)
     derived = json.loads(docker('image','inspect',IMAGE))[0]
     assert derived['Architecture'] == base['Architecture']
     assert derived['Config']['Labels']['io.datopsis.s2.opa-zip.sha256'] == SHA256
