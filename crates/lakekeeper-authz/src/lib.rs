@@ -3,8 +3,6 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use axum::Router;
-#[cfg(feature = "open-api")]
-use utoipa::OpenApi;
 
 use lakekeeper::{
     api::RequestMetadata,
@@ -549,15 +547,16 @@ impl CedarAuthorizer {
         })
     }
     async fn mutate(&self, m: Mutation) -> Result<()> {
+        use lakekeeper::service::events::AuthorizationFailureSource;
         self.client
             .post(format!("{}/mutate", self.endpoint))
             .bearer_auth(&self.key)
             .json(&m)
             .send()
             .await
-            .map_err(AuthorizationBackendUnavailable::new)?
+            .map_err(|e| AuthorizationBackendUnavailable::new(e).into_error_model())?
             .error_for_status()
-            .map_err(AuthorizationBackendUnavailable::new)?;
+            .map_err(|e| AuthorizationBackendUnavailable::new(e).into_error_model())?;
         Ok(())
     }
     async fn put(

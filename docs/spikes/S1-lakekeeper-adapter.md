@@ -21,7 +21,7 @@ This is a bounded feasibility spike, not production qualification.
 The public `lakekeeper::service::authz::Authorizer` declares **38 methods**, including
 one `open-api`-gated method: **37 without OpenAPI**. Nine associated action types.
 `HealthExt` adds two required async methods. Default methods are included in the 38;
-these are not 38 required bespoke implementations. See the pinned
+six have defaults, leaving 32 required with OpenAPI or 31 without. See the pinned
 [trait](https://github.com/lakekeeper/lakekeeper/blob/9bd377162345b64a716f0a4fcffe4e7e7f3c7534/crates/lakekeeper/src/service/authz/mod.rs#L1569).
 
 | Surface | Count | Methods / meaning |
@@ -56,7 +56,12 @@ PostgreSQL backend. The thin binary selects only Cedar; it has no AllowAll fallb
 Published-crate compatibility has not been tested. This is a 0.x trait, with async
 methods, generics, nine associated types and evolving hooks; treat it as a pinned
 source API, not a stable plugin ABI. Every upstream bump needs a compile and
-behavior gate. Final compile/runtime evidence will be linked below.
+behavior gate. Local `cargo check --workspace --locked` passes with Rust 1.94.1. Runtime evidence will be linked below.
+
+Out-of-tree builds must carry upstream’s `tracing_unstable` and `tokio_unstable`
+cfgs and `SQLX_OFFLINE=true`; dependency workspace Cargo configuration does not
+propagate. Source hashes and the complete method list are in
+[S1-source-inventory.json](S1-source-inventory.json).
 
 ## Q2: Minimal path and boundaries
 

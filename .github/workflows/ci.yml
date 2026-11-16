@@ -43,11 +43,29 @@ jobs:
           echo "INTEGRATION_ARCH=$(case $(uname -m) in x86_64) echo amd64;; aarch64) echo arm64;; *) exit 1;; esac)" >> "$GITHUB_ENV"
           echo "RUN_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_ENV"
       - run: .venv/bin/python evaluation/s1/run.py initialize
+      - name: Restore native compiler cache
+        id: rust-cache
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: |
+            target
+            .cargo-cache
+          key: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-${{ github.sha }}
+          restore-keys: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-
       - name: Native UBI compiler, workspace tests and both binaries
         run: |
           docker build -f Containerfile.builder -t s1-builder .
-          docker run --rm -v "$PWD:/work" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked'
+          mkdir -p .cargo-cache
+          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked'
           sudo chown -R "$(id -u):$(id -g)" target
+      - name: Save native compiler cache
+        if: ${{ !cancelled() && steps.rust-cache.outcome == 'success' }}
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: |
+            target
+            .cargo-cache
+          key: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-${{ github.sha }}
       - run: python3 scripts/tls-smoke.py
       - name: Build pinned owner fixture images without source changes
         run: |
