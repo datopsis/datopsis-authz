@@ -1,0 +1,9 @@
+.git
+.sources
+.venv
+reports
+.env
+.env.*
+target/debug/deps
+target/debug/build
+target/debug/incremental

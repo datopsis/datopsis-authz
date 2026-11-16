@@ -1,0 +1,9 @@
+# Evaluation-only runtime built from the owner-built pinned UBI image.
+FROM localhost/lakekeeper-ubi:integration AS catalog
+COPY --chmod=0555 target/debug/lakekeeper-bin-datopsis /usr/local/bin/lakekeeper-datopsis
+ENTRYPOINT ["/usr/local/bin/lakekeeper-datopsis"]
+CMD ["serve"]
+FROM localhost/lakekeeper-ubi:integration AS decisions
+COPY --chmod=0555 target/debug/authz-serve /usr/local/bin/datopsis-authz
+ENTRYPOINT ["/usr/local/bin/datopsis-authz"]
+CMD ["serve"]

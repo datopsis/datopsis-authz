@@ -1,0 +1,73 @@
+name: S1
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: python3 scripts/check-lf.py
+      - run: cargo fmt --all -- --check
+      - run: |
+          python3 -m pip install PyYAML==6.0.2
+          python3 -c 'import yaml,pathlib; [yaml.safe_load(p.read_text()) for p in pathlib.Path(".github/workflows").glob("*.yml")]'
+      - run: cargo install cargo-audit --version 0.22.2 --locked
+      - run: cargo audit
+  test:
+    name: test
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    env:
+      CARGO_BUILD_JOBS: 2
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: |
+          df -h
+          sudo apt-get update -qq
+          sudo apt-get install -y protobuf-compiler libssl-dev pkg-config
+      - name: Pinned acceptance fixture and blocked-result initialization
+        run: |
+          git clone https://github.com/datopsis/lakehouse-integration .sources/lakehouse-integration
+          git -C .sources/lakehouse-integration checkout --detach e8379a528bf413c05aad49e56bc8cd507b5e077a
+          python3 -m venv .venv
+          .venv/bin/pip install --require-hashes -r .sources/lakehouse-integration/requirements.txt
+          echo "INTEGRATION_ARCH=$(case $(uname -m) in x86_64) echo amd64;; aarch64) echo arm64;; *) exit 1;; esac)" >> "$GITHUB_ENV"
+          echo "RUN_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_ENV"
+      - run: .venv/bin/python evaluation/s1/run.py initialize
+      - name: Native UBI compiler, workspace tests and both binaries
+        run: |
+          docker build -f Containerfile.builder -t s1-builder .
+          docker run --rm -v "$PWD:/work" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked'
+          sudo chown -R "$(id -u):$(id -g)" target
+      - run: python3 scripts/tls-smoke.py
+      - name: Build pinned owner fixture images without source changes
+        run: |
+          sudo apt-get install -y rpm podman gnupg argon2
+          .venv/bin/python evaluation/s1/run.py build
+      - name: Compose spike images into fixture
+        run: |
+          docker build -f Containerfile.spike --target catalog -t localhost/lakekeeper-datopsis:s1 .
+          docker build -f Containerfile.spike --target decisions -t localhost/authz-serve:s1 .
+      - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
+        run: .venv/bin/python evaluation/s1/run.py
+      - name: Cleanup and sanitize evidence
+        if: always()
+        run: |
+          if test -x .venv/bin/python; then .venv/bin/python evaluation/s1/run.py cleanup; fi
+      - name: Retain sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: s1-${{ matrix.runner }}-${{ github.run_id }}
+          path: reports/s1/
+          if-no-files-found: error
+          retention-days: 14
