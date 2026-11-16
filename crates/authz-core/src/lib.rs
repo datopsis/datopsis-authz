@@ -1,6 +1,8 @@
 //! S1 only: trusted adapter assertions, an in-memory graph, and Cedar evaluation.
 use anyhow::{Result, bail};
-use cedar_policy::{Authorizer, Context, Decision, Entities, PolicySet, Request, Schema};
+use cedar_policy::{
+    Authorizer, Context, Decision, Entities, PolicySet, Request, Schema, ValidationMode, Validator,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
@@ -78,10 +80,10 @@ impl Store {
                 parent,
                 owner,
             } => {
-                if let Some(p) = &parent {
-                    if p == &resource || self.ancestors(p).contains(&resource) {
-                        bail!("hierarchy cycle");
-                    }
+                if let Some(p) = &parent
+                    && (p == &resource || self.ancestors(p).contains(&resource))
+                {
+                    bail!("hierarchy cycle");
                 }
                 self.parents
                     .insert(resource.key(), (resource.clone(), parent));
@@ -149,6 +151,11 @@ impl Store {
             text.push_str(&format!("@id(\"grant-{i}\") permit(principal in {}, action, resource) when {{ ({actions}) && (resource in {} || {}) }};\n", g.subject.cedar(), g.resource.cedar(), upward));
         }
         let policies: PolicySet = text.parse()?;
+        let validation = Validator::new(schema()?).validate(&policies, ValidationMode::Strict);
+        anyhow::ensure!(
+            validation.validation_passed(),
+            "generated policy failed schema validation"
+        );
         let request = Request::new(
             Resource::new("User", &check.principal).cedar().parse()?,
             "Action::\"check\"".parse()?,
@@ -174,10 +181,13 @@ impl Store {
         })
     }
 }
+fn schema() -> Result<Schema> {
+    Ok(Schema::from_json_value(serde_json::from_str(
+        include_str!("../../../policies/schema.json"),
+    )?)?)
+}
 pub fn validate_schema() -> Result<()> {
-    let _: Schema = Schema::from_json_value(serde_json::from_str(include_str!(
-        "../../../policies/schema.json"
-    ))?)?;
+    schema()?;
     Ok(())
 }
 #[cfg(test)]

@@ -13,6 +13,23 @@ def snapshot(catalog, key):
     return catalog.http.json('POST', 'https://cedar:8443/snapshot', headers={'Authorization': 'Bearer '+key}, json={})
 
 
+def restore(catalog, key, state):
+    """Reset fixture between destructive cases; never used inside an assertion."""
+    headers = {'Authorization': 'Bearer '+key}
+    current = snapshot(catalog,key)
+    for old_grant in current['grants']:
+        if old_grant not in state['grants']:
+            catalog.http.request('POST','https://cedar:8443/mutate',headers=headers,json={'op':'grant','grant':old_grant,'remove':True}).raise_for_status()
+    for name, (resource, _) in current['parents'].items():
+        if name not in state['parents']:
+            catalog.http.request('POST','https://cedar:8443/mutate',headers=headers,json={'op':'delete','resource':resource}).raise_for_status()
+    for resource, parent in state['parents'].values():
+        catalog.http.request('POST','https://cedar:8443/mutate',headers=headers,json={'op':'put','resource':resource,'parent':parent,'owner':None}).raise_for_status()
+    for grant in state['grants']:
+        catalog.http.request('POST','https://cedar:8443/mutate',headers=headers,json={'op':'grant','grant':grant,'remove':False}).raise_for_status()
+    assert snapshot(catalog,key) == state
+
+
 def grant(catalog, key, user, relation, obj, delete=False):
     assert relation == 'select'
     subject_kind, subject_id = user.split(':', 1)
@@ -57,7 +74,16 @@ def setup(arch, record):
     os.environ['AWS_CA_BUNDLE'] = str(ca)
     run('docker','network','create','--internal',upstream.NETWORK)
     run('docker','network','create','--internal',BACKEND_NETWORK)
-    env, _unused_fga_db = database(ca)
+    original_container = upstream.container
+    def with_backend_alias(name, *args, **kwargs):
+        if name == 'fga-postgres':
+            kwargs['extra'] = [*kwargs.get('extra', []), '--network-alias', 'cedar']
+        return original_container(name, *args, **kwargs)
+    upstream.container = with_backend_alias
+    try:
+        env, _unused_fga_db = database(ca)
+    finally:
+        upstream.container = original_container
     # Reuse the fixture's private PostgreSQL network namespace as stable backend
     # endpoint. It keeps the interface present during a decision-service outage.
     provider = Rauthy('rauthy',ca)

@@ -627,7 +627,22 @@ impl CedarAuthorizer {
         }
         Ok(results
             .into_iter()
-            .map(|v| AuthorizationDecision::from(v.allowed))
+            .map(|v| {
+                AuthorizationDecision::new(
+                    v.allowed,
+                    v.policies
+                        .into_iter()
+                        .map(
+                            |policy_id| lakekeeper::service::authz::DeterminingFactor::Policy {
+                                policy_id,
+                                name: None,
+                                effect: lakekeeper::service::authz::PolicyEffect::Permit,
+                                source: Some("s1-generated-grants".into()),
+                            },
+                        )
+                        .collect(),
+                )
+            })
             .collect())
     }
 }

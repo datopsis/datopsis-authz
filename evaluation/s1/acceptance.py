@@ -266,7 +266,12 @@ def evaluate(arch):
     record("C6", credentials)
     from security import evaluate as security
 
+    from s1_fixture import restore, snapshot
+    state_before_outage = snapshot(catalog, key)
     record("C7", lambda: security(catalog, operator, human, namespace, tuples))
+    # Preserve each destructive test's failure while giving C8 its own valid
+    # starting fixture. Restoration happens between cases, never during checks.
+    record("fixture_reset_before_C8", lambda: restore(catalog, key, state_before_outage), required=True)
 
     def operations():
         # The grant assertion remains strict: an in-memory backend is expected
@@ -289,6 +294,7 @@ def evaluate(arch):
         return {"grants_preserved": True, "migration_repetitions": 2}
 
     record("C8", operations)
+    record("fixture_reset_after_C8", lambda: restore(catalog, key, state_before_outage), required=True)
     record("unchanged_rows", lambda: catalog.read(admin), required=True)
     assert all(RESULTS[case]["status"] == "pass" for case in CASES), (
         "Incomplete acceptance; see results.json"

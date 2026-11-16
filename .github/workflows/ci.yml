@@ -23,14 +23,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+            machine: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            machine: aarch64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
       CARGO_BUILD_JOBS: 2
+      INTEGRATION_ARCH: ${{ matrix.arch }}
+      EXPECTED_MACHINE: ${{ matrix.machine }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - run: |
+          test "$(uname -m)" = "$EXPECTED_MACHINE"
           df -h
           sudo apt-get update -qq
           sudo apt-get install -y protobuf-compiler libssl-dev pkg-config
@@ -40,7 +49,6 @@ jobs:
           git -C .sources/lakehouse-integration checkout --detach e8379a528bf413c05aad49e56bc8cd507b5e077a
           python3 -m venv .venv
           .venv/bin/pip install --require-hashes -r .sources/lakehouse-integration/requirements.txt
-          echo "INTEGRATION_ARCH=$(case $(uname -m) in x86_64) echo amd64;; aarch64) echo arm64;; *) exit 1;; esac)" >> "$GITHUB_ENV"
           echo "RUN_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_ENV"
       - run: .venv/bin/python evaluation/s1/run.py initialize
       - name: Restore native compiler cache
@@ -73,8 +81,9 @@ jobs:
           .venv/bin/python evaluation/s1/run.py build
       - name: Compose spike images into fixture
         run: |
-          docker build -f Containerfile.spike --target catalog -t localhost/lakekeeper-datopsis:s1 .
-          docker build -f Containerfile.spike --target decisions -t localhost/authz-serve:s1 .
+          docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" --build-arg LOCK_SHA256="$(sha256sum Cargo.lock | cut -d ' ' -f 1)" -f Containerfile.spike --target catalog -t localhost/lakekeeper-datopsis:s1 .
+          docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" --build-arg LOCK_SHA256="$(sha256sum Cargo.lock | cut -d ' ' -f 1)" -f Containerfile.spike --target decisions -t localhost/authz-serve:s1 .
+      - run: python3 scripts/image-evidence.py
       - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
         run: .venv/bin/python evaluation/s1/run.py
       - name: Cleanup and sanitize evidence

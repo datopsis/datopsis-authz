@@ -1,9 +1,20 @@
 # Evaluation-only runtime built from the owner-built pinned UBI image.
 FROM localhost/lakekeeper-ubi:integration AS catalog
+ARG SOURCE_REVISION
+ARG LOCK_SHA256
+LABEL org.opencontainers.image.source="https://github.com/datopsis/datopsis-authz" \
+      io.datopsis.artifact-lock.sha256="${LOCK_SHA256}" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      io.datopsis.lakekeeper.source="9bd377162345b64a716f0a4fcffe4e7e7f3c7534"
 COPY --chmod=0555 target/debug/lakekeeper-bin-datopsis /usr/local/bin/lakekeeper-datopsis
 ENTRYPOINT ["/usr/local/bin/lakekeeper-datopsis"]
 CMD ["serve"]
 FROM localhost/lakekeeper-ubi:integration AS decisions
+ARG SOURCE_REVISION
+ARG LOCK_SHA256
+LABEL org.opencontainers.image.source="https://github.com/datopsis/datopsis-authz" \
+      io.datopsis.artifact-lock.sha256="${LOCK_SHA256}" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}"
 COPY --chmod=0555 target/debug/authz-serve /usr/local/bin/datopsis-authz
 ENTRYPOINT ["/usr/local/bin/datopsis-authz"]
 CMD ["serve"]

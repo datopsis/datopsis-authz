@@ -76,9 +76,9 @@ The thin binary uses upstream configuration, PostgreSQL catalog/secrets,
 core migrations and authenticator. It deliberately omits UI, event sinks and
 production operational CLI parity. The relationship store is **in memory**, as
 permitted for S1; restart durability and outage recovery are not implemented.
-Cedar policies are currently generated from grants per request. The schema is
-parsed by policy mode, but schema-based validation of generated policies is an
-MVP gap. Audit is sanitized stdout, not durable or tamper-evident.
+Cedar policies are currently generated from grants per request. Policy mode parses the schema; generated policies undergo Cedar strict validation
+before evaluation. Full policy bundles, context-sensitive rules and analysis are
+MVP gaps. Audit is sanitized stdout, not durable or tamper-evident.
 
 [Architecture SVG](../diagrams/authz-architecture.svg) shows the single program's
 roles and adapter. Only serve and a minimal policy schema check are implemented;
@@ -105,7 +105,9 @@ introduce a token epoch/introspection mechanism.
 
 C8 retains its restart/grant-preservation assertions. With memory storage it is
 expected to fail, not be skipped or relabeled PASS. C7 similarly retains recovery
-checks even though a backend process restart loses its state. Catalog failures,
+checks even though a backend process restart loses its state. Destructive cases receive an explicit fixture reset **between** C7 and C8 and
+after C8, so state loss cannot prevent the next case from exercising its own
+restart assertion. No state is restored inside an assertion. Catalog failures,
 TLS errors and authentication failures never qualify as authorization denials.
 
 | Case | amd64 | arm64 |
@@ -125,6 +127,19 @@ The compiler environment is evaluation tooling, not supply-chain-qualified.
 Per-run CA, service keys and tokens are never committed. Evidence upload is
 restricted to sanitized reports; `.runtime` and environment files are excluded.
 Container execution is unavailable locally; actual Actions logs are authoritative.
+
+### Audit gate
+
+[Actual lint job](https://github.com/datopsis/datopsis-authz/actions/runs/43858413647/job/133268555266)
+ran cargo-audit 0.22.2 and failed with three advisories in the locked transitive graph:
+`libsqlite3-sys` 0.37.0 / RUSTSEC-2026-0459, and `quick-xml` 0.40.1 /
+RUSTSEC-2026-0194 and RUSTSEC-2026-0195. Five informational/unmaintained/unsoundness
+warnings were also emitted. `cargo tree -i quick-xml@0.40.1` traces the XML dependency through the pinned
+Azure SDK fork into Lakekeeper; `cargo tree -i libsqlite3-sys` has no selected
+native-feature reverse dependency. The lock includes optional dependencies; this
+is not an assertion that every advisory is reachable in the built image.
+Embedding Lakekeeper pulls its cloud-storage graph, not just a small interface crate. No advisory
+ignore, patch, exemption or continue-on-error was added. The lint gate stays red.
 
 ## Q4: MVP gaps and effort
 
