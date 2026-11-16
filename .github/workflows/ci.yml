@@ -93,6 +93,8 @@ jobs:
           docker run --rm localhost/lakekeeper-datopsis:s1 version
           docker run --rm localhost/authz-serve:s1 policy
       - run: python3 scripts/image-evidence.py
+      - name: Probe owner image OPA gap and compose pinned official plugin
+        run: python3 scripts/trino-opa-image.py
       - name: S2 Trino end-user enforcement, filters, masks, parity and outage
         id: s2
         run: .venv/bin/python evaluation/s2/run.py

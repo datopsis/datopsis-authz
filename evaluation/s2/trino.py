@@ -49,7 +49,7 @@ def start(catalog, key, users, mode):
             run('sudo', 'chmod', '0400', path)
         else:
             path.chmod(0o755)
-    container('trino', 'localhost/trino-ubi:integration', env={
+    container('trino', 'localhost/trino-opa:s2', env={
         'S3_ACCESS_KEY_ID':catalog.storage.access, 'S3_SECRET_ACCESS_KEY':catalog.storage.password,
         'IDP_CLIENT_SECRET':catalog.provider.client_secret,
     }, mounts=[(directory, '/etc/trino')], extra=[
@@ -59,7 +59,9 @@ def start(catalog, key, users, mode):
     run('docker', 'network', 'connect', BACKEND_NETWORK, 'trino')
     http = HTTPS(catalog.provider.ca)
     ready_or_error('trino', lambda: http.json('GET', 'https://trino:8443/v1/info').get('starting') is False, 180)
-    evidence = transport('trino', 8443, catalog.provider.ca)
+    version = http.json('GET', 'https://trino:8443/v1/info')['nodeVersion']['version']
+    assert version == '484', version
+    evidence = {'version':version, 'mode':mode, 'tls':transport('trino', 8443, catalog.provider.ca)}
     def sql(user, statement):
         auth = (user, users[user])
         headers = {'X-Trino-User':user}
@@ -67,7 +69,8 @@ def start(catalog, key, users, mode):
         rows = []
         while True:
             if 'error' in page:
-                # Keep structured errors, never accept transport/authentication errors as denial.
+                # No earlier page may leak rows before a structured query failure.
+                assert not rows and not page.get('data'), 'Query leaked rows before failure'
                 return {'error':page['error']}
             rows.extend(page.get('data', []))
             if 'nextUri' not in page:

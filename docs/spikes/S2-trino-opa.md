@@ -8,6 +8,7 @@ C3/C7/C8 and audit failures.
 
 | Question | amd64 | arm64 | Evidence |
 | --- | --- | --- | --- |
+| Unmodified owner pin includes the OPA plugin | BLOCKED | BLOCKED | Native inventory probe pending; source lock omits OPA |
 | Granted SELECT succeeds; denied table hidden from SHOW/information_schema and SELECT denied | BLOCKED | BLOCKED | S2.1 runtime pending |
 | Region attribute yields exactly rows 1 and 3, excluding US row 2 | BLOCKED | BLOCKED | S2.2 runtime pending |
 | Sensitive values NULL for reader; exact original values for privileged user | BLOCKED | BLOCKED | S2.3 runtime pending |
@@ -33,9 +34,11 @@ runs separately after S2, with independent disposable fixture state.
   (`484` tag resolves to `e2d50bb733e193607c44be84ad80ce2430ba1d01`).
 - S1 pins Lakekeeper `9bd377162345b64a716f0a4fcffe4e7e7f3c7534` and Cedar 4.14.1.
 
+Source hashes and immutable URLs are retained in [S2-source-inventory.json](S2-source-inventory.json).
+
 ## Supported wire features (source evidence, runtime qualification above)
 
-The stock plugin is sufficient; no Rego interpreter, OPA process or Trino fork is
+The stock plugin is sufficient once packaged (see the owner-image gap below); no Rego interpreter, OPA process or Trino fork is
 needed. `authz-serve serve` implements JSON `input` / `result` envelopes:
 
 | Trino property | Endpoint | Response |
@@ -68,6 +71,30 @@ to Trino, trusted group ingestion or arbitrary IdP attributes. The catalog engin
 credential remains `oidc~lakekeeper`; it can read both S2 tables so a denied end
 user's failure cannot be explained by that credential's catalog restrictions.
 
+## Owner image packaging gap and local composition
+
+The exact owner pin's [artifact lock](https://github.com/datopsis/trino-ubi/blob/685ff5bca0037d38e3c2e2ed47a60f2540dad7c2/artifacts/trino.lock.json)
+permits only `iceberg`, `password-authenticators`, and `tpch`. Its
+[acquisition script](https://github.com/datopsis/trino-ubi/blob/685ff5bca0037d38e3c2e2ed47a60f2540dad7c2/scripts/artifacts.py)
+removes every other core plugin and rejects any other inventory. Thus the exact,
+unmodified image cannot enable OPA. The native inventory probe records this as a
+baseline feature FAIL; runtime enforcement uses an explicitly derived image.
+
+`scripts/trino-opa-image.py` adds the official `trino-opa-484.zip` to that unchanged
+base, without editing another repository. ZIP size is 15,384,527 bytes, SHA-256
+`f8627b3f2da8950e8209ddcf8fd436cc0e536459dd438c81261593ab8310dc24`, matching the
+[official release asset](https://github.com/trinodb/trino/releases/tag/484)'s API
+digest and locally downloaded bytes. Extraction rejects traversal, symlinks,
+duplicate names and non-JAR entries; the expected 62 JARs become root-owned,
+read-only plugin files. No source fork or custom Java plugin is introduced.
+
+The derived image has separate source/provenance labels. Native evidence retains
+base/derived image IDs, architecture, ZIP/JAR hashes and labels in
+`trino-composition.json`; the server version must equal `484`. This is digest-only
+artifact verification and functional composition, not signature, CVE or production
+qualification of the additional plugin dependencies. The original owner image
+and its strict provenance gate remain unchanged for C1-C8.
+
 ## One policy, two enforcement points
 
 `authz-core` retains S1's Cedar grant/hierarchy evaluator and relationship store.
@@ -94,6 +121,19 @@ client can use the mutation API without that credential. Never enable
 `opa.log-requests`: it would log context credentials. Requests/responses are not
 logged wholesale by serve; audit records retain operations/results/policy IDs only.
 Trino alone joins the private backend network. No ports are published.
+
+## Local and lint evidence
+
+Core/serve unit tests (six total), Clippy with warnings denied, Rust formatting,
+Python compilation, YAML parsing, LF checks and the real HTTPS smoke pass locally.
+The smoke additionally exercises OPA service authentication and escaped region SQL.
+These are not native runtime passes.
+
+[The actual lint job](https://github.com/datopsis/datopsis-authz/actions/runs/43883430072/job/133355080856)
+passed formatting/YAML/LF and failed the unchanged Cargo audit gate: three
+vulnerabilities (`RUSTSEC-2026-0459`, `RUSTSEC-2026-0195`, `RUSTSEC-2026-0194`)
+in the inherited lockfile, plus five warnings. No suppression or dependency update
+was made for this spike.
 
 ## Gaps and limits
 
