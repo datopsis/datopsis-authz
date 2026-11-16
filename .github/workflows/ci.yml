@@ -18,8 +18,8 @@ jobs:
           python3 -c 'import yaml,pathlib; [yaml.safe_load(p.read_text()) for p in pathlib.Path(".github/workflows").glob("*.yml")]'
       - run: cargo install cargo-audit --version 0.22.2 --locked
       - run: cargo audit
-  test:
-    name: test
+  native:
+    name: native (${{ matrix.runner }})
     strategy:
       fail-fast: false
       matrix:
@@ -71,3 +71,13 @@ jobs:
           path: reports/s1/
           if-no-files-found: error
           retention-days: 14
+
+  test:
+    name: test
+    needs: native
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - run: test "$NATIVE_RESULT" = success
+        env:
+          NATIVE_RESULT: ${{ needs.native.result }}
