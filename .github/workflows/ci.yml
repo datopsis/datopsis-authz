@@ -1,0 +1,118 @@
+name: S1
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: python3 scripts/check-lf.py
+      - run: cargo fmt --all -- --check
+      - run: |
+          python3 -m pip install PyYAML==6.0.2
+          python3 -c 'import yaml,pathlib; [yaml.safe_load(p.read_text()) for p in pathlib.Path(".github/workflows").glob("*.yml")]'
+      - run: cargo install cargo-audit --version 0.22.2 --locked
+      - run: cargo audit
+  native:
+    name: native (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+            machine: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            machine: aarch64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    env:
+      CARGO_BUILD_JOBS: 2
+      INTEGRATION_ARCH: ${{ matrix.arch }}
+      EXPECTED_MACHINE: ${{ matrix.machine }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: |
+          test "$(uname -m)" = "$EXPECTED_MACHINE"
+          df -h
+          sudo apt-get update -qq
+          sudo apt-get install -y protobuf-compiler libssl-dev pkg-config
+      - name: Pinned acceptance fixture and blocked-result initialization
+        run: |
+          git clone https://github.com/datopsis/lakehouse-integration .sources/lakehouse-integration
+          git -C .sources/lakehouse-integration checkout --detach e8379a528bf413c05aad49e56bc8cd507b5e077a
+          python3 -m venv .venv
+          .venv/bin/pip install --require-hashes -r .sources/lakehouse-integration/requirements.txt
+          echo "RUN_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_ENV"
+      - run: .venv/bin/python evaluation/s1/run.py initialize
+      - name: Restore native compiler cache
+        id: rust-cache
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: |
+            target
+            .cargo-cache
+          key: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-${{ github.sha }}
+          restore-keys: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-
+      - name: Native UBI compiler, workspace tests and both binaries
+        run: |
+          docker build -f Containerfile.builder -t s1-builder .
+          mkdir -p .cargo-cache
+          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked && python3 scripts/collect-runtime-libs.py target/debug/lakekeeper-bin-datopsis target/spike-libs'
+          sudo chown -R "$(id -u):$(id -g)" target .cargo-cache
+      - name: Save native compiler cache
+        if: ${{ !cancelled() && steps.rust-cache.outcome == 'success' }}
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: |
+            target
+            .cargo-cache
+          key: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-${{ github.sha }}
+      - run: python3 scripts/tls-smoke.py
+      - name: Check runtime loader before expensive fixture builds
+        run: |
+          docker build -f Containerfile.spike --target loader-probe -t localhost/lakekeeper-loader:s1 .
+          docker run --rm localhost/lakekeeper-loader:s1 version
+      - name: Build pinned owner fixture images without source changes
+        run: |
+          sudo apt-get install -y rpm podman gnupg argon2
+          .venv/bin/python evaluation/s1/run.py build
+      - name: Compose spike images into fixture
+        run: |
+          docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" --build-arg LOCK_SHA256="$(sha256sum Cargo.lock | cut -d ' ' -f 1)" -f Containerfile.spike --target catalog -t localhost/lakekeeper-datopsis:s1 .
+          docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" --build-arg LOCK_SHA256="$(sha256sum Cargo.lock | cut -d ' ' -f 1)" -f Containerfile.spike --target decisions -t localhost/authz-serve:s1 .
+      - name: Runtime loader and policy schema smoke
+        run: |
+          docker run --rm localhost/lakekeeper-datopsis:s1 version
+          docker run --rm localhost/authz-serve:s1 policy
+      - run: python3 scripts/image-evidence.py
+      - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
+        run: .venv/bin/python evaluation/s1/run.py
+      - name: Cleanup and sanitize evidence
+        if: always()
+        run: |
+          if test -x .venv/bin/python; then .venv/bin/python evaluation/s1/run.py cleanup; fi
+      - name: Retain sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: s1-${{ matrix.runner }}-${{ github.run_id }}
+          path: reports/s1/
+          if-no-files-found: error
+          retention-days: 14
+
+  test:
+    name: test
+    needs: native
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - run: test "$NATIVE_RESULT" = success
+        env:
+          NATIVE_RESULT: ${{ needs.native.result }}
