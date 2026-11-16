@@ -155,32 +155,13 @@ def evaluate(arch):
     record("C2", inheritance)
 
     def groups():
-        tuples(human_id, "select", namespace, True)
-        try:
-            # Direct verified groups replace registered roles and tuple sync.
-            negative = denial(lambda: catalog.read(reader))
-            tuples("group:lake-readers", "select", namespace)
-            allowed = catalog.read(catalog.pyiceberg(human))
-            tuples("group:lake-readers", "select", namespace, True)
-            denied = denial(lambda: catalog.read(reader))
-            from common import save
-            save("C3-direct-claims.json", {
-                "unmapped_claim_denied": negative,
-                "mapped_group_exact_rows": allowed,
-                "removed_mapping_old_token_denied": denied,
-                "adaptation": "Verified JWT groups used directly; no membership synchronization",
-            })
-            # Keep the original old-token membership-removal control strict.
-            # A stateless claim adapter is expected to FAIL here: the JWT still
-            # contains lake-readers. Mapping revocation above is not a substitute.
-            tuples("group:lake-readers", "select", namespace)
-            removed = provider.remove_group(claims["sub"])
-            assert "lake-readers" not in (removed.get("groups") or [])
-            old_token_denied = denial(lambda: catalog.read(reader))
-            return {"old_token_after_IdP_removal": old_token_denied}
-        finally:
-            tuples("group:lake-readers", "select", namespace, True)
-            tuples(human_id, "select", namespace)
+        nonlocal human, reader, claims
+        from s4 import membership_cases
+        result, human = membership_cases(catalog, key, human, namespace, tuples, denial)
+        claims = decode(human)[1]
+        provider.human_token = human
+        reader = catalog.pyiceberg(human)
+        return result
 
     record("C3", groups)
 
@@ -305,6 +286,8 @@ def evaluate(arch):
     record("C8", operations)
     record("fixture_reset_after_C8", lambda: restore(catalog, key, state_before_outage), required=True)
     record("unchanged_rows", lambda: catalog.read(admin), required=True)
+    from s4 import short_tokens
+    record("S4.A", lambda: short_tokens(catalog), required=True)
     assert all(RESULTS[case]["status"] == "pass" for case in CASES), (
         "Incomplete acceptance; see results.json"
     )

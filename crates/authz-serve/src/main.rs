@@ -5,10 +5,116 @@ use axum::{
     http::{HeaderMap, StatusCode},
     routing::post,
 };
+use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
+use std::time::{Duration, Instant};
+#[derive(Clone, serde::Deserialize)]
+struct Membership {
+    principal: String,
+    cache_ms: Option<u64>,
+}
+#[derive(Clone)]
+struct Live {
+    client: reqwest::Client,
+    url: String,
+    key: String,
+    config: Arc<RwLock<BTreeMap<String, u64>>>,
+    cache: Arc<RwLock<BTreeMap<String, (Instant, Vec<String>)>>>,
+}
+impl Live {
+    async fn groups(&self, principal: &str) -> Result<Option<Vec<String>>, StatusCode> {
+        let ttl = self
+            .config
+            .read()
+            .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?
+            .get(principal)
+            .copied();
+        let Some(ttl) = ttl else { return Ok(None) };
+        if let Some((at, groups)) = self
+            .cache
+            .read()
+            .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?
+            .get(principal)
+        {
+            if at.elapsed() < Duration::from_millis(ttl) {
+                return Ok(Some(groups.clone()));
+            }
+        }
+        let subject = principal
+            .strip_prefix("oidc~")
+            .ok_or(StatusCode::FORBIDDEN)?;
+        // No stale-on-error path. Redirects and plaintext are disabled at construction.
+        let mut url =
+            reqwest::Url::parse(&self.url).map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+        url.path_segments_mut()
+            .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?
+            .push(subject);
+        let start = Instant::now();
+        let response = self
+            .client
+            .get(url)
+            .header("authorization", &self.key)
+            .send()
+            .await
+            .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+        if response.status() == reqwest::StatusCode::NOT_FOUND {
+            return Ok(Some(vec![]));
+        }
+        let user: serde_json::Value = response
+            .error_for_status()
+            .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?
+            .json()
+            .await
+            .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+        let groups: Vec<String> = match user.get("groups") {
+            Some(serde_json::Value::Array(values)) => values
+                .iter()
+                .map(|v| {
+                    v.as_str()
+                        .map(str::to_owned)
+                        .ok_or(StatusCode::SERVICE_UNAVAILABLE)
+                })
+                .collect::<Result<_, _>>()?,
+            Some(serde_json::Value::Null) => vec![],
+            _ => return Err(StatusCode::SERVICE_UNAVAILABLE),
+        };
+        self.cache
+            .write()
+            .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?
+            .insert(principal.into(), (start, groups.clone()));
+        println!(
+            "{}",
+            serde_json::json!({"membership_lookup_ms": start.elapsed().as_secs_f64()*1000.0})
+        );
+        Ok(Some(groups))
+    }
+}
+async fn membership(
+    State(app): State<App>,
+    headers: HeaderMap,
+    Json(m): Json<Membership>,
+) -> Result<StatusCode, StatusCode> {
+    authenticate(&app, &headers)?;
+    let live = app.live.as_ref().ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
+    let mut config = live
+        .config
+        .write()
+        .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+    if let Some(ttl) = m.cache_ms {
+        config.insert(m.principal.clone(), ttl);
+    } else {
+        config.remove(&m.principal);
+    }
+    live.cache
+        .write()
+        .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?
+        .remove(&m.principal);
+    Ok(StatusCode::NO_CONTENT)
+}
 #[derive(Clone)]
 struct App {
     key: String,
+    live: Option<Live>,
     store: Arc<RwLock<Store>>,
 }
 fn authenticate(app: &App, headers: &HeaderMap) -> Result<(), StatusCode> {
@@ -26,12 +132,17 @@ async fn decide(
     Json(checks): Json<Vec<Check>>,
 ) -> Result<Json<Vec<Verdict>>, StatusCode> {
     authenticate(&app, &headers)?;
-    let store = app
-        .store
-        .read()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let mut results = vec![];
-    for check in checks {
+    for mut check in checks {
+        if let Some(live) = &app.live {
+            if let Some(groups) = live.groups(&check.principal).await? {
+                check.groups = groups;
+            }
+        }
+        let store = app
+            .store
+            .read()
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         let verdict = store
             .decide(&check)
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -91,12 +202,36 @@ async fn main() -> anyhow::Result<()> {
         std::env::var("AUTHZ_TLS_KEY")?,
     )
     .await?;
+    let live = if let Ok(url) = std::env::var("AUTHZ_RAUTHY_USERS_URL") {
+        anyhow::ensure!(url.starts_with("https://"), "Rauthy must use HTTPS");
+        let ca = reqwest::Certificate::from_pem(&std::fs::read(std::env::var(
+            "AUTHZ_RAUTHY_CA_FILE",
+        )?)?)?;
+        Some(Live {
+            client: reqwest::Client::builder()
+                .https_only(true)
+                .add_root_certificate(ca)
+                .redirect(reqwest::redirect::Policy::none())
+                .timeout(Duration::from_secs(2))
+                .build()?,
+            url,
+            key: std::fs::read_to_string(std::env::var("AUTHZ_RAUTHY_KEY_FILE")?)?
+                .trim()
+                .into(),
+            config: Default::default(),
+            cache: Default::default(),
+        })
+    } else {
+        None
+    };
     let app = App {
         key,
+        live,
         store: Arc::new(RwLock::new(Store::default())),
     };
     let router = Router::new()
         .route("/decide", post(decide))
+        .route("/membership", post(membership))
         .route("/mutate", post(mutate))
         .route("/snapshot", post(snapshot))
         .with_state(app);

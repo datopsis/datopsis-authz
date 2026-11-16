@@ -12,3 +12,4 @@ axum.workspace = true
 authz-core = { path = "../authz-core" }
 axum-server = { version = "0.7", features = ["tls-rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
+reqwest.workspace = true

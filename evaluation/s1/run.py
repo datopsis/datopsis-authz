@@ -23,6 +23,7 @@ elif sys.argv[1:] == ['cleanup']:
     networks = common.run('docker','network','ls','-q','--filter','name=^authz-backend$').split()
     for network in networks:
         common.run('docker','network','rm',network)
+    common.run('docker','network','rm','s4-idp')
 elif sys.argv[1:] == ['build']:
     # importlib avoids this entry point's filename collision.
     import importlib.util

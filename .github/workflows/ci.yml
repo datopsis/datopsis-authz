@@ -1,4 +1,4 @@
-name: S1
+name: S4 groups and revocation
 on:
   pull_request:
   push:
@@ -92,7 +92,7 @@ jobs:
           docker run --rm localhost/lakekeeper-datopsis:s1 version
           docker run --rm localhost/authz-serve:s1 policy
       - run: python3 scripts/image-evidence.py
-      - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
+      - name: C1-C8 plus S4 membership, epoch, cache outage and short-token measurements
         run: .venv/bin/python evaluation/s1/run.py
       - name: Cleanup and sanitize evidence
         if: always()
