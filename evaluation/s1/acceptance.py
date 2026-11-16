@@ -287,7 +287,7 @@ def evaluate(arch):
     record("fixture_reset_after_C8", lambda: restore(catalog, key, state_before_outage), required=True)
     record("unchanged_rows", lambda: catalog.read(admin), required=True)
     from s4 import short_tokens
-    record("S4.A", lambda: short_tokens(catalog), required=True)
+    record("S4.A", lambda: short_tokens(catalog, namespace, tuples), required=True)
     assert all(RESULTS[case]["status"] == "pass" for case in CASES), (
         "Incomplete acceptance; see results.json"
     )

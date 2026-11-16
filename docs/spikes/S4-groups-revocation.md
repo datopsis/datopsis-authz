@@ -3,7 +3,7 @@
 Evaluation only, stacked on unmerged S1. No MVP acceptance or merge.
 
 Inputs: S1 report and crates; platform plan §4a and AUTHZ-EVALUATION at
-`e8379a528bf413c05aad49e56bc8cd507b5e077a` (also read current main before work);
+`e8379a528bf413c05aad49e56bc8cd507b5e077a` (also read main `369dbdec67445eb1c2931b39b45f3364ec71ead4` before work);
 Rauthy owner image `1e114b84b01988bf15306b110b040378878488d3`;
 its lock pins Rauthy 0.37.2 source `fe6bcb95192e8a83c29e2b525bf4960933bea3bd`.
 No external source modifications. One platform program, Cedar and compiled adapter retained.
@@ -42,7 +42,7 @@ only Rauthy and the private backend namespace, not clients to the decision API.
 - [SCIM contract](https://github.com/sebadob/rauthy/blob/fe6bcb95192e8a83c29e2b525bf4960933bea3bd/book/src/work/scim.md): Rauthy pushes to an application's Users/Groups endpoints; group membership uses PATCH add/remove. Requires implementing the receiving endpoints and reconciliation. This is outbound provisioning, not a Rauthy membership-read endpoint.
 - Admin `GET /auth/v1/users/{id}` returns authoritative groups using an API key scoped to Users/read. The fixture also needs Users/update for removals and Clients/read/update for lifetime experiments. Production reader credentials need only read access.
 
-SCIM delivery/retry timing is not runtime verified. Source evidence supports
+The [SCIM retry scheduler](https://github.com/sebadob/rauthy/blob/fe6bcb95192e8a83c29e2b525bf4960933bea3bd/src/schedulers/src/scim_tasks.rs) sleeps 60–90 seconds between retry scans, and eventually deletes tasks after the configured retry limit. SCIM alone cannot promise seconds during receiver outages. SCIM delivery/retry timing is not runtime verified. Source evidence supports
 polling as the smallest measurable prototype, with SCIM plus reconciliation a
 candidate for reducing detection delay.
 

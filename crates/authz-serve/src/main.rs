@@ -13,13 +13,14 @@ struct Membership {
     principal: String,
     cache_ms: Option<u64>,
 }
+type MembershipCache = BTreeMap<String, (Instant, Vec<String>)>;
 #[derive(Clone)]
 struct Live {
     client: reqwest::Client,
     url: String,
     key: String,
     config: Arc<RwLock<BTreeMap<String, u64>>>,
-    cache: Arc<RwLock<BTreeMap<String, (Instant, Vec<String>)>>>,
+    cache: Arc<RwLock<MembershipCache>>,
 }
 impl Live {
     async fn groups(&self, principal: &str) -> Result<Option<Vec<String>>, StatusCode> {
@@ -35,10 +36,9 @@ impl Live {
             .read()
             .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?
             .get(principal)
+            && at.elapsed() < Duration::from_millis(ttl)
         {
-            if at.elapsed() < Duration::from_millis(ttl) {
-                return Ok(Some(groups.clone()));
-            }
+            return Ok(Some(groups.clone()));
         }
         let subject = principal
             .strip_prefix("oidc~")
@@ -134,10 +134,10 @@ async fn decide(
     authenticate(&app, &headers)?;
     let mut results = vec![];
     for mut check in checks {
-        if let Some(live) = &app.live {
-            if let Some(groups) = live.groups(&check.principal).await? {
-                check.groups = groups;
-            }
+        if let Some(live) = &app.live
+            && let Some(groups) = live.groups(&check.principal).await?
+        {
+            check.groups = groups;
         }
         let store = app
             .store

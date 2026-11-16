@@ -13,7 +13,7 @@ class Rauthy(PinnedRauthy):
         result = super().config_rauthy()
         path = self.path / 'bootstrap/api_keys.json'
         keys = json.loads(path.read_text())
-        keys[0]['access'] += [{'group':'Clients','access_rights':['read','update']}]
+        keys[0]['access'] += [{'group':'Clients','access_rights':['read','update']},{'group':'Events','access_rights':['read']}]
         write(path, keys)
         return result
 

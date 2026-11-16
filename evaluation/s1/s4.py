@@ -76,6 +76,7 @@ def membership_cases(catalog, key, human, namespace, tuples, denial):
                 # lookups, then force an outage past the positive-cache TTL.
                 restore()
                 configure(0 if mode == 'C-live' else 250)
+                before_lookups = lookup_samples()
                 durations = []
                 for _ in range(20):
                     start = time.monotonic()
@@ -91,6 +92,8 @@ def membership_cases(catalog, key, human, namespace, tuples, denial):
                     assert body.get('error',{}).get('type'), body
                     assert not any(k in body for k in ('metadata','config','storage-credentials'))
                     evidence[mode].update({'catalog_latency_ms':durations,'median_ms':statistics.median(durations),
+                        'membership_lookup_ms':lookup_samples()[len(before_lookups):],
+                        'catalog_load_requests':20,
                         'outage_status':outage.status_code,'outage_error_type':body['error']['type'],
                         'outage_seconds':time.monotonic()-start})
                 finally:
@@ -121,7 +124,7 @@ def membership_cases(catalog, key, human, namespace, tuples, denial):
         tuples(human_id,'select',namespace)
 
 
-def short_tokens(catalog):
+def short_tokens(catalog, namespace, tuples):
     """Configure the real IdP; measure expiry exposure and token endpoint cost.
 
     Existing Trino and Sail containers are reused. Queries force fresh metadata.
@@ -133,6 +136,9 @@ def short_tokens(catalog):
     original = http.json('GET',url,headers=provider.admin)
     updated = {**original,'access_token_lifetime':30}
     evidence = {'configured_lifetime_seconds':30, 'clients':{}}
+    user_url = None
+    original_user = None
+    human_id = None
     try:
         http.json('PUT',url,headers=provider.admin,json=updated)
         # Restart Sail with a genuine 30-second file token. Trino is already
@@ -146,11 +152,19 @@ def short_tokens(catalog):
         # Write through the existing bind-mounted inode rather than replacing it.
         run('sudo','tee',WORK/'sail-authz/token',input=short_file_token)
         run('docker','restart','sail-backend')
-        token = provider.token()
+        token = provider.human()['access_token']
         claims = decode(token)[1]
+        human_id = 'user:oidc~'+claims['sub']
+        user_url = provider.base+'/auth/v1/users/'+claims['sub']
+        original_user = http.json('GET',user_url,headers=provider.admin)
+        assert 'lake-readers' in claims['groups']
+        tuples(human_id,'select',namespace,True)
+        tuples('group:lake-readers','select',namespace)
         assert claims['exp'] - claims['iat'] == 30
         path = catalog.base+f'/catalog/v1/{catalog.warehouse_id}/namespaces/bakeoff/tables/sample'
         assert http.request('GET',path,headers={'Authorization':'Bearer '+token}).status_code==200
+        removed=provider.remove_group(claims['sub'])
+        assert 'lake-readers' not in (removed.get('groups') or [])
         start = time.monotonic()
         samples=[]
         while time.monotonic()-start < 100:
@@ -161,6 +175,7 @@ def short_tokens(catalog):
                 break
             time.sleep(1)
         assert samples[-1]['status'] == 401
+        evidence['C3_old_unexpired_token'] = 'FAIL: allowed until authentication expiry; 401 is not authorization denial'
         evidence['trino_after_expiry'] = trino_query(http)
         evidence['sail_stale_file'] = sail_query(provider)
         assert evidence['sail_stale_file']['returncode'] != 0, 'Expired Sail file unexpectedly read successfully'
@@ -180,15 +195,48 @@ def short_tokens(catalog):
             evidence['clients'][client]={'explicit_client_credentials_requests':5,'latency_ms':timings,
                 'projected_requests_per_minute_at_20s_renewal':3,
                 'scope':'Token endpoint microbenchmark; native client renewal measured separately'}
-        # PyIceberg's OAuth session must reacquire on a subsequent metadata request.
+        # Isolate each workload so persisted TokenIssued events measure native
+        # token acquisition, not an estimate or a relabeled microbenchmark.
         client=catalog.pyiceberg()
-        catalog.read(client)
-        time.sleep(35)
-        evidence['pyiceberg_after_expiry']=catalog.read(client)
+        workloads = {
+            'Trino': lambda: trino_query(http),
+            'PyIceberg': lambda: catalog.read(client),
+            'Sail-token-file': lambda: sail_query(provider),
+        }
+        for name, workload in workloads.items():
+            before_ids = token_event_ids(provider)
+            tick = time.monotonic()
+            outcomes = []
+            acquisitions = 0
+            for i in range(4):
+                if i:
+                    time.sleep(max(0, tick+i*20-time.monotonic()))
+                if name == 'Sail-token-file':
+                    fresh = provider.token()
+                    acquisitions += 1
+                    run('sudo','tee',WORK/'sail-authz/token',input=fresh)
+                try:
+                    value = workload()
+                    outcomes.append({'seconds':time.monotonic()-tick,'value':value})
+                except Exception as exc:
+                    outcomes.append({'seconds':time.monotonic()-tick,'error_type':type(exc).__name__})
+            after_ids = token_event_ids(provider)
+            evidence['clients'][name]['native_workload'] = {
+                'seconds':time.monotonic()-tick, 'requests':4, 'token_issued_events':len(after_ids-before_ids),
+                'external_file_acquisitions':acquisitions, 'outcomes':outcomes,
+                'scope':'Isolated 0/20/40/60s fresh queries; Sail uses explicit external file renewal every 20s',
+            }
+            save('S4-short-tokens.json',evidence)
+            if name == 'Trino':
+                run('docker','stop','trino')
         save('S4-short-tokens.json',evidence)
         return evidence
     finally:
         http.json('PUT',url,headers=provider.admin,json=original)
+        if original_user is not None:
+            http.json('PUT',user_url,headers=provider.admin,json=original_user)
+            tuples('group:lake-readers','select',namespace,True)
+            tuples(human_id,'select',namespace)
         save('S4-short-tokens.json',evidence)
 
 
@@ -214,3 +262,25 @@ def sail_query(provider):
         env=dict(os.environ,GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=str(provider.ca)),capture_output=True,text=True,timeout=180)
     # Only retain status: exception text can contain remote request details.
     return {'returncode':result.returncode,'scope':'Full pinned Sail exact-row and typed-denial client'}
+
+
+def token_event_ids(provider):
+    time.sleep(.3)  # let asynchronous event persistence settle
+    events = provider.http.json('POST',provider.base+'/auth/v1/events',headers=provider.admin,
+                               json={'from':1719784800,'until':int(time.time())+2,'level':'info','typ':'TokenIssued'})
+    # IDs only; never retain event bodies or token values.
+    return {event['id'] for event in events if (event.get('text') or '').startswith('lakekeeper (')}
+
+
+def lookup_samples():
+    import json
+    logs = run('docker','logs','cedar')
+    result=[]
+    for line in logs.splitlines():
+        try:
+            entry=json.loads(line)
+            if 'membership_lookup_ms' in entry:
+                result.append(entry['membership_lookup_ms'])
+        except ValueError:
+            pass
+    return result
