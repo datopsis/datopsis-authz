@@ -1,6 +1,6 @@
 # S1: Lakekeeper authorizer adapter with Cedar
 
-Status: **in progress; no MVP go decision**. Working name: datopsis-authz.
+Status: **spike complete; trait/build feasibility PASS; full acceptance FAIL on both CPUs. No MVP go decision.** Working name: datopsis-authz.
 This is a bounded feasibility spike, not production qualification.
 
 ## Inputs and binding decisions
@@ -59,7 +59,7 @@ set only; enabling upstream open-api also requires implementing the adapter’s
 api_doc method. That feature combination is not qualified. This is a 0.x trait, with async
 methods, generics, nine associated types and evolving hooks; treat it as a pinned
 source API, not a stable plugin ABI. Every upstream bump needs a compile and
-behavior gate. Local `cargo check --workspace --locked` passes with Rust 1.94.1. Runtime evidence will be linked below.
+behavior gate. Local `cargo check --workspace --locked` passes with Rust 1.94.1. Native runtime evidence is linked below.
 
 Out-of-tree builds must carry upstream’s `tracing_unstable` and `tokio_unstable`
 cfgs and `SQLX_OFFLINE=true`; dependency workspace Cargo configuration does not
@@ -104,7 +104,7 @@ SHA-256 values, and checks the catalog version command in the final image. A
 loader probe against the pinned UBI Micro base runs before expensive fixture builds. These extra runtime RPMs are not
 supply-chain-qualified; production RPM locking/scanning remains an MVP gap.
 
-### Feasibility checks already observed
+### Verified feasibility checks
 
 | Check | Result | Evidence |
 | --- | --- | --- |
@@ -113,13 +113,16 @@ supply-chain-qualified; production RPM locking/scanning remains an MVP gap.
 | Cedar schema, inherited groups, write/sibling denial, revoke | PASS locally | core unit test, including strict validation |
 | Verified HTTPS allow/deny/revoke, self-only identity read and API authentication | PASS locally | scripts/tls-smoke.py |
 | Harness denial safety | PASS locally | four pinned upstream harness tests plus adapted denial guard |
-| Native amd64 compilation, workspace tests, HTTPS smoke | PASS at 62b6be2 | [actual job logs](https://github.com/datopsis/datopsis-authz/actions/runs/43859108523/job/133270942721) |
-| Native arm64 compilation, workspace tests, HTTPS smoke | PASS at 62b6be2 | [actual job logs](https://github.com/datopsis/datopsis-authz/actions/runs/43859108523/job/133270942875) |
+| Native amd64 compilation, workspace tests, HTTPS smoke | PASS at 28dc8af | [actual job logs](https://github.com/datopsis/datopsis-authz/actions/runs/43873482289/job/133320393071) |
+| Native arm64 compilation, workspace tests, HTTPS smoke | PASS at 28dc8af | [actual job logs](https://github.com/datopsis/datopsis-authz/actions/runs/43873482289/job/133320393346) |
 
-The linked run was superseded and cancelled during fixture-image builds after
-source/fixture improvements; its compile/test/smoke steps completed successfully
-on both CPUs. These are not C1–C8 passes. The source at 837340f adds strict policy
-validation and diagnostic forwarding and is undergoing a new complete run.
+The final [run 43873482289](https://github.com/datopsis/datopsis-authz/actions/runs/43873482289)
+tested PR source 28dc8afe66371d683a7f1ace83d07fd5dc2624af through merge commit
+31d0f624e1b3e408648c9088be4b1cc5edd34807. Both native jobs’ actual logs and
+sanitized artifacts were read. Default-feature composition, real catalog calls,
+Cedar evaluation, Rauthy-issued tokens and verified TLS are proven without
+patching Lakekeeper. Published-crate packaging and OpenAPI feature mode remain
+unverified. Required checks remain red; this is not acceptance of an MVP.
 
 ## Q3: Acceptance evidence
 
@@ -151,16 +154,59 @@ after C8, so state loss cannot prevent the next case from exercising its own
 restart assertion. No state is restored inside an assertion. Catalog failures,
 TLS errors and authentication failures never qualify as authorization denials.
 
-| Case | amd64 | arm64 |
+| Case | [amd64][native-amd64] | [arm64][native-arm64] |
 | --- | --- | --- |
-| C1 namespace read/exact rows/write denials | NOT RUN | NOT RUN |
-| C2 inheritance/single-table isolation | NOT RUN | NOT RUN |
-| C3 direct verified groups / mapping revoke | NOT RUN | NOT RUN |
-| C4 revoke within 30 seconds | NOT RUN | NOT RUN |
-| C5 Trino, PyIceberg and Sail | NOT RUN | NOT RUN |
-| C6 no denied storage credentials | NOT RUN | NOT RUN |
-| C7 spoofing/invalid tokens/isolation/outage/recovery | NOT RUN | NOT RUN |
-| C8 durable restart and repeated migrations | NOT RUN | NOT RUN |
+| C1 namespace read/exact rows/write denials | PASS | PASS |
+| C2 inheritance/single-table isolation | PASS | PASS |
+| C3 direct groups plus old-token membership revocation | FAIL | FAIL |
+| C4 revoke within 30 seconds | PASS — 35.116 ms | PASS — 34.301 ms |
+| C5 Trino, PyIceberg and Sail | PASS — all three | PASS — all three |
+| C6 no denied storage credentials | PASS | PASS |
+| C7 spoofing/invalid tokens/isolation/outage/recovery | FAIL — recovery | FAIL — recovery |
+| C8 durable restart and repeated migrations | FAIL — state loss | FAIL — state loss |
+
+[native-amd64]: https://github.com/datopsis/datopsis-authz/actions/runs/43873482289/job/133320393071
+[native-arm64]: https://github.com/datopsis/datopsis-authz/actions/runs/43873482289/job/133320393346
+
+Durable sanitized summaries: [amd64](S1-results-amd64.json) and
+[arm64](S1-results-arm64.json). They retain exact read rows, denial/timing evidence,
+per-client C5 outcomes, input revisions, image/binary/library hashes and owner
+image provenance. Full sanitized service logs remain in the run artifacts (14 days).
+No private keys or tokens are committed.
+
+- **C1/C2:** exact sample rows were [{id: 1, label: alpha}, {id: 2, label: beta}].
+  Namespace grants covered a newly created table. A single-table grant read only
+  its table; namespace listing returned NoSuchNamespaceError and the sibling
+  load was denied. This is allowed by C2’s strict non-exposure oracle, not proof
+  of a convenient filtered single-table namespace listing.
+- **C3:** unmapped genuine groups denied, mapping the group allowed exact rows,
+  and removing the mapping denied the old token on both CPUs. The retained
+  authoritative IdP-removal assertion then failed with “Denied operation
+  succeeded”: the old JWT still contained lake-readers. No sync was performed
+  and no full C3 PASS is claimed.
+- **C4:** first fresh REST denial was 404 after 0.03511558799982595 seconds on
+  amd64 and 0.0343011260001731 seconds on arm64, one probe each. These are
+  single-run, single-service observations, not a cache/multi-replica SLA or
+  revocation of previously issued storage credentials.
+- **C5:** all three clients read exactly [[1, alpha], [2, beta]] and passed the
+  original other-namespace/write denials. Sail used an external token file;
+  this does not claim native Sail OAuth or Trino end-user OPA enforcement.
+- **C6:** denied vending returned 404 without credentials. Allowed responses
+  contained no S3 keys/session tokens; the configuration-name lists are retained
+  in each summary. STS remained disabled.
+- **C7:** the trace reaches the final backend-recovery wait, so preceding identity
+  spoofing, cross-client secret, invalid/expired-token, network-isolation and
+  structured outage assertions completed. Restarted Cedar answered without the
+  grants needed to allow the load; the 120-second wait for 200 timed out on both
+  CPUs. Post-recovery allow/deny checks were not reached. The exact structured
+  outage status was not retained after the exception; it was required to be
+  403/500/503 with a typed error and no metadata/credentials, never a timeout.
+- **C8:** after an explicit between-case fixture reset, another Cedar restart
+  changed the complete state snapshot, failing with “Cedar restart lost
+  relationship/grant state”. Repeated migration assertions were not reached;
+  no durable backend migrations are implemented or qualified. The final fixture
+  reset restored grants and the unchanged-row control passed. These resets do
+  not turn either destructive case into PASS.
 
 CI uses native ubuntu-24.04 and ubuntu-24.04-arm; no QEMU. Images are compiled in
 UBI 9 to avoid the runner's newer glibc being required by the UBI runtime.
@@ -198,6 +244,12 @@ probe a live Trino process instead of PID 0.
   needed libssl.so.3 absent from the minimal upstream runtime. C1–C8 were all BLOCKED,
   not failed authorization cases. Both jobs’ logs and sanitized artifacts were read.
   Runtime-library collection and an early loader probe address that blocker.
+- [43866413758](https://github.com/datopsis/datopsis-authz/actions/runs/43866413758):
+  the catalog path and PyIceberg/Sail passed on both CPUs. Trino startup was blocked
+  by duplicate node.internal-address, which in turn blocked C7’s live-process
+  network probe (raw harness records FAIL for those prerequisites). The generated
+  config correction above preserves the current image’s strict TLS guards and
+  original engine assertions. Final run 43873482289 supersedes these scores.
 - Other intermediate runs were superseded/cancelled during source iteration and
   establish no C1–C8 acceptance result.
 
@@ -215,7 +267,7 @@ scope, issued-credential revocation or direct-storage isolation is qualified.
 
 ### Audit gate
 
-[Actual lint job](https://github.com/datopsis/datopsis-authz/actions/runs/43858413647/job/133268555266)
+[Actual lint job](https://github.com/datopsis/datopsis-authz/actions/runs/43873482289/job/133320392464)
 ran cargo-audit 0.22.2 and failed with three advisories in the locked transitive graph:
 `libsqlite3-sys` 0.37.0 / RUSTSEC-2026-0459, and `quick-xml` 0.40.1 /
 RUSTSEC-2026-0194 and RUSTSEC-2026-0195. Five informational/unmaintained/unsoundness
@@ -247,3 +299,20 @@ Rough S1-to-catalog-MVP total: **32–61 engineering days**, before S2/S3/S4,
 OPA endpoint, Sail gateway, token broker and Phase D STS qualification. Do not
 start that scope under this PR. Static storage keys remain a bypass until Phase D;
 C6's STS-disabled profile only proves the catalog/vending boundary.
+
+## Verdict and unverified scope
+
+**The public pinned SPI is feasible: PASS. Full C1–C8 acceptance: FAIL on both
+native architectures.** Do not interpret compilation or five passing cases as a
+completed authorization platform. C3 needs a membership-revocation design (S4);
+C7/C8 need durable relationship state. These failures are retained as spike
+findings, not fixed by beginning the MVP without the owner’s decision.
+
+Not qualified: published-crate/OpenAPI builds; real PostgreSQL relationship
+migrations or repeated migration parity; existing-catalog backfill; full management
+API/role/delegated-view parity; fresh empty-group human tokens; IdP-membership
+revocation bound; load, caching, HA and durable audit; signed bundles and policy
+analysis; Trino OPA, Sail gateway/token broker; STS/direct-storage isolation;
+production image hardening, RPM locks/SBOM and complete vulnerability qualification.
+The final documentation/evidence follow-up does not change the tested program
+or assertions; the exact tested source and merge commits are recorded above.

@@ -4,6 +4,11 @@ Apache-2.0 authorization platform spike. The owner will rename this repository.
 **S1 is evaluation-only, not an MVP or a production authorizer.** An owner go/no-go
 is required before MVP work.
 
+S1 proves unmodified-source Lakekeeper composition and the Cedar catalog path on
+native amd64 and arm64. C1/C2/C4/C5/C6 pass; C3/C7/C8 fail on old-token membership
+revocation and volatile relationship state. The audit gate also remains red.
+The report links actual runs and retained sanitized evidence.
+
 The intended platform is one Rust program/image with `serve`, `sail-gateway`,
 `token-broker`, and `policy` roles. S1 implements only `serve` and schema validation
 under `policy`; other roles fail explicitly. A separate thin Lakekeeper binary
