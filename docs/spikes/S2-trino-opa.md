@@ -29,8 +29,8 @@ runs separately after S2, with independent disposable fixture state.
 - Fixture `e8379a528bf413c05aad49e56bc8cd507b5e077a`, with its owner image locks.
 - Required [trino-ubi](https://github.com/datopsis/trino-ubi/tree/685ff5bca0037d38e3c2e2ed47a60f2540dad7c2)
   pin already matches the fixture lock. Iceberg and verified TLS, no source edits.
-- [Trino 484 source](https://github.com/trinodb/trino/tree/db3822bfb9aec688f3f06ae8fe8194763b842f1d/plugin/trino-opa)
-  (`484` tag resolves to `db3822bfb9aec688f3f06ae8fe8194763b842f1d`).
+- [Trino 484 source](https://github.com/trinodb/trino/tree/e2d50bb733e193607c44be84ad80ce2430ba1d01/plugin/trino-opa)
+  (`484` tag resolves to `e2d50bb733e193607c44be84ad80ce2430ba1d01`).
 - S1 pins Lakekeeper `9bd377162345b64a716f0a4fcffe4e7e7f3c7534` and Cedar 4.14.1.
 
 ## Supported wire features (source evidence, runtime qualification above)
@@ -46,21 +46,21 @@ needed. `authz-serve serve` implements JSON `input` / `result` envelopes:
 | `opa.policy.column-masking-uri` | `/opa/mask` | expression object or null |
 | `opa.policy.batch-column-masking-uri` | `/opa/batch_masks` | `{index, viewExpression}` list |
 
-[OpaConfig](https://github.com/trinodb/trino/blob/db3822bfb9aec688f3f06ae8fe8194763b842f1d/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaConfig.java)
-and [OpaHighLevelClient](https://github.com/trinodb/trino/blob/db3822bfb9aec688f3f06ae8fe8194763b842f1d/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaHighLevelClient.java)
+[OpaConfig](https://github.com/trinodb/trino/blob/e2d50bb733e193607c44be84ad80ce2430ba1d01/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaConfig.java)
+and [OpaHighLevelClient](https://github.com/trinodb/trino/blob/e2d50bb733e193607c44be84ad80ce2430ba1d01/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaHighLevelClient.java)
 establish that batched masking takes precedence over single masking; an absent
 row/mask URI disables that feature. Masks are queried with `GetColumnMask` and
 row filters with `GetRowFilters`. Expressions can carry an alternate evaluation
 identity; this spike does not return one.
 
-[OpaBatchAccessControl](https://github.com/trinodb/trino/blob/db3822bfb9aec688f3f06ae8fe8194763b842f1d/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaBatchAccessControl.java)
+[OpaBatchAccessControl](https://github.com/trinodb/trino/blob/e2d50bb733e193607c44be84ad80ce2430ba1d01/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaBatchAccessControl.java)
 batches catalog/schema/table/function filtering. `FilterColumns` sends a single
 table with a columns array and expects column indexes within that array. This
 is different from indexes into `filterResources`. Unconfigured batch URI uses
 parallel scalar decisions. Permission/role management does not call OPA: the
 plugin's separate bulk option defaults to deny and remains disabled.
 
-[OpaAccessControl](https://github.com/trinodb/trino/blob/db3822bfb9aec688f3f06ae8fe8194763b842f1d/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaAccessControl.java)
+[OpaAccessControl](https://github.com/trinodb/trino/blob/e2d50bb733e193607c44be84ad80ce2430ba1d01/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaAccessControl.java)
 leaves `checkCanSetUser` empty; authentication belongs to Trino. The fixture uses
 TLS plus file password authentication (independent per-run passwords), with exact
 Cedar principal IDs as usernames. It does not claim Rauthy login/token propagation

@@ -74,6 +74,10 @@ fn check(
     );
     Ok(verdict.allowed)
 }
+fn metadata(resource: &Value) -> bool {
+    let r = resource.get("table").or_else(|| resource.get("column"));
+    r.is_some_and(|r| r["catalogName"] == "iceberg" && r["schemaName"] == "information_schema")
+}
 fn allowed(store: &Store, input: &Input, resource: &Value) -> Result<bool> {
     let op = input.action.operation.as_str();
     if op == "ExecuteQuery" {
@@ -96,9 +100,7 @@ fn allowed(store: &Store, input: &Input, resource: &Value) -> Result<bool> {
     }
     if resource.get("table").is_some() {
         // Trino's information_schema connector performs item-level filtering itself.
-        if field(&resource["table"], "catalogName")? == "iceberg"
-            && field(&resource["table"], "schemaName")? == "information_schema"
-        {
+        if metadata(resource) {
             return Ok(true);
         }
         return match binding(store, resource) {
@@ -130,6 +132,9 @@ fn quote_identifier(s: &str) -> String {
     format!("\"{}\"", s.replace('"', "\"\""))
 }
 fn mask(store: &Store, input: &Input, resource: &Value) -> Result<Value> {
+    if metadata(resource) {
+        return Ok(Value::Null);
+    }
     let b = binding(store, resource)?;
     if !check(store, &input.context.identity, b, "read_data")? {
         return Err(StatusCode::FORBIDDEN);
@@ -181,6 +186,9 @@ fn evaluate(store: &Store, query: &Query, endpoint: &str) -> Result<Value> {
         "rows" => {
             if input.action.operation != "GetRowFilters" {
                 return Err(StatusCode::BAD_REQUEST);
+            }
+            if metadata(resource) {
+                return Ok(json!({"result":[]}));
             }
             let b = binding(store, resource)?;
             if !check(store, &input.context.identity, b, "read_data")? {
