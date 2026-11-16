@@ -20,6 +20,9 @@ store. It trusts authenticated adapter assertions, not client-supplied JWT claim
 Lakekeeper verifies OIDC tokens and passes verified `groups` through its token-role
 metadata. Never expose the decision/mutation API to catalog clients.
 
+S2 adds Trino 484 OPA-compatible decisions, list filtering, row-filter and mask
+endpoints to the same serve role; see [the S2 report](docs/spikes/S2-trino-opa.md).
+
 See [the S1 report](docs/spikes/S1-lakekeeper-adapter.md) for coverage and limitations.
 
 ## Development

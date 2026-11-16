@@ -1,4 +1,4 @@
-name: S1
+name: S2 (stacked on S1)
 on:
   pull_request:
   push:
@@ -42,7 +42,7 @@ jobs:
           test "$(uname -m)" = "$EXPECTED_MACHINE"
           df -h
           sudo apt-get update -qq
-          sudo apt-get install -y protobuf-compiler libssl-dev pkg-config
+          sudo apt-get install -y protobuf-compiler libssl-dev pkg-config apache2-utils
       - name: Pinned acceptance fixture and blocked-result initialization
         run: |
           git clone https://github.com/datopsis/lakehouse-integration .sources/lakehouse-integration
@@ -51,6 +51,7 @@ jobs:
           .venv/bin/pip install --require-hashes -r .sources/lakehouse-integration/requirements.txt
           echo "RUN_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_ENV"
       - run: .venv/bin/python evaluation/s1/run.py initialize
+      - run: .venv/bin/python evaluation/s2/run.py initialize
       - name: Restore native compiler cache
         id: rust-cache
         uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
@@ -92,7 +93,11 @@ jobs:
           docker run --rm localhost/lakekeeper-datopsis:s1 version
           docker run --rm localhost/authz-serve:s1 policy
       - run: python3 scripts/image-evidence.py
+      - name: S2 Trino end-user enforcement, filters, masks, parity and outage
+        id: s2
+        run: .venv/bin/python evaluation/s2/run.py
       - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
+        if: ${{ !cancelled() && steps.s2.outcome != 'skipped' }}
         run: .venv/bin/python evaluation/s1/run.py
       - name: Cleanup and sanitize evidence
         if: always()
@@ -103,7 +108,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: s1-${{ matrix.runner }}-${{ github.run_id }}
-          path: reports/s1/
+          path: |
+            reports/s1/
+            reports/s2/
           if-no-files-found: error
           retention-days: 14
 

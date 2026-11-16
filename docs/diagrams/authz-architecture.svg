@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1100" height="650" viewBox="0 0 1100 650" role="img" aria-labelledby="title desc">
 <title id="title">Datopsis authorization: one platform binary with roles and a Lakekeeper adapter</title>
-<desc id="desc">Lakekeeper verifies Rauthy tokens and their groups claim. A compiled adapter calls the serve role over verified HTTPS. The platform image also has planned Sail gateway, token broker, and policy roles. PostgreSQL is planned; S1 uses memory.</desc>
+<desc id="desc">Lakekeeper verifies Rauthy tokens and their groups claim. A compiled adapter calls the serve role over verified HTTPS. The platform image also has planned Sail gateway, token broker, and policy roles. Trino uses the stock OPA plugin over HTTPS with trusted name-to-UUID bindings and row/mask templates. PostgreSQL is planned; S1/S2 use memory.</desc>
 <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3z" fill="#546880"/></marker></defs>
 <rect width="1100" height="650" fill="#f5f7fb"/>
 <g font-family="sans-serif" fill="#14243b">
-<text x="35" y="42" font-size="25" font-weight="bold">Datopsis authorization — S1 spike</text>
-<text x="35" y="70" font-size="16">Working name · one monorepo · planned roles shown; dashed boxes are outside S1</text>
+<text x="35" y="42" font-size="25" font-weight="bold">Datopsis authorization — S1 + S2 spikes</text>
+<text x="35" y="70" font-size="16">Working name · one monorepo · planned roles shown; dashed boxes are outside S1/S2</text>
 <rect x="40" y="105" width="230" height="80" rx="10" fill="#e3eefe" stroke="#476d9f"/>
 <text x="60" y="136" font-size="19">Rauthy</text><text x="60" y="162" font-size="15">OIDC / JWKS / groups</text>
 <rect x="40" y="240" width="270" height="145" rx="10" fill="#e3eefe" stroke="#476d9f"/>
@@ -15,12 +15,13 @@
 <text x="410" y="145" font-size="21" font-weight="bold">One datopsis-authz program / image</text>
 <rect x="415" y="170" width="600" height="105" rx="6" fill="#fff" stroke="#2a7958"/>
 <text x="430" y="198" font-size="19">serve — Cedar decisions + relationship store + audit</text>
-<text x="430" y="224" font-size="15">S1: HTTPS, memory, grants, parent hierarchy, stdout audit</text>
-<text x="430" y="250" font-size="15">Planned: PostgreSQL, OPA endpoint for Trino, durable audit</text>
+<text x="430" y="224" font-size="15">S1/S2: HTTPS, Cedar grants, memory, Trino OPA + SQL obligations</text>
+<text x="430" y="250" font-size="15">Planned: PostgreSQL, durable audit; engine-only row/mask protection</text>
 <g stroke="#779a89" stroke-dasharray="7 4" fill="#fff"><rect x="415" y="300" width="280" height="65" rx="6"/><rect x="720" y="300" width="295" height="65" rx="6"/></g>
 <text x="430" y="328" font-size="18">sail-gateway (S3)</text><text x="430" y="350" font-size="14">JWT + Spark Connect enforcement</text>
 <text x="735" y="328" font-size="18">token-broker (later)</text><text x="735" y="350" font-size="14">outbound token lifecycle</text>
 <rect x="415" y="390" width="600" height="55" rx="6" fill="#fff" stroke="#2a7958"/><text x="430" y="423" font-size="17">policy — S1 schema check; validate/test/analyze planned</text>
+<rect x="740" y="525" width="305" height="90" rx="8" fill="#e3eefe" stroke="#476d9f"/><text x="755" y="550" font-size="18">Trino 484 stock OPA (S2)</text><text x="755" y="575" font-size="14">TLS + authenticated end users</text><text x="755" y="598" font-size="14">list / select / row filters / masks</text><path d="M900 525V280" fill="none" stroke="#546880" stroke-width="2" marker-end="url(#arrow)"/>
 <rect x="420" y="535" width="260" height="65" rx="8" fill="#fff" stroke="#779a89" stroke-dasharray="7 4"/><text x="440" y="562" font-size="18">PostgreSQL (MVP)</text><text x="440" y="585" font-size="14">ownership, hierarchy, grants</text>
 <rect x="40" y="495" width="270" height="105" rx="8" fill="#fff" stroke="#779a89" stroke-dasharray="7 4"/><text x="60" y="525" font-size="18">Storage / SeaweedFS STS</text><text x="60" y="552" font-size="14">Lakekeeper decisions gate vending</text><text x="60" y="578" font-size="14">table scope qualification: Phase D</text>
 <path d="M155 185V235 M310 342H355V225H410 M155 385V490 M550 470V530" fill="none" stroke="#546880" stroke-width="2" marker-end="url(#arrow)"/>
