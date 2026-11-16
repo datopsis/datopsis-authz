@@ -77,11 +77,17 @@ service credential over verified HTTPS. It does not independently validate JWTs.
 
 The thin binary uses upstream configuration, PostgreSQL catalog/secrets,
 core migrations and authenticator. It deliberately omits UI, event sinks and
-production operational CLI parity. The relationship store is **in memory**, as
+production operational CLI parity. It currently selects PostgreSQL secrets
+unconditionally and bypasses the owner image’s entrypoint encryption-key guard;
+the fixture supplies an independent per-run encryption key and forces loopback
+binding. Production backend selection/default guards are not qualified.
+The relationship store is **in memory**, as
 permitted for S1; restart durability and outage recovery are not implemented.
 Cedar policies are currently generated from grants per request. Policy mode parses the schema; generated policies undergo Cedar strict validation
 before evaluation. Full policy bundles, context-sensitive rules and analysis are
-MVP gaps. Audit is sanitized stdout, not durable or tamper-evident. Generated
+MVP gaps. The schema admits broad resource ancestry; the adapter hooks construct
+the intended server/project/warehouse/namespace/tabular hierarchy, but strict
+parent-type constraints still need tightening. Audit is sanitized stdout, not durable or tamper-evident. Generated
 policy IDs currently depend on grant order; stable grant IDs and bundle hashes
 are needed for durable attribution.
 
@@ -163,6 +169,33 @@ Per-run CA, service keys and tokens are never committed. Evidence upload is
 restricted to sanitized reports; `.runtime` and environment files are excluded.
 Container execution is unavailable locally; actual Actions logs are authoritative.
 
+### Generated Trino fixture correction
+
+The e8379a5 integration profile already contains node.internal-address=trino, but
+its evaluation helper appends the same key again. Trino's launcher rejects this
+before serving queries. A local wrapper normalizes only the generated profile
+copy, then calls the unmodified pinned engine assertions. It asserts the source
+value is exactly trino; after the helper appends, the final configuration contains
+one identical definition. No source checkout or read/write/denial assertion is
+changed. This also lets C7 probe a live Trino process instead of PID 0.
+
+### Earlier attempts (not acceptance passes)
+
+- [43858413647](https://github.com/datopsis/datopsis-authz/actions/runs/43858413647):
+  both architectures blocked before runtime because UBI did not supply the requested
+  protoc package. Replaced with checksum-pinned upstream native protoc archives.
+- [43859108523](https://github.com/datopsis/datopsis-authz/actions/runs/43859108523):
+  native compile/tests/HTTPS smoke passed; superseded and cancelled during fixture
+  builds. It provides compilation evidence only.
+- [43860324131](https://github.com/datopsis/datopsis-authz/actions/runs/43860324131):
+  both architectures built all pinned fixture images and passed Rauthy, Cedar and
+  storage TLS startup. Catalog migration could not start because the custom binary
+  needed libssl.so.3 absent from the minimal upstream runtime. C1–C8 were all BLOCKED,
+  not failed authorization cases. Both jobs’ logs and sanitized artifacts were read.
+  Runtime-library collection and an early loader probe address that blocker.
+- Other intermediate runs were superseded/cancelled during source iteration and
+  establish no C1–C8 acceptance result.
+
 ### C6 source boundary
 
 Pinned [load_table](https://github.com/lakekeeper/lakekeeper/blob/9bd377162345b64a716f0a4fcffe4e7e7f3c7534/crates/lakekeeper/src/server/tables/load_table.rs)
@@ -192,10 +225,11 @@ ignore, patch, exemption or continue-on-error was added. The lint gate stays red
 
 Estimates below are engineering workdays for one experienced Rust engineer,
 not a delivery commitment; integration/security review can reveal more work.
+Upstream advisory fixes can add unbounded elapsed waiting time.
 
 | Gap | Approximate effort | Required result |
 | --- | --- | --- |
-| Durable relationship store and consistency | 5–10 days | PostgreSQL verify-full, idempotent migrations, atomic grant changes, hierarchy reconciliation, rename/rollback/crash tests |
+| Durable relationship store and consistency | 5–10 days | PostgreSQL verify-full, idempotent migrations, atomic grant changes, catalog/graph reconciliation (no shared transaction), rename/rollback/crash tests |
 | Management API and delegated authorization | 5–10 days | explicit compatible grant/revoke/list/introspection routes, pagination, role/user semantics, deny unauthorized inspectors |
 | Full action/schema model | 3–5 days | validated policies, context-sensitive mutations, view/definer/generic-table tests; current select/owner model is narrow |
 | List performance | 3–5 days | bounded batches, avoid per-object HTTP, query budgets, large namespace/pagination benchmarks |

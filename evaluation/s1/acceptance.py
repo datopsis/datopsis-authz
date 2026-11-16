@@ -216,7 +216,7 @@ def evaluate(arch):
     tuples("user:oidc~lakekeeper", "select", namespace)
 
     def machines():
-        from engines import sail, trino
+        from engine_clients import sail, trino
 
         def pyiceberg():
             client = catalog.pyiceberg()

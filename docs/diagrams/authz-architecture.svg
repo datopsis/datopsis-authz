@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1100" height="650" viewBox="0 0 1100 650" role="img" aria-labelledby="title desc">
 <title id="title">Datopsis authorization: one platform binary with roles and a Lakekeeper adapter</title>
-<desc id="desc">Rauthy verifies identity at Lakekeeper. A compiled adapter calls the serve role over verified HTTPS. The platform image also has planned Sail gateway, token broker, and policy roles. PostgreSQL is planned; S1 uses memory.</desc>
+<desc id="desc">Lakekeeper verifies Rauthy tokens and their groups claim. A compiled adapter calls the serve role over verified HTTPS. The platform image also has planned Sail gateway, token broker, and policy roles. PostgreSQL is planned; S1 uses memory.</desc>
 <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3z" fill="#546880"/></marker></defs>
 <rect width="1100" height="650" fill="#f5f7fb"/>
 <g font-family="sans-serif" fill="#14243b">
@@ -23,6 +23,6 @@
 <rect x="415" y="390" width="600" height="55" rx="6" fill="#fff" stroke="#2a7958"/><text x="430" y="423" font-size="17">policy — S1 schema check; validate/test/analyze planned</text>
 <rect x="420" y="535" width="260" height="65" rx="8" fill="#fff" stroke="#779a89" stroke-dasharray="7 4"/><text x="440" y="562" font-size="18">PostgreSQL (MVP)</text><text x="440" y="585" font-size="14">ownership, hierarchy, grants</text>
 <rect x="40" y="495" width="270" height="105" rx="8" fill="#fff" stroke="#779a89" stroke-dasharray="7 4"/><text x="60" y="525" font-size="18">Storage / SeaweedFS STS</text><text x="60" y="552" font-size="14">Lakekeeper decisions gate vending</text><text x="60" y="578" font-size="14">table scope qualification: Phase D</text>
-<path d="M155 185V235 M310 342H385 M155 385V490 M550 470V530" fill="none" stroke="#546880" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M155 185V235 M310 342H355V225H410 M155 385V490 M550 470V530" fill="none" stroke="#546880" stroke-width="2" marker-end="url(#arrow)"/>
 <text x="170" y="215" font-size="14">verified JWT</text><text x="313" y="318" font-size="13">HTTPS</text>
 </g></svg>
