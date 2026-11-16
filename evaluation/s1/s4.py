@@ -41,10 +41,12 @@ def membership_cases(catalog, key, human, namespace, tuples, denial):
             assert load(human).status_code == 200
             before = time.monotonic()
             removed = provider.remove_group(claims['sub'])
-            acknowledged = time.monotonic()
+            before = provider.removal_started
+            acknowledged = provider.removal_ack
             assert 'lake-readers' not in (removed.get('groups') or [])
             poll_requests = 0
             epoch = None
+            epoch_ack = None
             if mode.startswith('B-'):
                 # One complete poll cycle after acknowledged removal. The baseline
                 # above is authoritative. Persist the cutoff BEFORE acknowledging sync.
@@ -55,6 +57,7 @@ def membership_cases(catalog, key, human, namespace, tuples, denial):
                 epoch = int(time.time()) + 1  # reject every token issued in this second
                 http.request('POST', 'https://cedar:8443/mutate', headers=headers,
                              json={'op':'revoke_before','principal':principal,'epoch':epoch}).raise_for_status()
+                epoch_ack = time.monotonic()
             samples = []
             while time.monotonic() - acknowledged < 30:
                 response = load(human)
@@ -69,7 +72,9 @@ def membership_cases(catalog, key, human, namespace, tuples, denial):
             evidence[mode] = {'unmapped':negative,'mapped_exact_rows':allowed,'mapping_removal':unmapped,
                 'IdP_removal_old_unexpired_token':old_denied, 'removal_request_seconds':acknowledged-before,
                 'first_denial_seconds':samples[-1]['seconds_since_ack'],'samples':samples,
-                'poll_requests':poll_requests}
+                'poll_requests':poll_requests,
+                'epoch_ack_since_removal_seconds':None if epoch_ack is None else epoch_ack-acknowledged,
+                'denial_after_epoch_ack_ms':None if epoch_ack is None else (time.monotonic()-epoch_ack)*1000}
             save('S4-membership.json', evidence)
             if mode.startswith('C-'):
                 # Measure a repeatable mix of 20 fresh catalog requests and service
@@ -82,6 +87,15 @@ def membership_cases(catalog, key, human, namespace, tuples, denial):
                     start = time.monotonic()
                     assert load(human).status_code == 200
                     durations.append((time.monotonic()-start)*1000)
+                measured_lookups = lookup_samples()[len(before_lookups):]
+                configure(None)
+                baseline = []
+                for _ in range(20):
+                    start = time.monotonic()
+                    assert load(human).status_code == 200
+                    baseline.append((time.monotonic()-start)*1000)
+                configure(0 if mode == 'C-live' else 250)
+                assert load(human).status_code == 200
                 run('docker','stop',provider.container)
                 try:
                     time.sleep(.3)
@@ -92,7 +106,8 @@ def membership_cases(catalog, key, human, namespace, tuples, denial):
                     assert body.get('error',{}).get('type'), body
                     assert not any(k in body for k in ('metadata','config','storage-credentials'))
                     evidence[mode].update({'catalog_latency_ms':durations,'median_ms':statistics.median(durations),
-                        'membership_lookup_ms':lookup_samples()[len(before_lookups):],
+                        'membership_lookup_ms':measured_lookups, 'baseline_catalog_latency_ms':baseline,
+                        'baseline_median_ms':statistics.median(baseline),
                         'catalog_load_requests':20,
                         'outage_status':outage.status_code,'outage_error_type':body['error']['type'],
                         'outage_seconds':time.monotonic()-start})
@@ -186,7 +201,7 @@ def short_tokens(catalog, namespace, tuples):
         assert http.request('GET',path,headers={'Authorization':'Bearer '+token}).status_code==200
         removed=provider.remove_group(claims['sub'])
         assert 'lake-readers' not in (removed.get('groups') or [])
-        start = time.monotonic()
+        start = provider.removal_ack
         samples=[]
         while time.monotonic()-start < 100:
             r=http.request('GET',path,headers={'Authorization':'Bearer '+token})

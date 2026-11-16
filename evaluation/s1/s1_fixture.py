@@ -1,6 +1,7 @@
 """Compose pinned fixture helpers without editing their source checkout."""
 import json
 import os
+import time
 from pathlib import Path
 
 import fixture as upstream
@@ -9,6 +10,15 @@ from fixture import BACKEND_NETWORK, Storage, backend_address, container, databa
 from rauthy import Rauthy as PinnedRauthy
 
 class Rauthy(PinnedRauthy):
+    def remove_group(self, subject):
+        url = self.base + '/auth/v1/users/' + subject
+        user = self.http.json('GET', url, headers=self.admin)
+        user['groups'] = []
+        self.removal_started = time.monotonic()
+        self.http.json('PUT', url, headers=self.admin, statuses=(200,202), json=user)
+        self.removal_ack = time.monotonic()
+        return self.http.json('GET', url, headers=self.admin)
+
     def config_rauthy(self):
         result = super().config_rauthy()
         path = self.path / 'bootstrap/api_keys.json'
