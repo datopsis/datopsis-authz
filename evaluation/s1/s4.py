@@ -33,9 +33,10 @@ def membership_cases(catalog, key, human, namespace, tuples, denial):
             configure(0 if mode == 'C-live' else 250 if mode.startswith('C-') else None)
             negative = denial(lambda: catalog.read(catalog.pyiceberg(human)))
             tuples('group:lake-readers', 'select', namespace)
-            allowed = catalog.read(catalog.pyiceberg(human))
+            mapped_reader = catalog.pyiceberg(human)
+            allowed = catalog.read(mapped_reader)
             tuples('group:lake-readers', 'select', namespace, True)
-            unmapped = denial(lambda: catalog.read(catalog.pyiceberg(human)))
+            unmapped = denial(lambda: catalog.read(mapped_reader))
             tuples('group:lake-readers', 'select', namespace)
             # Warm the cache immediately before removal, exercising its exposure bound.
             assert load(human).status_code == 200
@@ -68,7 +69,9 @@ def membership_cases(catalog, key, human, namespace, tuples, denial):
                 time.sleep(.025)
             assert samples[-1]['status'] in (403,404), samples
             assert decode(human)[1]['exp'] > time.time(), 'C3 requires an unexpired old token'
-            old_denied = denial(lambda: catalog.read(catalog.pyiceberg(human)))
+            # Preserve S1's retained-token reader: an epoch also hides warehouse
+            # discovery, whose generic RESTError is not a typed table denial.
+            old_denied = denial(lambda: catalog.read(mapped_reader))
             evidence[mode] = {'unmapped':negative,'mapped_exact_rows':allowed,'mapping_removal':unmapped,
                 'IdP_removal_old_unexpired_token':old_denied, 'removal_request_seconds':acknowledged-before,
                 'first_denial_seconds':samples[-1]['seconds_since_ack'],'samples':samples,
