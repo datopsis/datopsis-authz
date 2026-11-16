@@ -182,19 +182,28 @@ checks remain unchanged. No owner checkout or lockfile is modified. This changes
 artifact acquisition transport, not any acceptance assertion or shipped image
 input. The workaround is evaluation-only, not a general dependency mirror.
 
-### Sail builder transport stall
+### Build duration and runtime choice
 
 The cancelled second run's
 [actual arm64 log](https://github.com/datopsis/datopsis-authz/actions/runs/43886130893/job/133364641119)
-shows Sail's Docker buildx export complete at 14:35:38 UTC, but its build command
-remained alive until cancellation at 14:45:14. This is an observed builder stall,
-not a Sail query failure or a diagnosed Docker root cause. That superseded run
-was cancelled; it supplies no S3 runtime pass.
+shows Sail's Docker image export complete at 14:35:38 UTC, followed by no console
+progress until cancellation at 14:45:14. **This does not prove that Sail/buildx
+stalled.** Later fixture helpers capture their output, and successful S1 owner
+builds took 27m20s on amd64 and 29m22s on arm64. The initial stall interpretation
+was withdrawn after checking those recorded step timings. Superseded attempts
+were cancelled; they provide no S3 runtime passes.
 
-`evaluation/s3/owner_build.py` composes the unmodified pinned Sail build script's
-supported `CONTAINER_RUNTIME=podman` path, then transfers its Docker archive into
-Docker for the original fixture. It intercepts only that exact Sail build command,
-asserts the full source pin and expected image, and leaves all owner provenance,
-architecture, combined lock-hash and clean-source assertions intact. All other
-owner builds and all acceptance assertions are unchanged. The transport choice
-is recorded in sanitized S3 build evidence. No upstream source is patched.
+The temporary Podman composition experiment was removed after checking these
+historical timings. The final fixture uses the original pinned owner's Docker
+build path. No builder-runtime fix is claimed or retained. S3 uses the owner's
+Sail resource limits and private writable mounts (2 CPUs, 2 GiB memory, 256 MiB
+0700 tmpfs mounts for /tmp and /var/lib/sail), with a read-only root filesystem.
+
+### gRPC trailers-only regression
+
+A local real-client check reproduced a transport bug: a backend trailers-only
+INVALID_ARGUMENT became client UNKNOWN because the proxy added an empty DATA
+END_STREAM after headers. The regression unit test failed before the fix. The
+relay now preserves END_STREAM on the backend's initial response HEADERS and
+returns without adding DATA. The unit test and real-client check pass after the
+fix. Normal streamed DATA/trailers retain their original flow-control path.

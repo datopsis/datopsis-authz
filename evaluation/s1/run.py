@@ -32,9 +32,6 @@ elif sys.argv[1:] == ['build']:
     # The imported entry point sets its own output directory. Keep its data
     # in this repository’s allowlisted, subsequently sanitized evidence tree.
     common.OUT = ROOT/'reports/s1'
-    sys.path.insert(0,str(ROOT/"evaluation/s3"))
-    from owner_build import configure
-    configure(SOURCE,ROOT/"reports/s3")
     module.build()
 else:
     acceptance.evaluate(arch)

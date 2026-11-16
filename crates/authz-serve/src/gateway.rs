@@ -341,7 +341,11 @@ async fn relay(
     send(&mut tx, body, true).await?;
     let response = response.await?;
     let (parts, mut rx) = response.into_parts();
-    let mut downstream = respond.send_response(Response::from_parts(parts, ()), false)?;
+    let end = rx.is_end_stream();
+    let mut downstream = respond.send_response(Response::from_parts(parts, ()), end)?;
+    if end {
+        return Ok(());
+    }
     while let Some(data) = rx.data().await {
         let data = data?;
         let len = data.len();
@@ -467,6 +471,65 @@ mod tests {
         let mut compressed = input;
         compressed[0] = 1;
         assert!(identity_frame(&compressed, "sub").is_err());
+        Ok(())
+    }
+    #[tokio::test]
+    async fn preserves_trailers_only_error_end_stream() -> Result<()> {
+        let (backend_io, backend_server_io) = tokio::io::duplex(65_536);
+        let _backend = Driver(tokio::spawn(async move {
+            let mut server = h2::server::handshake(backend_server_io).await.unwrap();
+            while let Some(request) = server.accept().await {
+                let (_, mut respond) = request.unwrap();
+                respond
+                    .send_response(
+                        Response::builder()
+                            .header("content-type", "application/grpc")
+                            .header("grpc-status", "3")
+                            .body(())
+                            .unwrap(),
+                        true,
+                    )
+                    .unwrap();
+            }
+        }));
+        let (upstream, connection) = h2::client::handshake(backend_io).await?;
+        let _upstream = Driver(tokio::spawn(async move {
+            let _ = connection.await;
+        }));
+        let (client_io, server_io) = tokio::io::duplex(65_536);
+        let _server = Driver(tokio::spawn(async move {
+            let mut server = h2::server::handshake(server_io).await.unwrap();
+            while let Some(request) = server.accept().await {
+                let (request, respond) = request.unwrap();
+                let mut upstream = upstream.clone();
+                tokio::spawn(async move {
+                    relay(
+                        &mut upstream,
+                        request.into_parts().0,
+                        Bytes::from_static(&[0, 0, 0, 0, 0]),
+                        respond,
+                    )
+                    .await
+                    .unwrap();
+                });
+            }
+        }));
+        let (mut client, connection) = h2::client::handshake(client_io).await?;
+        let _client = Driver(tokio::spawn(async move {
+            let _ = connection.await;
+        }));
+        let (response, _) = client.send_request(
+            Request::builder()
+                .uri("http://localhost/spark.connect.SparkConnectService/ExecutePlan")
+                .body(())?,
+            true,
+        )?;
+        let response = tokio::time::timeout(Duration::from_secs(3), response).await??;
+        assert_eq!(response.headers()["grpc-status"], "3");
+        assert!(
+            response.body().is_end_stream(),
+            "Trailers-only error must end in HEADERS"
+        );
         Ok(())
     }
 }
