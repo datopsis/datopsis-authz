@@ -1,21 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1100" height="650" viewBox="0 0 1100 650" role="img" aria-labelledby="title desc">
 <title id="title">Datopsis authorization: one platform binary with roles and a Lakekeeper adapter</title>
-<desc id="desc">Lakekeeper verifies Rauthy tokens and their groups claim. A compiled adapter calls the serve role over verified HTTPS. The platform image also has planned Sail gateway, token broker, and policy roles. PostgreSQL is planned; S1 uses memory.</desc>
+<desc id="desc">Lakekeeper verifies Rauthy tokens and their groups claim. A compiled adapter calls the serve role over verified HTTPS. The platform image also has planned Sail gateway, token broker, and policy roles. S4 adds volatile per-user epochs from fixture polling and live HTTPS membership lookup with a short cache. PostgreSQL is planned.</desc>
 <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3z" fill="#546880"/></marker></defs>
 <rect width="1100" height="650" fill="#f5f7fb"/>
 <g font-family="sans-serif" fill="#14243b">
-<text x="35" y="42" font-size="25" font-weight="bold">Datopsis authorization — S1 spike</text>
-<text x="35" y="70" font-size="16">Working name · one monorepo · planned roles shown; dashed boxes are outside S1</text>
+<text x="35" y="42" font-size="25" font-weight="bold">Datopsis authorization — S4 spike</text>
+<text x="35" y="70" font-size="16">Working name · one monorepo · planned roles shown; dashed boxes are outside this spike</text>
 <rect x="40" y="105" width="230" height="80" rx="10" fill="#e3eefe" stroke="#476d9f"/>
-<text x="60" y="136" font-size="19">Rauthy</text><text x="60" y="162" font-size="15">OIDC / JWKS / groups</text>
+<text x="60" y="136" font-size="19">Rauthy</text><text x="60" y="162" font-size="12">OIDC / JWKS / groups / admin API</text>
 <rect x="40" y="240" width="270" height="145" rx="10" fill="#e3eefe" stroke="#476d9f"/>
 <text x="60" y="272" font-size="19">Lakekeeper thin binary</text><text x="60" y="300" font-size="15">pinned unmodified source</text>
 <rect x="60" y="320" width="230" height="45" rx="6" fill="#fff" stroke="#476d9f"/><text x="75" y="347" font-size="16">lakekeeper-authz adapter</text>
+<path d="M390 195 L270 145" fill="none" stroke="#546880" marker-end="url(#arrow)"/><text x="275" y="120" font-size="12">live lookup (HTTPS)</text>
+<rect x="40" y="405" width="270" height="65" rx="6" fill="#fff" stroke="#476d9f" stroke-dasharray="6 4"/>
+<text x="55" y="430" font-size="17">S4 fixture poller (not a role)</text><text x="55" y="451" font-size="13">Users GET → monotonic epoch update</text>
+<path d="M40 435H20V145H40 M310 435H370V265H415" fill="none" stroke="#546880" marker-end="url(#arrow)"/>
 <rect x="390" y="110" width="655" height="360" rx="12" fill="#e7f4ee" stroke="#2a7958" stroke-width="2"/>
 <text x="410" y="145" font-size="21" font-weight="bold">One datopsis-authz program / image</text>
 <rect x="415" y="170" width="600" height="105" rx="6" fill="#fff" stroke="#2a7958"/>
 <text x="430" y="198" font-size="19">serve — Cedar decisions + relationship store + audit</text>
-<text x="430" y="224" font-size="15">S1: HTTPS, memory, grants, parent hierarchy, stdout audit</text>
+<text x="430" y="224" font-size="15">S4: HTTPS, memory grants + per-user epochs; live groups cache</text>
 <text x="430" y="250" font-size="15">Planned: PostgreSQL, OPA endpoint for Trino, durable audit</text>
 <g stroke="#779a89" stroke-dasharray="7 4" fill="#fff"><rect x="415" y="300" width="280" height="65" rx="6"/><rect x="720" y="300" width="295" height="65" rx="6"/></g>
 <text x="430" y="328" font-size="18">sail-gateway (S3)</text><text x="430" y="350" font-size="14">JWT + Spark Connect enforcement</text>

@@ -616,6 +616,7 @@ impl CedarAuthorizer {
             .into_iter()
             .map(|(resource, action)| Check {
                 principal: principal.clone(),
+                issued_at: metadata.authentication().and_then(|a| a.issued_at()),
                 groups: groups.clone(),
                 action,
                 resource,

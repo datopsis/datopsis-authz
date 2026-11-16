@@ -1,12 +1,32 @@
 """Compose pinned fixture helpers without editing their source checkout."""
 import json
 import os
+import time
 from pathlib import Path
 
 import fixture as upstream
 from common import HTTPS, WORK, host, pki, run, secret, wait, write
 from fixture import BACKEND_NETWORK, Storage, backend_address, container, database, leaf, transport
-from rauthy import Rauthy
+from rauthy import Rauthy as PinnedRauthy
+
+class Rauthy(PinnedRauthy):
+    def remove_group(self, subject):
+        url = self.base + '/auth/v1/users/' + subject
+        user = self.http.json('GET', url, headers=self.admin)
+        user['groups'] = []
+        self.removal_started = time.monotonic()
+        self.http.json('PUT', url, headers=self.admin, statuses=(200,202), json=user)
+        self.removal_ack = time.monotonic()
+        return self.http.json('GET', url, headers=self.admin)
+
+    def config_rauthy(self):
+        result = super().config_rauthy()
+        path = self.path / 'bootstrap/api_keys.json'
+        keys = json.loads(path.read_text())
+        keys[0]['access'] += [{'group':'Clients','access_rights':['read','update']},{'group':'Events','access_rights':['read']}]
+        write(path, keys)
+        return result
+
 
 
 def snapshot(catalog, key):
@@ -27,6 +47,8 @@ def restore(catalog, key, state):
         catalog.http.request('POST','https://cedar:8443/mutate',headers=headers,json={'op':'put','resource':resource,'parent':parent,'owner':None}).raise_for_status()
     for grant in state['grants']:
         catalog.http.request('POST','https://cedar:8443/mutate',headers=headers,json={'op':'grant','grant':grant,'remove':False}).raise_for_status()
+    for principal, epoch in state.get("epochs", {}).items():
+        catalog.http.request("POST", "https://cedar:8443/mutate", headers=headers, json={"op":"revoke_before", "principal":principal,"epoch":epoch}).raise_for_status()
     assert snapshot(catalog,key) == state
 
 
@@ -92,8 +114,16 @@ def setup(arch, record):
     write(WORK/'cedar-key',key)
     run('sudo','chown','root:root',WORK/'cedar-key')
     run('sudo','chmod','0440',WORK/'cedar-key')
+    # Outbound admin lookup uses a separate IDP-only attachment. Clients cannot
+    # reach the private decision API through the normal client network.
+    run('docker','network','create','--internal','s4-idp')
+    run('docker','network','connect','--alias',provider.hostname,'s4-idp',provider.container)
+    run('docker','network','connect','s4-idp','fga-postgres')
+    write(WORK/'rauthy-admin',provider.admin['Authorization'])
+    run('sudo','chown','root:root',WORK/'rauthy-admin')
+    run('sudo','chmod','0440',WORK/'rauthy-admin')
     tls = leaf('cedar')
-    container('cedar','localhost/authz-serve:s1',['serve'],env={'AUTHZ_TLS_CERT':'/tls/cert.pem','AUTHZ_TLS_KEY':'/tls/key.pem','AUTHZ_KEY_FILE':'/run/cedar-key'},mounts=[(tls,'/tls'),(WORK/'cedar-key','/run/cedar-key')],network='container:fga-postgres')
+    container('cedar','localhost/authz-serve:s1',['serve'],env={'AUTHZ_TLS_CERT':'/tls/cert.pem','AUTHZ_TLS_KEY':'/tls/key.pem','AUTHZ_KEY_FILE':'/run/cedar-key','AUTHZ_RAUTHY_USERS_URL':provider.base+'/auth/v1/users','AUTHZ_RAUTHY_CA_FILE':'/ca/ca.pem','AUTHZ_RAUTHY_KEY_FILE':'/run/rauthy-admin'},mounts=[(tls,'/tls'),(WORK/'cedar-key','/run/cedar-key'),(WORK/'rauthy-admin','/run/rauthy-admin'),(ca,'/ca/ca.pem')],network='container:fga-postgres')
     address = backend_address()
     run('sudo','tee','/etc/hosts',input=Path('/etc/hosts').read_text()+f'{address} cedar # idp-bakeoff\n')
     http = HTTPS(ca)

@@ -23,6 +23,8 @@ elif sys.argv[1:] == ['cleanup']:
     networks = common.run('docker','network','ls','-q','--filter','name=^authz-backend$').split()
     for network in networks:
         common.run('docker','network','rm',network)
+    for network in common.run('docker','network','ls','-q','--filter','name=^s4-idp$').split():
+        common.run('docker','network','rm',network)
 elif sys.argv[1:] == ['build']:
     # importlib avoids this entry point's filename collision.
     import importlib.util
@@ -32,6 +34,9 @@ elif sys.argv[1:] == ['build']:
     # The imported entry point sets its own output directory. Keep its data
     # in this repository’s allowlisted, subsequently sanitized evidence tree.
     common.OUT = ROOT/'reports/s1'
+    # Child artifact acquirers retain every pinned hash/signature check. Only
+    # missing PGDG 18.6 URLs fall back to the same host's minor-version path.
+    os.environ['PYTHONPATH'] = str(ROOT/'evaluation/artifact_transport') + (os.pathsep+os.environ['PYTHONPATH'] if os.environ.get('PYTHONPATH') else '')
     module.build()
 else:
     acceptance.evaluate(arch)

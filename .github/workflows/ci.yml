@@ -1,4 +1,4 @@
-name: S1
+name: S4 groups and revocation
 on:
   pull_request:
   push:
@@ -59,12 +59,14 @@ jobs:
             target
             .cargo-cache
           key: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-${{ github.sha }}
-          restore-keys: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-
+          restore-keys: |
+            s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-
+            s1-rust-${{ runner.arch }}-
       - name: Native UBI compiler, workspace tests and both binaries
         run: |
           docker build -f Containerfile.builder -t s1-builder .
           mkdir -p .cargo-cache
-          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked && python3 scripts/collect-runtime-libs.py target/debug/lakekeeper-bin-datopsis target/spike-libs'
+          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked && python3 scripts/collect-runtime-libs.py target/debug/lakekeeper-bin-datopsis target/debug/authz-serve target/spike-libs'
           sudo chown -R "$(id -u):$(id -g)" target .cargo-cache
       - name: Save native compiler cache
         if: ${{ !cancelled() && steps.rust-cache.outcome == 'success' }}
@@ -79,6 +81,7 @@ jobs:
         run: |
           docker build -f Containerfile.spike --target loader-probe -t localhost/lakekeeper-loader:s1 .
           docker run --rm localhost/lakekeeper-loader:s1 version
+          docker run --rm --entrypoint /usr/local/bin/datopsis-authz localhost/lakekeeper-loader:s1 policy
       - name: Build pinned owner fixture images without source changes
         run: |
           sudo apt-get install -y rpm podman gnupg argon2
@@ -92,7 +95,7 @@ jobs:
           docker run --rm localhost/lakekeeper-datopsis:s1 version
           docker run --rm localhost/authz-serve:s1 policy
       - run: python3 scripts/image-evidence.py
-      - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
+      - name: C1-C8 plus S4 membership, epoch, cache outage and short-token measurements
         run: .venv/bin/python evaluation/s1/run.py
       - name: Cleanup and sanitize evidence
         if: always()

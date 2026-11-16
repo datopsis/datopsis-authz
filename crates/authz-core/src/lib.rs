@@ -1,4 +1,4 @@
-//! S1 only: trusted adapter assertions, an in-memory graph, and Cedar evaluation.
+//! S1/S4 spikes: trusted adapter assertions, volatile relationships/epochs, and Cedar.
 use anyhow::{Result, bail};
 use cedar_policy::{
     Authorizer, Context, Decision, Entities, PolicySet, Request, Schema, ValidationMode, Validator,
@@ -36,6 +36,8 @@ impl Resource {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Check {
     pub principal: String,
+    #[serde(default)]
+    pub issued_at: Option<i64>,
     pub groups: Vec<String>,
     pub action: String,
     pub resource: Resource,
@@ -55,10 +57,16 @@ pub struct Grant {
 pub struct Store {
     pub parents: BTreeMap<String, (Resource, Option<Resource>)>,
     pub grants: Vec<Grant>,
+    #[serde(default)]
+    pub epochs: BTreeMap<String, i64>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Mutation {
+    RevokeBefore {
+        principal: String,
+        epoch: i64,
+    },
     Put {
         resource: Resource,
         parent: Option<Resource>,
@@ -75,6 +83,10 @@ pub enum Mutation {
 impl Store {
     pub fn mutate(&mut self, mutation: Mutation) -> Result<()> {
         match mutation {
+            Mutation::RevokeBefore { principal, epoch } => {
+                let current = self.epochs.entry(principal).or_insert(epoch);
+                *current = (*current).max(epoch);
+            }
             Mutation::Put {
                 resource,
                 parent,
@@ -129,6 +141,16 @@ impl Store {
         result
     }
     pub fn decide(&self, check: &Check) -> Result<Verdict> {
+        if self
+            .epochs
+            .get(&check.principal)
+            .is_some_and(|epoch| check.issued_at.is_none_or(|iat| iat < *epoch))
+        {
+            return Ok(Verdict {
+                allowed: false,
+                policies: vec![],
+            });
+        }
         let mut entities: Vec<Value> = self.parents.values().map(|(r, p)| json!({
             "uid": r.uid(), "attrs": {}, "parents": p.iter().map(Resource::uid).collect::<Vec<_>>()
         })).collect();
@@ -196,10 +218,37 @@ pub fn validate_schema() -> Result<()> {
 mod tests {
     use super::*;
     #[test]
+    fn epoch_is_monotonic_and_requires_issued_at() -> Result<()> {
+        let mut store = Store::default();
+        let mut check = Check {
+            principal: "alice".into(),
+            issued_at: Some(99),
+            groups: vec![],
+            action: "read_self".into(),
+            resource: Resource::new("User", "alice"),
+        };
+        for epoch in [100, 90] {
+            store.mutate(Mutation::RevokeBefore {
+                principal: "alice".into(),
+                epoch,
+            })?;
+        }
+        assert!(!store.decide(&check)?.allowed);
+        check.issued_at = None;
+        assert!(!store.decide(&check)?.allowed);
+        check.issued_at = Some(100);
+        assert!(store.decide(&check)?.allowed);
+        let restored: Store = serde_json::from_value(serde_json::to_value(store)?)?;
+        check.issued_at = Some(99);
+        assert!(!restored.decide(&check)?.allowed);
+        Ok(())
+    }
+    #[test]
     fn identity_read_is_self_only() -> Result<()> {
         let store = Store::default();
         let mut check = Check {
             principal: "alice".into(),
+            issued_at: Some(100),
             groups: vec![],
             action: "read_self".into(),
             resource: Resource::new("User", "alice"),
@@ -229,6 +278,7 @@ mod tests {
         };
         let mut c = Check {
             principal: "alice".into(),
+            issued_at: Some(100),
             groups: vec!["readers".into()],
             action: "read_data".into(),
             resource: table,
