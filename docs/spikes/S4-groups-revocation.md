@@ -74,3 +74,20 @@ Only sanitized counts and latency samples are retained.
 The B prototype is deliberately a single observed poll cycle, not a background
 service or polling-scale benchmark. Its 1s phase is chosen explicitly. Do not
 turn that one sample into a distribution or availability SLA.
+
+## Fixture acquisition correction
+
+[Run 43885508158](https://github.com/datopsis/datopsis-authz/actions/runs/43885508158)
+reached native compilation/tests/HTTPS smoke, but amd64 acceptance was BLOCKED:
+PGDG's rolling `rhel-9-x86_64` alias returned 404 for three locked PostgreSQL 18.6
+RPMs. The official `rhel-9.8-x86_64` path still serves exactly the locked bytes.
+All four PostgreSQL packages on **both** architectures were downloaded locally
+and checked against the original pinned sizes/SHA256 values.
+
+`evaluation/artifact_transport/sitecustomize.py` supplies an HTTPS transport-only
+fallback for the exact 18.6 RPM names, only after a 404 and only on the same
+`download.postgresql.org` host. It is enabled for child Python acquirers during
+fixture builds. Owner sources and locks are unchanged; their locked size/hash,
+key-fingerprint, signature, offline-build and image-provenance checks all remain
+mandatory. There is no version or trust fallback. Native runtime evidence must
+come from a subsequent run that gets through this prerequisite.
