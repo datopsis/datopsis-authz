@@ -8,7 +8,9 @@ from clients import ready_or_error
 def start(catalog, key, users, mode):
     directory = WORK / ('trino-s2-' + mode)
     shutil.copytree(ROOT / 'integration/trino', directory)
-    tls = leaf('trino')
+    tls = WORK / 'trino/tls'
+    if not (tls / 'cert.pem').exists():
+        tls = leaf('trino')
     write(directory / 'server.pem', (tls / 'cert.pem').read_text() + run('sudo', 'cat', tls / 'key.pem'))
     password = secret()
     run('keytool', '-importcert', '-noprompt', '-alias', 's2', '-file', catalog.provider.ca,
