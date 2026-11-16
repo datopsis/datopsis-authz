@@ -176,8 +176,13 @@ its evaluation helper appends the same key again. Trino's launcher rejects this
 before serving queries. A local wrapper normalizes only the generated profile
 copy, then calls the unmodified pinned engine assertions. It asserts the source
 value is exactly trino; after the helper appends, the final configuration contains
-one identical definition. No source checkout or read/write/denial assertion is
-changed. This also lets C7 probe a live Trino process instead of PID 0.
+one identical definition. The generated profile also maps the newer HTTPS catalog
+URL to this fixture’s actual HTTPS hostname and creates a per-run CA PKCS12 store
+through the pinned image’s supported truststore.properties interface. Its trust
+store, password, configuration and internal CA copy are protected as UID 10001,
+mode 0400 before container creation, preserving the image’s strict guards.
+No source checkout or read/write/denial assertion is changed. This also lets C7
+probe a live Trino process instead of PID 0.
 
 ### Earlier attempts (not acceptance passes)
 
