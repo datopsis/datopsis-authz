@@ -22,6 +22,10 @@ metadata. Never expose the decision/mutation API to catalog clients.
 
 See [the S1 report](docs/spikes/S1-lakekeeper-adapter.md) for coverage and limitations.
 
+S4 evaluates short tokens, per-user epochs and live membership. See the
+[groups and revocation report](docs/spikes/S4-groups-revocation.md) for native
+measurements and remaining gaps. This remains evaluation-only.
+
 ## Development
 
 Install the pinned Rust toolchain and native prerequisites (`protobuf-compiler`,

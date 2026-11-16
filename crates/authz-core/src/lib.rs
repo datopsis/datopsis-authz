@@ -1,4 +1,4 @@
-//! S1 only: trusted adapter assertions, an in-memory graph, and Cedar evaluation.
+//! S1/S4 spikes: trusted adapter assertions, volatile relationships/epochs, and Cedar.
 use anyhow::{Result, bail};
 use cedar_policy::{
     Authorizer, Context, Decision, Entities, PolicySet, Request, Schema, ValidationMode, Validator,

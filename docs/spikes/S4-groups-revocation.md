@@ -53,3 +53,24 @@ and remain failures. Poll freshness, HA, durable epoch fanout, event replay, clo
 skew, disabled users, group deletion/rename and production token-broker behavior
 are not qualified. Already-issued storage credentials and fetched data are outside
 catalog revocation. Full native logs and results will replace pending rows.
+
+## Cost and failure model (before runtime numbers)
+
+| Option | Extra load | Exposure bound | Complexity / failure modes |
+| --- | --- | --- | --- |
+| A short tokens | At lifetime L, roughly N/L token requests/s for N active client sessions, higher with early renewal. Trino/PyIceberg use client credentials, not human refresh-token exchange. Sail requires an external writer. | Remaining token lifetime plus verifier clock allowance; fresh membership removed from future human tokens. | Small IdP configuration change; renewal compatibility and token-file reload must be measured. IdP outage prevents renewal but leaves valid old tokens usable. Does not revoke storage credentials or cached metadata. |
+| B polling + epoch | One Users GET per monitored user per poll interval; one epoch write per observed removal; local map lookup per decision. | Poll phase + network + epoch commit + propagation, **only when polling is healthy**. | Requires baseline/reconciliation, authenticated `iat`, atomic monotonic update, persistent shared epochs, freshness gate and clock budget. An undetected removal is not revoked during poll/IdP failure. Out-of-order updates cannot lower an epoch. Same-second cutoff waits until next second for recovery. |
+| C live groups | One Users GET per decision with no cache (a catalog call can make multiple decisions); with TTL d roughly at most one fetch per active user/d in serial traffic. Concurrent misses can amplify this. | Cache remaining age + lookup + catalog check. | Low prototype complexity; IdP becomes a synchronous dependency. Timeout/error fails closed after TTL. Positive cache still permits access during its remaining TTL. No stale-on-error. Production needs concurrency limits, coalescing and protected read-only credentials. |
+
+The native A experiment issues a genuine 30-second groups-bearing human token,
+removes authoritative membership, and polls catalog loads through authentication
+expiry. A 401 is recorded as expiry, never C3 authorization denial. It also
+restarts Trino under the short lifetime, measures persisted Rauthy TokenIssued
+events during isolated 0/20/40/60s workloads, and exercises PyIceberg and an
+externally renewed Sail token file. Five explicit acquisitions per label are a
+shared-endpoint microbenchmark; they are not counted as native client renewal.
+Only sanitized counts and latency samples are retained.
+
+The B prototype is deliberately a single observed poll cycle, not a background
+service or polling-scale benchmark. Its 1s phase is chosen explicitly. Do not
+turn that one sample into a distribution or availability SLA.

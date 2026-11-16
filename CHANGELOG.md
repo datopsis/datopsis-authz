@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add S4 groups/revocation experiments: short token lifecycle, per-user issuance
+  epochs and live membership with a bounded cache; keep C3 old-token controls.
+
 - Start S1: pinned Lakekeeper trait analysis, Cedar core, HTTPS decision API,
   compiled authorizer adapter, thin catalog binary and native CI proof.
 - Record native amd64/arm64 results: five acceptance cases pass, with strict

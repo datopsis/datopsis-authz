@@ -114,6 +114,27 @@ def membership_cases(catalog, key, human, namespace, tuples, denial):
                 response = http.json('POST','https://cedar:8443/decide',headers=headers,json=[check])
                 assert response[0]['allowed'] is False
                 evidence[mode]['missing_iat_denied'] = True
+                # Demonstrate the poller's stale-state failure independently of
+                # the healthy C3 assertions above. An epoch cannot revoke a
+                # change it has not observed; no invented successful sync.
+                provider.remove_group(claims['sub'])
+                run('docker','stop',provider.container)
+                try:
+                    try:
+                        http.request('GET',user_url,headers=provider.admin).raise_for_status()
+                    except Exception as exc:
+                        evidence[mode]['poll_outage_error_type'] = type(exc).__name__
+                    else:
+                        raise AssertionError('Stopped IdP unexpectedly answered poll')
+                    stale = load(human)
+                    assert stale.status_code == 200, stale.status_code
+                    evidence[mode]['stale_epoch_IdP_outage_status'] = stale.status_code
+                    evidence[mode]['outage_scope'] = 'No freshness gate: undetected removal still allows a fresh-after-prior-epoch token'
+                finally:
+                    run('docker','start',provider.container)
+                    from common import wait
+                    wait(lambda:http.request('GET',provider.base+'/auth/v1/health').status_code==200,180)
+                    restore()
             tuples('group:lake-readers','select',namespace,True)
             save('S4-membership.json', evidence)
         return evidence, human
