@@ -66,7 +66,7 @@ jobs:
         run: |
           docker build -f Containerfile.builder -t s1-builder .
           mkdir -p .cargo-cache
-          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked && python3 scripts/collect-runtime-libs.py target/debug/lakekeeper-bin-datopsis target/spike-libs'
+          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked && python3 scripts/collect-runtime-libs.py target/debug/lakekeeper-bin-datopsis target/debug/authz-serve target/spike-libs'
           sudo chown -R "$(id -u):$(id -g)" target .cargo-cache
       - name: Save native compiler cache
         if: ${{ !cancelled() && steps.rust-cache.outcome == 'success' }}
@@ -81,6 +81,7 @@ jobs:
         run: |
           docker build -f Containerfile.spike --target loader-probe -t localhost/lakekeeper-loader:s1 .
           docker run --rm localhost/lakekeeper-loader:s1 version
+          docker run --rm --entrypoint /usr/local/bin/datopsis-authz localhost/lakekeeper-loader:s1 policy
       - name: Build pinned owner fixture images without source changes
         run: |
           sudo apt-get install -y rpm podman gnupg argon2

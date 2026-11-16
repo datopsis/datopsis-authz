@@ -2,8 +2,9 @@
 
 Evaluation only, stacked on unmerged S1. No MVP acceptance or merge.
 
-Inputs: S1 report and crates; platform plan §4a and AUTHZ-EVALUATION at
-`e8379a528bf413c05aad49e56bc8cd507b5e077a` (also read main `369dbdec67445eb1c2931b39b45f3364ec71ead4` before work);
+Inputs: S1 report and crates; platform plan §4a and AUTHZ-EVALUATION read at
+main `369dbdec67445eb1c2931b39b45f3364ec71ead4`; acceptance harness pinned to
+`e8379a528bf413c05aad49e56bc8cd507b5e077a`;
 Rauthy owner image `1e114b84b01988bf15306b110b040378878488d3`;
 its lock pins Rauthy 0.37.2 source `fe6bcb95192e8a83c29e2b525bf4960933bea3bd`.
 No external source modifications. One platform program, Cedar and compiled adapter retained.
@@ -51,7 +52,8 @@ candidate for reducing detection delay.
 Store/epochs remain in memory: S1 C7 recovery/C8 durability failures are expected
 and remain failures. Poll freshness, HA, durable epoch fanout, event replay, clock
 skew, disabled users, group deletion/rename and production token-broker behavior
-are not qualified. Already-issued storage credentials and fetched data are outside
+are not qualified. Live mode is opt-in for configured principals; its selectors
+and cache are volatile too. No restart-safe membership enforcement is claimed. Already-issued storage credentials and fetched data are outside
 catalog revocation. Full native logs and results will replace pending rows.
 
 ## Cost and failure model (before runtime numbers)
@@ -69,7 +71,11 @@ restarts Trino under the short lifetime, measures persisted Rauthy TokenIssued
 events during isolated 0/20/40/60s workloads, and exercises PyIceberg and an
 externally renewed Sail token file. Five explicit acquisitions per label are a
 shared-endpoint microbenchmark; they are not counted as native client renewal.
-Only sanitized counts and latency samples are retained.
+Only sanitized counts and latency samples are retained. These C5 clients use a
+fixed workload identity; their renewal measurements do not establish human
+end-user propagation through Trino or Sail. Human group removal is measured
+with a genuine user token against the catalog. Engine caches and previously
+fetched data can outlive a catalog token.
 
 The B prototype is deliberately a single observed poll cycle, not a background
 service or polling-scale benchmark. Its 1s phase is chosen explicitly. Do not
@@ -91,3 +97,14 @@ fixture builds. Owner sources and locks are unchanged; their locked size/hash,
 key-fingerprint, signature, offline-build and image-provenance checks all remain
 mandatory. There is no version or trust fallback. Native runtime evidence must
 come from a subsequent run that gets through this prerequisite.
+
+A second prerequisite failure reached final-image smoke on amd64 in
+[43886994650](https://github.com/datopsis/datopsis-authz/actions/runs/43886994650/job/133367725832)
+and arm64 in
+[43885508158](https://github.com/datopsis/datopsis-authz/actions/runs/43885508158/job/133362433810):
+`authz-serve` could not load `libssl.so.3`. Workspace feature unification pulls
+native TLS into the new reqwest-using service even though its direct dependency
+requests rustls. S1 copied UBI runtime libraries only into the catalog image.
+The correction collects dependencies from **both** binaries, includes them in
+both images, and probes **both** binaries against Micro before fixture builds.
+These attempts provide no C1–C8 or S4 runtime pass.
