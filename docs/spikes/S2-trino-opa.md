@@ -106,10 +106,13 @@ Three exact locked amd64 RPMs (`postgresql18`, `postgresql18-libs`,
 `postgresql18-server`) are available at the official versioned `rhel-9.8-x86_64`
 paths on the same `download.postgresql.org` host. Local GETs verified every size
 and original pinned SHA-256. The build step alone enables a narrowly scoped
-`sitecustomize` fallback: only these three exact public URLs, only after 404,
+`sitecustomize` fallback: only these three exact public URLs, after 404 or an unsolicited partial response,
 verified HTTPS with no credentials forwarded. The owner acquirer still validates
 the original lock, response URL, size, hash, signing key and RPM signature; the
 owner checkout and lock remain unmodified. Runtime requests never load the shim.
+The [next amd64 attempt](https://github.com/datopsis/datopsis-authz/actions/runs/43889078338/job/133375035116)
+rejected a partial original server RPM (1,048,576 versus 7,606,326 locked bytes).
+The fallback now handles that response too; full-size/hash checks remain mandatory.
 Source inventory retains all original/fallback URLs and hashes. This is retrieval
 of identical pinned bytes, not a dependency version or acceptance change.
 
@@ -130,7 +133,9 @@ quote the identifier and the stored region value. Missing region for an otherwis
 error. Denied or unbound tables receive a constant FALSE row filter and NULL masks,
 then Trino's boolean SELECT check denies. Trino fetches obligations before final
 SELECT authorization, so an HTTP 403 there would misclassify a normal policy denial
-as an OPA backend failure. The strict query-denial oracles remain unchanged. The mask is SQL NULL, coerced by Trino to the column type. Cedar's same generated grant policies
+as an OPA backend failure. The strict query-denial oracles remain unchanged. See the pinned
+[obligation analysis](https://github.com/trinodb/trino/blob/e2d50bb733e193607c44be84ad80ce2430ba1d01/core/trino-main/src/main/java/io/trino/sql/analyzer/StatementAnalyzer.java#L2567)
+and [final SELECT check](https://github.com/trinodb/trino/blob/e2d50bb733e193607c44be84ad80ce2430ba1d01/core/trino-main/src/main/java/io/trino/sql/analyzer/Analyzer.java#L101). The mask is SQL NULL, coerced by Trino to the column type. Cedar's same generated grant policies
 control `unmask` and `unrestricted_rows` exceptions; an owner has both. No second
 allow/deny policy database exists. Restriction templates and region attributes
 live alongside relationships in the same volatile store.

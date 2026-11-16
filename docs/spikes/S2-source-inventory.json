@@ -33,7 +33,7 @@
   },
   "pgdg_fallback": {
     "owner_commit": "0ff367fae85d9685eed9d4851dce9203cccae2b2",
-    "trigger": "HTTP 404 on exact original URL, build process only",
+    "trigger": "HTTP 404 or unsolicited partial response on exact original URL, build process only",
     "packages": [
       {
         "filename": "postgresql18-18.6-1PGDG.rhel9.8.x86_64.rpm",
