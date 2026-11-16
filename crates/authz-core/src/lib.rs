@@ -137,7 +137,9 @@ impl Store {
         for group in &check.groups {
             entities.push(json!({"uid":{"type":"Group","id":group},"attrs":{},"parents":[]}));
         }
-        let mut text = String::new();
+        let mut text = String::from(
+            "@id(\"self-read\") permit(principal, action, resource) when { context.operation == \"read_self\" && resource == principal };\n",
+        );
         for (i, g) in self.grants.iter().enumerate() {
             // Visibility travels up only for discovery, never for data or mutations.
             let discover = ["include_in_list", "use", "get_config", "list_namespaces"]
@@ -193,6 +195,22 @@ pub fn validate_schema() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn identity_read_is_self_only() -> Result<()> {
+        let store = Store::default();
+        let mut check = Check {
+            principal: "alice".into(),
+            groups: vec![],
+            action: "read_self".into(),
+            resource: Resource::new("User", "alice"),
+        };
+        assert!(store.decide(&check)?.allowed);
+        check.resource = Resource::new("User", "bob");
+        assert!(!store.decide(&check)?.allowed);
+        check.resource = Resource::new("Table", "alice");
+        assert!(!store.decide(&check)?.allowed);
+        Ok(())
+    }
     #[test]
     fn inherited_groups_sibling_isolation_and_revoke() -> Result<()> {
         validate_schema()?;

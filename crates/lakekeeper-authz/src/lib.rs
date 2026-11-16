@@ -114,10 +114,24 @@ impl Authorizer for CedarAuthorizer {
         _for_user: Option<&UserOrRole>,
         users_with_actions: &[(&UserId, Self::UserAction)],
     ) -> Result<Vec<AuthorizationDecision>, IsAllowedActionError> {
-        Ok(vec![
-            AuthorizationDecision::deny();
-            users_with_actions.len()
-        ])
+        self.check(
+            _metadata,
+            _for_user,
+            users_with_actions
+                .iter()
+                .map(|(user, action)| {
+                    (
+                        Resource::new("User", user),
+                        if matches!(action, CatalogUserAction::Read) {
+                            "read_self".to_owned()
+                        } else {
+                            action.action_descriptor().action_name.to_owned()
+                        },
+                    )
+                })
+                .collect(),
+        )
+        .await
     }
 
     async fn are_allowed_role_actions_impl(

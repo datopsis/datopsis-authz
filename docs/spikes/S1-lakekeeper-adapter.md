@@ -43,7 +43,8 @@ Permission-management endpoints are not free implementations in the base trait.
 `new_router` supplies backend routes; upstream OpenFGA's router and API types are
 its own surface. The S1 adapter supplies an empty router: no permission-management
 API parity. Core catalog management checks still call the decision methods; S1
-denies user/role checks, role assumption and delegated/other-user checks.
+allows only Cedar self-read for user introspection and denies other user/role
+checks, role assumption and delegated/other-user checks.
 
 List filtering uses batch authorization, including `IncludeInList` and
 `ListEverything`; an overly broad ListEverything would bypass item filtering.
@@ -53,7 +54,9 @@ S1 forwards item checks and never grants ListEverything to select-only readers.
 **Out-of-tree feasibility:** source-visible public trait and public serve builder
 permit composition. S1 uses full pinned git dependencies, including the public
 PostgreSQL backend. The thin binary selects only Cedar; it has no AllowAll fallback.
-Published-crate compatibility has not been tested. This is a 0.x trait, with async
+Published-crate compatibility has not been tested. S1 builds the default feature
+set only; enabling upstream open-api also requires implementing the adapter’s
+api_doc method. That feature combination is not qualified. This is a 0.x trait, with async
 methods, generics, nine associated types and evolving hooks; treat it as a pinned
 source API, not a stable plugin ABI. Every upstream bump needs a compile and
 behavior gate. Local `cargo check --workspace --locked` passes with Rust 1.94.1. Runtime evidence will be linked below.

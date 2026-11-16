@@ -39,6 +39,10 @@ def main():
                     time.sleep(.1)
             else:
                 raise AssertionError('service readiness timeout')
+            identity = {'principal':'alice','groups':[],'action':'read_self','resource':{'kind':'User','id':'alice'}}
+            assert json.load(post('decide',[identity]))[0]['allowed'] is True
+            identity['resource']['id'] = 'bob'
+            assert json.load(post('decide',[identity]))[0]['allowed'] is False
             check = {'principal':'alice','groups':['readers'],'action':'read_data','resource':{'kind':'Table','id':'one'}}
             assert json.load(post('decide',[check]))[0]['allowed'] is False
             grant={'subject':{'kind':'Group','id':'readers'},'resource':check['resource'],'access':'select'}
