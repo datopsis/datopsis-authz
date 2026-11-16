@@ -156,22 +156,31 @@ def evaluate(arch):
 
     def groups():
         tuples(human_id, "select", namespace, True)
-        # Direct verified-claim design: no role registration or membership sync.
-        # Unmapped groups deny. Mapping the group grants. Removing the mapping
-        # denies even the old unexpired groups-bearing token.
-        negative = denial(lambda: catalog.read(reader))
-        tuples("group:lake-readers", "select", namespace)
-        allowed = catalog.read(catalog.pyiceberg(human))
-        tuples("group:lake-readers", "select", namespace, True)
-        denied = denial(lambda: catalog.read(reader))
-        tuples(human_id, "select", namespace)
-        return {
-            "unmapped_claim_denied": negative,
-            "mapped_group_exact_rows": allowed,
-            "removed_mapping_old_token_denied": denied,
-            "adaptation": "Verified JWT groups used directly; no membership synchronization",
-            "boundary": "IdP membership removal alone leaves old JWT claims valid until expiry; S4 must qualify a bound",
-        }
+        try:
+            # Direct verified groups replace registered roles and tuple sync.
+            negative = denial(lambda: catalog.read(reader))
+            tuples("group:lake-readers", "select", namespace)
+            allowed = catalog.read(catalog.pyiceberg(human))
+            tuples("group:lake-readers", "select", namespace, True)
+            denied = denial(lambda: catalog.read(reader))
+            from common import save
+            save("C3-direct-claims.json", {
+                "unmapped_claim_denied": negative,
+                "mapped_group_exact_rows": allowed,
+                "removed_mapping_old_token_denied": denied,
+                "adaptation": "Verified JWT groups used directly; no membership synchronization",
+            })
+            # Keep the original old-token membership-removal control strict.
+            # A stateless claim adapter is expected to FAIL here: the JWT still
+            # contains lake-readers. Mapping revocation above is not a substitute.
+            tuples("group:lake-readers", "select", namespace)
+            removed = provider.remove_group(claims["sub"])
+            assert "lake-readers" not in (removed.get("groups") or [])
+            old_token_denied = denial(lambda: catalog.read(reader))
+            return {"old_token_after_IdP_removal": old_token_denied}
+        finally:
+            tuples("group:lake-readers", "select", namespace, True)
+            tuples(human_id, "select", namespace)
 
     record("C3", groups)
 

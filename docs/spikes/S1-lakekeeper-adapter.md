@@ -85,6 +85,22 @@ roles and adapter. Only serve and a minimal policy schema check are implemented;
 sail-gateway, token-broker, OPA and policy analysis belong to later spikes/MVP.
 No other repository was modified.
 
+### Feasibility checks already observed
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Stable Rust out-of-tree workspace type-check | PASS locally | Rust 1.94.1, cargo check --workspace --locked |
+| Workspace Clippy with warnings denied | PASS locally | cargo clippy --workspace --locked -- -D warnings |
+| Cedar schema, inherited groups, write/sibling denial, revoke | PASS locally | core unit test, including strict validation |
+| Verified HTTPS allow/deny/revoke and API authentication | PASS locally | scripts/tls-smoke.py |
+| Native amd64 compilation, workspace tests, HTTPS smoke | PASS at 62b6be2 | [actual job logs](https://github.com/datopsis/datopsis-authz/actions/runs/43859108523/job/133270942721) |
+| Native arm64 compilation, workspace tests, HTTPS smoke | PASS at 62b6be2 | [actual job logs](https://github.com/datopsis/datopsis-authz/actions/runs/43859108523/job/133270942875) |
+
+The linked run was superseded and cancelled during fixture-image builds after
+source/fixture improvements; its compile/test/smoke steps completed successfully
+on both CPUs. These are not C1–C8 passes. The source at 837340f adds strict policy
+validation and diagnostic forwarding and is undergoing a new complete run.
+
 ## Q3: Acceptance evidence
 
 The local S1 harness composes the pinned fixture without editing its checkout.
@@ -97,11 +113,16 @@ the unused OpenFGA database is fixture scaffolding, not an authorization backend
 
 **C3 adaptation:** token groups alone deny until an explicit group-to-resource
 select grant exists. Adding that grant permits exact reads without registering a
-Lakekeeper role or syncing membership. Removing the grant must deny the old,
-unexpired token. This preserves the explicit mapping/revocation control. Removing
-a group from Rauthy alone cannot erase claims in already-issued JWTs: this spike
-makes no immediate IdP membership-revocation claim. S4 must establish a bound or
-introduce a token epoch/introspection mechanism.
+Lakekeeper role or syncing membership. Removing the mapping must deny the old,
+unexpired token. These direct-claim subchecks are saved separately.
+
+The original IdP membership-removal/old-token assertion is **also retained**:
+remove lake-readers from Rauthy while its Cedar group grant exists, then require
+the old unexpired token to be denied. A stateless adapter is expected to **FAIL**
+this assertion, because the old JWT still contains the group. A passing mapping
+revocation subcheck is not substituted for this control. S4 must establish a bound
+or add an epoch/introspection mechanism. C3 may pass only when all its assertions
+pass. Fresh empty-group tokens remain subject to the upstream compatibility gap.
 
 C8 retains its restart/grant-preservation assertions. With memory storage it is
 expected to fail, not be skipped or relabeled PASS. C7 similarly retains recovery

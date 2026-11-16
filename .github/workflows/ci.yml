@@ -65,7 +65,7 @@ jobs:
           docker build -f Containerfile.builder -t s1-builder .
           mkdir -p .cargo-cache
           docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked'
-          sudo chown -R "$(id -u):$(id -g)" target
+          sudo chown -R "$(id -u):$(id -g)" target .cargo-cache
       - name: Save native compiler cache
         if: ${{ !cancelled() && steps.rust-cache.outcome == 'success' }}
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
