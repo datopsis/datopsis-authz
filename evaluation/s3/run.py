@@ -25,7 +25,7 @@ ARCH = {'x86_64': 'amd64', 'aarch64': 'arm64'}[platform.machine()]
 assert ARCH == os.environ['INTEGRATION_ARCH']
 SAIL = INTEGRATION/'.sources/sail-ubi'
 PYTHON = INTEGRATION/'.sources/sail-venv/bin/python'
-CASES = ('valid', 'missing', 'wrong_audience', 'denied_user', 'wrong_key', 'expiry_before',
+CASES = ('valid', 'valid_machine', 'missing', 'wrong_audience', 'denied_user', 'denied_machine', 'wrong_key', 'expiry_before',
          'expired', 'expiry_fresh', 'tls_plaintext', 'backend_isolation', 'paced_stream', 'revoked_user')
 RESULTS = dict(architecture=ARCH, machine=platform.machine(), run=os.environ.get('RUN_URL'),
                integration=PIN, sail=SAIL_PIN, source=run('git', 'rev-parse', 'HEAD'), cases={name: dict(status='BLOCKED', reason='Runtime prerequisites not completed') for name in CASES})
@@ -86,7 +86,11 @@ def evaluate():
     headers = {'Authorization': 'Bearer '+service_key}
     wait(lambda: provider.http.request('POST', 'https://cedar:8443/decide', headers=headers, json=[]).status_code == 200)
     tokens = {name: provider.token(name) for name in ('lakekeeper', 'operator', 'expiry', 'wrong-audience')}
-    for name in ('lakekeeper', 'expiry'):
+    tokens['machine'] = tokens['lakekeeper']
+    tokens['lakekeeper'] = secret(provider.human()['access_token'])
+    tokens['bob'] = secret(provider.human(email='bob@idp.test', password=provider.bob_password)['access_token'])
+    assert decode(tokens['lakekeeper'])[1]['sub'] != decode(tokens['bob'])[1]['sub']
+    for name in ('lakekeeper', 'machine', 'expiry'):
         provider.http.request('POST', 'https://cedar:8443/mutate', headers=headers, json=dict(
             op='grant', remove=False, grant=dict(subject=dict(kind='User', id='oidc~'+decode(tokens[name])[1]['sub']),
                                                resource=dict(kind='Server', id='sail'), access='owner'))).raise_for_status()
@@ -106,13 +110,17 @@ def evaluate():
                      "import socket; socket.create_connection(('127.0.0.1',50052),timeout=1).close(); print('ready')"))
     paths = {name: token_file(name, token) for name, token in tokens.items()}
     case('valid', lambda: probe('valid', paths['lakekeeper'], 'OK'))
+    case('valid_machine', lambda: probe('valid-machine', paths['machine'], 'OK'))
     case('missing', lambda: probe('missing', '-', 'UNAUTHENTICATED'))
     case('wrong_audience', lambda: probe('aud', paths['wrong-audience'], 'UNAUTHENTICATED'))
-    case('denied_user', lambda: probe('denied', paths['operator'], 'PERMISSION_DENIED'))
+    case('denied_user', lambda: probe('denied', paths['bob'], 'PERMISSION_DENIED'))
+    case('denied_machine', lambda: probe('denied-machine', paths['operator'], 'PERMISSION_DENIED'))
     provider.human_token = tokens['lakekeeper']  # bad_token uses only this token's header/claims.
     from catalog import bad_token
     wrong = token_file('wrong-key', bad_token(provider, 'different_key'))
     case('wrong_key', lambda: probe('key', wrong, 'UNAUTHENTICATED'))
+    tokens['expiry'] = provider.token('expiry')
+    paths['expiry'] = token_file('expiry-before', tokens['expiry'])
     case('expiry_before', lambda: probe('expiry-before', paths['expiry'], 'OK'))
     deadline = decode(tokens['expiry'])[1]['exp'] + 1
     while time.time() <= deadline:

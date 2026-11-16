@@ -112,6 +112,12 @@ session ID. Denied users remain blocked on every RPC before reaching Sail.
 Session ownership enforcement, restart behavior and cross-user session tests
 remain unimplemented/unverified; this is a material limit for any multi-user MVP.
 
+The runtime controls use genuine human PKCE access tokens for Alice (allowed),
+Bob (denied) and the paced stream, through the unmodified pinned Rauthy helper.
+Independent machine-principal allow/deny controls are also retained. The
+short-lived machine token is minted immediately before its before-expiry
+positive control, then tested after expiry and against a fresh-token control.
+
 The prepared harness reuses the owner's unmodified million-row probe with retry
 mode `none`, checking exact unique IDs, every SHA-512 payload and the ID sum.
 It records control frames through the pinned passive observer, never packet
