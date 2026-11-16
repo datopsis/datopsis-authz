@@ -109,7 +109,7 @@ requires its exact table result, not just SHOW output.
 SQL obligations are a deliberately small adapter translation, not a Cedar-to-SQL
 compiler. A binding can request a region column and a sensitive column. Row filters
 quote the identifier and the stored region value. Missing region/read access
-fails closed. The mask is typed SQL NULL. Cedar's same generated grant policies
+fails closed. The mask is SQL NULL, coerced by Trino to the column type. Cedar's same generated grant policies
 control `unmask` and `unrestricted_rows` exceptions; an owner has both. No second
 allow/deny policy database exists. Restriction templates and region attributes
 live alongside relationships in the same volatile store.
@@ -122,9 +122,16 @@ client can use the mutation API without that credential. Never enable
 logged wholesale by serve; audit records retain operations/results/policy IDs only.
 Trino alone joins the private backend network. No ports are published.
 
+The shared-revocation oracle requires OPA false and catalog 403/404, plus a Trino
+permission error or exactly `CATALOG_NOT_FOUND` / code 44 / `USER_ERROR` with
+`line 1:15: Catalog 'iceberg' not found`. The latter can occur because revocation
+removes the user's last visible table and hence its catalog visibility. Positive
+reads before revocation and after restoration distinguish this from an unrelated
+missing catalog. C1-C8's original denial assertions are unchanged.
+
 ## Local and lint evidence
 
-Core/serve unit tests (six total), Clippy with warnings denied, Rust formatting,
+Full workspace unit tests (six total), core/serve Clippy with warnings denied, Rust formatting,
 Python compilation, YAML parsing, LF checks and the real HTTPS smoke pass locally.
 The smoke additionally exercises OPA service authentication and escaped region SQL.
 These are not native runtime passes.
@@ -147,6 +154,8 @@ was made for this spike.
 - Store persistence, bundle loading, durable audit, distributed revocation, load,
   HA, OIDC Trino authentication, column-specific read grants and arbitrary SQL
   obligations are not implemented. Cedar remains the access decision engine;
-  expression templates are application code.
+  expression templates are application code. Trino mutation operations deliberately deny
+  even owners; parity is qualified for table reads only. The shared service key is
+  mutation-capable; decision-only engine credentials are not implemented.
 - No changes to external repositories, repository settings, secrets or permissions.
   CA private keys, tokens, passwords and context credentials exist per run only.

@@ -100,12 +100,24 @@ def evaluate():
         obj = 'lakekeeper_table:'+catalog.warehouse_id+'/'+ids['allowed']
         grant(catalog,key,'user:'+user,'select',obj,True)
         try:
-            denied = deny(user,'SELECT * FROM iceberg.s2.allowed')
+            query['input']['action']['resource']['table']['tableName'] = 'allowed'
+            decision = catalog.http.json('POST','https://cedar:8443/opa/allow',json=query)
+            assert decision == {'result':False}, decision
+            actual = sql(user,'SELECT * FROM iceberg.s2.allowed')
+            error = actual.get('error',{})
+            # Removing the last visible binding can hide the whole catalog.
+            if error.get('errorName') == 'CATALOG_NOT_FOUND':
+                assert error['errorCode'] == 44 and error['errorType'] == 'USER_ERROR', actual
+                assert error['message'] == "line 1:15: Catalog 'iceberg' not found", actual
+            else:
+                assert error.get('errorName') == 'PERMISSION_DENIED' and error['errorType'] == 'USER_ERROR', actual
+            denied = {'errorName':error['errorName'],'message':error['message']}
             response = catalog.http.request('GET',catalog.base+f'/catalog/v1/{catalog.warehouse_id}/namespaces/s2/tables/allowed',headers={'Authorization':'Bearer '+human})
             assert response.status_code in (403,404), response.status_code
-            evidence.append({'after_revoke_catalog':response.status_code,'after_revoke_trino':denied})
+            evidence.append({'after_revoke_catalog':response.status_code,'after_revoke_opa':decision,'after_revoke_trino':denied})
         finally:
             grant(catalog,key,'user:'+user,'select',obj)
+            rows(user,'SELECT id FROM iceberg.s2.allowed ORDER BY id',[[1],[3]])
         return evidence
     record('S2.4',parity)
     def outage():
