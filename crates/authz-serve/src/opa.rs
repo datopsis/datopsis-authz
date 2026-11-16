@@ -135,9 +135,15 @@ fn mask(store: &Store, input: &Input, resource: &Value) -> Result<Value> {
     if metadata(resource) {
         return Ok(Value::Null);
     }
-    let b = binding(store, resource)?;
+    let b = match binding(store, resource) {
+        Ok(b) => b,
+        Err(StatusCode::FORBIDDEN) => return Ok(json!({"expression":"NULL"})),
+        Err(e) => return Err(e),
+    };
+    // Trino fetches masks before its final SELECT check. Restrict, then let that
+    // boolean check produce the authorization denial rather than a backend error.
     if !check(store, &input.context.identity, b, "read_data")? {
-        return Err(StatusCode::FORBIDDEN);
+        return Ok(json!({"expression":"NULL"}));
     }
     let column = field(&resource["column"], "columnName")?;
     if b.sensitive_column.as_deref() == Some(column)
@@ -190,9 +196,15 @@ fn evaluate(store: &Store, query: &Query, endpoint: &str) -> Result<Value> {
             if metadata(resource) {
                 return Ok(json!({"result":[]}));
             }
-            let b = binding(store, resource)?;
+            let b = match binding(store, resource) {
+                Ok(b) => b,
+                Err(StatusCode::FORBIDDEN) => {
+                    return Ok(json!({"result":[{"expression":"FALSE"}]}));
+                }
+                Err(e) => return Err(e),
+            };
             if !check(store, &input.context.identity, b, "read_data")? {
-                return Err(StatusCode::FORBIDDEN);
+                return Ok(json!({"result":[{"expression":"FALSE"}]}));
             }
             if let Some(column) = &b.region_column {
                 if check(store, &input.context.identity, b, "unrestricted_rows")? {
@@ -344,8 +356,13 @@ mod tests {
         );
         store.grants.clear();
         assert_eq!(
-            evaluate(&store, &query, "rows").unwrap_err(),
-            StatusCode::FORBIDDEN
+            evaluate(&store, &query, "rows").unwrap(),
+            json!({"result":[{"expression":"FALSE"}]})
+        );
+        query.input.action.resource.as_mut().unwrap()["table"]["tableName"] = json!("unbound");
+        assert_eq!(
+            evaluate(&store, &query, "rows").unwrap(),
+            json!({"result":[{"expression":"FALSE"}]})
         );
     }
     #[test]

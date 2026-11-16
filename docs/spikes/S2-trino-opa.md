@@ -95,6 +95,24 @@ artifact verification and functional composition, not signature, CVE or producti
 qualification of the additional plugin dependencies. The original owner image
 and its strict provenance gate remain unchanged for C1-C8.
 
+## Pinned fixture acquisition issue
+
+[The amd64 job at dcdb4d9](https://github.com/datopsis/datopsis-authz/actions/runs/43886289001/job/133365216380)
+passed all six workspace tests, HTTPS smoke and the loader probe, then was BLOCKED
+by HTTP 404 acquiring PostgreSQL 18.6 RPMs. The original unmodified owner builder
+failed before any runtime assertions. All S2/C cases remain BLOCKED in that job.
+
+Three exact locked amd64 RPMs (`postgresql18`, `postgresql18-libs`,
+`postgresql18-server`) are available at the official versioned `rhel-9.8-x86_64`
+paths on the same `download.postgresql.org` host. Local GETs verified every size
+and original pinned SHA-256. The build step alone enables a narrowly scoped
+`sitecustomize` fallback: only these three exact public URLs, only after 404,
+verified HTTPS with no credentials forwarded. The owner acquirer still validates
+the original lock, response URL, size, hash, signing key and RPM signature; the
+owner checkout and lock remain unmodified. Runtime requests never load the shim.
+Source inventory retains all original/fallback URLs and hashes. This is retrieval
+of identical pinned bytes, not a dependency version or acceptance change.
+
 ## One policy, two enforcement points
 
 `authz-core` retains S1's Cedar grant/hierarchy evaluator and relationship store.
@@ -108,8 +126,11 @@ requires its exact table result, not just SHOW output.
 
 SQL obligations are a deliberately small adapter translation, not a Cedar-to-SQL
 compiler. A binding can request a region column and a sensitive column. Row filters
-quote the identifier and the stored region value. Missing region/read access
-fails closed. The mask is SQL NULL, coerced by Trino to the column type. Cedar's same generated grant policies
+quote the identifier and the stored region value. Missing region for an otherwise granted restricted read fails closed with an
+error. Denied or unbound tables receive a constant FALSE row filter and NULL masks,
+then Trino's boolean SELECT check denies. Trino fetches obligations before final
+SELECT authorization, so an HTTP 403 there would misclassify a normal policy denial
+as an OPA backend failure. The strict query-denial oracles remain unchanged. The mask is SQL NULL, coerced by Trino to the column type. Cedar's same generated grant policies
 control `unmask` and `unrestricted_rows` exceptions; an owner has both. No second
 allow/deny policy database exists. Restriction templates and region attributes
 live alongside relationships in the same volatile store.
