@@ -1,0 +1,561 @@
+{
+  "architecture": "arm64",
+  "machine": "aarch64",
+  "run": "https://github.com/datopsis/datopsis-authz/actions/runs/43895646867",
+  "integration": "e8379a528bf413c05aad49e56bc8cd507b5e077a",
+  "sail": "e96e068f926b8fecb3939e953389685ee4780032",
+  "source": "3a4efae921497d341fc8266267e926ad20b5cceb",
+  "cases": {
+    "valid": {
+      "status": "PASS",
+      "evidence": {
+        "code": "OK",
+        "rows": [
+          {
+            "answer": 42
+          }
+        ],
+        "result_batches": 1
+      }
+    },
+    "valid_machine": {
+      "status": "PASS",
+      "evidence": {
+        "code": "OK",
+        "rows": [
+          {
+            "answer": 42
+          }
+        ],
+        "result_batches": 1
+      }
+    },
+    "missing": {
+      "status": "PASS",
+      "evidence": {
+        "code": "UNAUTHENTICATED"
+      }
+    },
+    "wrong_audience": {
+      "status": "PASS",
+      "evidence": {
+        "code": "UNAUTHENTICATED"
+      }
+    },
+    "denied_user": {
+      "status": "PASS",
+      "evidence": {
+        "code": "PERMISSION_DENIED"
+      }
+    },
+    "denied_machine": {
+      "status": "PASS",
+      "evidence": {
+        "code": "PERMISSION_DENIED"
+      }
+    },
+    "wrong_key": {
+      "status": "PASS",
+      "evidence": {
+        "code": "UNAUTHENTICATED"
+      }
+    },
+    "expiry_before": {
+      "status": "PASS",
+      "evidence": {
+        "code": "OK",
+        "rows": [
+          {
+            "answer": 42
+          }
+        ],
+        "result_batches": 1
+      }
+    },
+    "expired": {
+      "status": "PASS",
+      "evidence": {
+        "code": "UNAUTHENTICATED"
+      }
+    },
+    "expiry_fresh": {
+      "status": "PASS",
+      "evidence": {
+        "code": "OK",
+        "rows": [
+          {
+            "answer": 42
+          }
+        ],
+        "result_batches": 1
+      }
+    },
+    "tls_plaintext": {
+      "status": "PASS",
+      "evidence": {
+        "version": "TLSv1.3",
+        "unknown_ca_rejected": true,
+        "wrong_name_rejected": true,
+        "plaintext_rejected": true
+      }
+    },
+    "backend_isolation": {
+      "status": "PASS",
+      "evidence": {
+        "50051": 0,
+        "50052": 111
+      }
+    },
+    "paced_stream": {
+      "status": "PASS",
+      "evidence": {
+        "outcome": "COMPLETE",
+        "result": {
+          "event": "workload_complete",
+          "seconds": 86.13415297099982,
+          "unix_time": 1794844705.205639,
+          "rows": 1000000,
+          "batches": 123,
+          "total": 499999500000,
+          "unique_ids": 1000000,
+          "payload_hashes_verified": 1000000,
+          "elapsed": 86.12973903099964
+        },
+        "pings": [
+          {
+            "ping_seconds": 61.713054573000136,
+            "connection_age_seconds": 60.002707122000174,
+            "ack_ms": 0.2193599998463469,
+            "during_downstream_wait": true
+          }
+        ],
+        "result_flow": {
+          "ports": [
+            50052,
+            60582
+          ],
+          "frames": {
+            "SETTINGS": 2,
+            "PING": 2,
+            "HEADERS": 2,
+            "DATA": 4616
+          },
+          "data_bytes": 73339920,
+          "pending_segments": 0,
+          "pending_bytes": 0
+        },
+        "capture_drops": 0
+      }
+    },
+    "revoked_user": {
+      "status": "PASS",
+      "evidence": {
+        "code": "PERMISSION_DENIED"
+      }
+    }
+  },
+  "pr_source": "dca2ef51ee416f083cb8500aeb5882e0d59221d7",
+  "job": "https://github.com/datopsis/datopsis-authz/actions/runs/43895646867/job/133398352465",
+  "client_events": [
+    {
+      "event": "workload_start",
+      "seconds": 0.004408916000102181,
+      "unix_time": 1794844619.0758955,
+      "rows": 1000000,
+      "delay": 5.0,
+      "delayed_batches": 16,
+      "retry_mode": "none"
+    },
+    {
+      "event": "rpc_start",
+      "seconds": 0.24048276099983923,
+      "unix_time": 1794844619.3119683,
+      "method": "/spark.connect.SparkConnectService/ExecutePlan",
+      "reattachable": [
+        true
+      ],
+      "operation_id": "1a1f1565-ff08-4216-a262-7127a51f4af8",
+      "last_response_id": null
+    },
+    {
+      "event": "rpc_done",
+      "seconds": 86.12434778999977,
+      "unix_time": 1794844705.1958337,
+      "method": "/spark.connect.SparkConnectService/ExecutePlan",
+      "code": "OK",
+      "code_number": 0,
+      "details": ""
+    },
+    {
+      "event": "workload_complete",
+      "seconds": 86.13415297099982,
+      "unix_time": 1794844705.205639,
+      "rows": 1000000,
+      "batches": 123,
+      "total": 499999500000,
+      "unique_ids": 1000000,
+      "payload_hashes_verified": 1000000,
+      "elapsed": 86.12973903099964
+    }
+  ],
+  "capture_packets": 10991,
+  "backpressure_overlap": [
+    {
+      "ping_unix": 1794844679.3702857,
+      "downstream_waits": [
+        {
+          "event": "downstream_backpressure",
+          "start_unix": 1794844674.7073452,
+          "duration_seconds": 4.968167578
+        }
+      ]
+    }
+  ],
+  "owner_builds": {
+    "postgresql-lakekeeper-ubi": {
+      "revision": "0ff367fae85d9685eed9d4851dce9203cccae2b2",
+      "image_id": "sha256:bba1b47fc5a1a5399712de4ed389350a72c8864e61b0f48204982557eaf79597",
+      "architecture": "arm64",
+      "runner_machine": "aarch64",
+      "expected_architecture": "arm64",
+      "lock_path": "artifacts/locks/arm64.json",
+      "lock_sha256": "58549132210b6e91fd4358ee747973a9a58fd20fe49a503ecf239e0b46eb4e51",
+      "labels": {
+        "io.datopsis.artifact-lock.sha256": "58549132210b6e91fd4358ee747973a9a58fd20fe49a503ecf239e0b46eb4e51",
+        "io.datopsis.postgresql.publisher": "PostgreSQL Global Development Group (PGDG)",
+        "io.datopsis.postgresql.rpm-version": "18.6-1PGDG.rhel9.8",
+        "io.datopsis.postgresql.signing-key-fingerprint": "B031F89FC983E98262906B6E177B343BB9738825",
+        "io.datopsis.postgresql.version": "18.6",
+        "io.datopsis.ubi.builder": "registry.access.redhat.com/ubi9/ubi-minimal:9.9@sha256:baafce2d34783a28b4a472779f304e97e00f9d35c99553bc53b068b14344d9a9",
+        "io.datopsis.ubi.runtime": "registry.access.redhat.com/ubi9/ubi-micro:9.9@sha256:dbd325b96bcd432dd42816d31412bdf1dc0fb973b79ed310344bc23c76c068db",
+        "org.opencontainers.image.created": "1970-01-01T00:00:00Z",
+        "org.opencontainers.image.description": "Rootless PostgreSQL for Lakekeeper metadata with five allowlisted extensions on UBI 9 Micro",
+        "org.opencontainers.image.documentation": "https://github.com/datopsis/postgresql-lakekeeper-ubi/blob/0ff367fae85d9685eed9d4851dce9203cccae2b2/README.md",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.revision": "0ff367fae85d9685eed9d4851dce9203cccae2b2",
+        "org.opencontainers.image.source": "https://github.com/datopsis/postgresql-lakekeeper-ubi",
+        "org.opencontainers.image.title": "PostgreSQL for Lakekeeper on Red Hat UBI 9",
+        "org.opencontainers.image.url": "https://github.com/datopsis/postgresql-lakekeeper-ubi",
+        "org.opencontainers.image.vendor": "Datopsis",
+        "org.opencontainers.image.version": "development"
+      },
+      "provenance_errors": [],
+      "status": "pass"
+    },
+    "lakekeeper-ubi": {
+      "revision": "baa196bea55765e8e3da625ad50cda7d5ec99082",
+      "image_id": "sha256:7a2af8c5ac961e357d51ab9bb19e2374b2b5d63468dee9c3836dac33c7771e5b",
+      "architecture": "arm64",
+      "runner_machine": "aarch64",
+      "expected_architecture": "arm64",
+      "lock_path": "artifacts/lakekeeper.lock.json",
+      "lock_sha256": "0565ef04a4c220eef7b8d0757f3d44071d256c68e02607e90cc7a16a105b172d",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-05T06:36:09Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.33.7",
+        "io.datopsis.artifact-lock.sha256": "0565ef04a4c220eef7b8d0757f3d44071d256c68e02607e90cc7a16a105b172d",
+        "io.datopsis.lakekeeper.upstream-version": "0.13.4",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.created": "2026-11-05T06:36:09Z",
+        "org.opencontainers.image.description": "A security-oriented, rootless Lakekeeper Apache Iceberg REST catalog built on Red Hat UBI 9 Micro",
+        "org.opencontainers.image.documentation": "https://github.com/datopsis/lakekeeper-ubi#readme",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.revision": "baa196bea55765e8e3da625ad50cda7d5ec99082",
+        "org.opencontainers.image.source": "https://github.com/datopsis/lakekeeper-ubi",
+        "org.opencontainers.image.title": "Lakekeeper on Red Hat UBI 9",
+        "org.opencontainers.image.vendor": "Datopsis",
+        "org.opencontainers.image.version": "0.13.4",
+        "release": "1793860449",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "9d7bd388a99de116058bd54b77737e2863cb3d45",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.8"
+      },
+      "provenance_errors": [],
+      "status": "pass",
+      "image_binary_sha256": "fea96fa11ecfff75a82892e70387f4abba02ab4a1ade5f3a40bc1afa63f20889"
+    },
+    "seaweedfs-ubi": {
+      "revision": "80bba407ba534f9d2e6ec6401c071d827dcf4a03",
+      "image_id": "sha256:cb81a9f09d239c1d49491585ba2aada7f510054efbf3b0378a0c88cac07b5e02",
+      "architecture": "arm64",
+      "runner_machine": "aarch64",
+      "expected_architecture": "arm64",
+      "lock_path": "artifacts/seaweedfs.lock.json",
+      "lock_sha256": "d0fc6c6303f58715068c419bfe9b083abc257416f4ca51e51763c501738b69c2",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-05T06:36:09Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.33.7",
+        "io.datopsis.artifact-lock.sha256": "d0fc6c6303f58715068c419bfe9b083abc257416f4ca51e51763c501738b69c2",
+        "io.datopsis.seaweedfs.commit": "4ab66fb76da83700739f5839e62fcaf15fb7d02a",
+        "io.datopsis.seaweedfs.variant": "large_disk",
+        "io.datopsis.seaweedfs.version": "4.53",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.base.name": "registry.access.redhat.com/ubi9/ubi-micro",
+        "org.opencontainers.image.created": "2026-11-16T15:28:34Z",
+        "org.opencontainers.image.description": "Security-oriented, rootless SeaweedFS on Red Hat UBI 9",
+        "org.opencontainers.image.documentation": "https://github.com/datopsis/seaweedfs-ubi/blob/main/README.md",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.revision": "80bba407ba534f9d2e6ec6401c071d827dcf4a03",
+        "org.opencontainers.image.source": "https://github.com/datopsis/seaweedfs-ubi",
+        "org.opencontainers.image.title": "seaweedfs-ubi",
+        "org.opencontainers.image.vendor": "Datopsis",
+        "org.opencontainers.image.version": "4.53",
+        "release": "1793860449",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "9d7bd388a99de116058bd54b77737e2863cb3d45",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.8"
+      },
+      "provenance_errors": [],
+      "status": "pass",
+      "image_binary_sha256": "91bf8c95d87c00c719698ec5978dfdf189399a9cc2b442c6802a2f5d81722f4e"
+    },
+    "trino-ubi": {
+      "revision": "685ff5bca0037d38e3c2e2ed47a60f2540dad7c2",
+      "image_id": "sha256:0353924738b7c42de277a4212c59b51b48033a56bf41e9899a1d8ae83bd9a00c",
+      "architecture": "arm64",
+      "runner_machine": "aarch64",
+      "expected_architecture": "arm64",
+      "lock_path": "artifacts/trino.lock.json",
+      "lock_sha256": "09e8f80afeb59c48011feeac1e84eb2dd50a3d7196354a7fd990cf67464b3117",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-09T00:39:45Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.45.0",
+        "io.datopsis.artifact-lock.sha256": "09e8f80afeb59c48011feeac1e84eb2dd50a3d7196354a7fd990cf67464b3117",
+        "io.datopsis.ubi.runtime": "registry.access.redhat.com/ubi9/ubi-micro:9.8@sha256:d3499a0896e2d6a1642f922615831bc5c2fd513bbb34f3446cabba530d9d54a2",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.created": "2026-11-13T07:00:05-06:00",
+        "org.opencontainers.image.licenses": "Apache-2.0 AND GPL-2.0-with-classpath-exception",
+        "org.opencontainers.image.revision": "685ff5bca0037d38e3c2e2ed47a60f2540dad7c2",
+        "org.opencontainers.image.source": "https://github.com/datopsis/trino-ubi",
+        "org.opencontainers.image.title": "Trino on UBI 9",
+        "org.opencontainers.image.version": "484-development",
+        "release": "1794184668",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "180abe1db345daeb7a00ed9fda71e3ad05c261b7",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.8"
+      },
+      "provenance_errors": [],
+      "status": "pass"
+    },
+    "sail-ubi": {
+      "revision": "e96e068f926b8fecb3939e953389685ee4780032",
+      "image_id": "sha256:7c017cc651a4ab7cc48a82bb2c011df9e38da2fe7f1da72ff2e7fe12de0f4b56",
+      "architecture": "arm64",
+      "runner_machine": "aarch64",
+      "expected_architecture": "arm64",
+      "lock_path": "artifacts/sail.lock.json",
+      "lock_sha256": "7b66571efcca5f6e856b5922090ddc9c728489d300f20a12ca93b577ab4b4c38",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-09T00:39:45Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.45.0",
+        "io.datopsis.artifact-lock.sha256": "7b66571efcca5f6e856b5922090ddc9c728489d300f20a12ca93b577ab4b4c38",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.base.name": "registry.access.redhat.com/ubi9/ubi-micro:9.8@sha256:d3499a0896e2d6a1642f922615831bc5c2fd513bbb34f3446cabba530d9d54a2",
+        "org.opencontainers.image.created": "2026-11-13T06:35:25-06:00",
+        "org.opencontainers.image.description": "Rootless local Spark Connect server",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.revision": "e96e068f926b8fecb3939e953389685ee4780032",
+        "org.opencontainers.image.source": "https://github.com/datopsis/sail-ubi",
+        "org.opencontainers.image.title": "Sail on Red Hat UBI 9",
+        "org.opencontainers.image.version": "0.7.3",
+        "release": "1794184668",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "180abe1db345daeb7a00ed9fda71e3ad05c261b7",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.8"
+      },
+      "lock_inputs": {
+        "artifacts/sail.lock.json": "8f25a1bcccfc475f87fc5239056fb56926e1d56672effa4e3e493e510c95bcc6",
+        "artifacts/rpms.lock.json": "1db2e198653d2997afc4ed205e0075a51903c111cbda51079722d858bbd0393b"
+      },
+      "provenance_errors": [],
+      "status": "pass"
+    },
+    "nginx-ubi": {
+      "status": "pass",
+      "revision": "9ef9e822c6b5e508cebef2adff3bb647a206773c",
+      "architecture": "arm64",
+      "lock_sha256": "733d912e914cd94eeefa48da08671f768ee49ea26bcd2762370bc8b5a107552a",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-05T06:36:09Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.33.7",
+        "io.datopsis.artifact-lock.sha256": "733d912e914cd94eeefa48da08671f768ee49ea26bcd2762370bc8b5a107552a",
+        "io.datopsis.nginx.rpm-version": "2:1.30.6-1.el9.ngx",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.created": "2026-11-05T06:36:09Z",
+        "org.opencontainers.image.description": "A security-oriented, rootless NGINX image built on Red Hat UBI 9 Micro",
+        "org.opencontainers.image.documentation": "https://github.com/datopsis/nginx-ubi#readme",
+        "org.opencontainers.image.licenses": "BSD-2-Clause AND Apache-2.0",
+        "org.opencontainers.image.revision": "9ef9e822c6b5e508cebef2adff3bb647a206773c",
+        "org.opencontainers.image.source": "https://github.com/datopsis/nginx-ubi",
+        "org.opencontainers.image.title": "NGINX on Red Hat UBI 9",
+        "org.opencontainers.image.vendor": "Datopsis",
+        "org.opencontainers.image.version": "1.30.6",
+        "release": "1793860449",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "9d7bd388a99de116058bd54b77737e2863cb3d45",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.8"
+      },
+      "image_id": "sha256:5bd9a082aed8b9f3991dc3cd04e491da194a8fcce984da1e926801f4324fd935",
+      "profile_sha256": "ffb1f020a9fb81451bc7a0841130cd462003f16569daa7d735d2dbc484c37c63"
+    },
+    "rauthy-ubi": {
+      "status": "pass",
+      "revision": "1e114b84b01988bf15306b110b040378878488d3",
+      "lock_sha256": "d510242b05c28bba1186217ab5dc39419c950ce8b329c16cc839766521fd8cd6",
+      "architecture": "arm64",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-12T10:16:56Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.45.0",
+        "io.datopsis.artifact-lock.sha256": "d510242b05c28bba1186217ab5dc39419c950ce8b329c16cc839766521fd8cd6",
+        "io.datopsis.rauthy.upstream-revision": "fe6bcb95192e8a83c29e2b525bf4960933bea3bd",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.created": "2026-11-12T10:16:56Z",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.revision": "1e114b84b01988bf15306b110b040378878488d3",
+        "org.opencontainers.image.source": "https://github.com/datopsis/rauthy-ubi",
+        "org.opencontainers.image.title": "Rauthy on Red Hat UBI 9",
+        "org.opencontainers.image.version": "0.37.2",
+        "release": "1794478307",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "fe65ab2ee8a23d96179165605ba81b37ed988b79",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.9"
+      }
+    }
+  },
+  "platform_build": {
+    "architecture": "arm64",
+    "revision": "3a4efae921497d341fc8266267e926ad20b5cceb",
+    "cargo_lock_sha256": "006e063ac5376fc01fd642b38a29e95e514b5381ecf693d8752118d2cc13eebc",
+    "images": {
+      "localhost/lakekeeper-datopsis:s1": {
+        "image_id": "sha256:e1b9e201ffda3c7a0cde28c9f9eb51647ffeeb0335dfc38f15e7b6cbe76a62ae",
+        "architecture": "arm64",
+        "binary_sha256": "2065b779cd779b7ff2fb9a156ceb466d18e443d147666367244e96155d295ae7"
+      },
+      "localhost/authz-serve:s1": {
+        "image_id": "sha256:7990266b8bee1fc0bcffd4594bd105b054eb7e13850e70951fdc5b080dd4e444",
+        "architecture": "arm64",
+        "binary_sha256": "c67c08bdbd716489056da1e082684e9c1eab12449da346561ff0aeb268a0c78f"
+      }
+    },
+    "ubi_runtime_libraries": {
+      "libz.so.1": "25dd9e9290c892ad91fab35db640754d01adbaffcdc1a2312451a61b3f55a776",
+      "libcrypto.so.3": "09a28b8d2f7a70b462ec1a7b2ca53956c74d834879c6e62ddb1a159c54ba7f18",
+      "libssl.so.3": "b9398eca5e54975a3dbc926657cb6e0fda6d70777ed777d7e72f0d75a9bc507a"
+    }
+  },
+  "catalog_acceptance": {
+    "C1": {
+      "status": "pass"
+    },
+    "C2": {
+      "status": "pass"
+    },
+    "C3": {
+      "status": "fail",
+      "error": "Denied operation succeeded"
+    },
+    "C4": {
+      "status": "pass"
+    },
+    "C5": {
+      "status": "pass"
+    },
+    "C6": {
+      "status": "pass"
+    },
+    "C7": {
+      "status": "fail",
+      "error": "Readiness timeout (120s): None"
+    },
+    "C8": {
+      "status": "fail",
+      "error": "Cedar restart lost relationship/grant state"
+    }
+  },
+  "evidence_sha256": {
+    "results.json": "0bd947dcc0ee89add0b261f8b6dd0f3ac8a9a401867b8eee82371553296701bb",
+    "paced-client.json": "a826de6d7a3b1d7968fdd9b22e03ff18170130298846fcdbe6792fb0d75a891f",
+    "paced-h2.jsonl": "3bb6a8719d64c6f8cc1110ca787e0e43cc1ed6ea50b37a8a967554cac4360e62",
+    "paced-backpressure.json": "16d1c0baa5b65130ddf4263f271b2b432385fe0846acc638c1f86dce30a4671e",
+    "plan-inventory.json": "fce818ad96a9cf4194938c991d3dc65f0598782422a5d46b1b3981903f101de8"
+  }
+}

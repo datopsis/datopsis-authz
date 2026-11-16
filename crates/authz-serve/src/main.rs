@@ -1,3 +1,5 @@
+mod gateway;
+
 use authz_core::{Check, Mutation, Store, Verdict};
 use axum::{
     Json, Router,
@@ -74,9 +76,10 @@ async fn main() -> anyhow::Result<()> {
             authz_core::validate_schema()?;
             return Ok(());
         }
+        "sail-gateway" => return gateway::run().await,
         "serve" => (),
         _ => anyhow::bail!(
-            "S1 supports serve and policy only; sail-gateway and token-broker are later spikes"
+            "supported roles: serve, sail-gateway, policy; token-broker is not implemented"
         ),
     }
     rustls::crypto::ring::default_provider()

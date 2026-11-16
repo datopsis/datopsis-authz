@@ -9,9 +9,14 @@ native amd64 and arm64. C1/C2/C4/C5/C6 pass; C3/C7/C8 fail on old-token membersh
 revocation and volatile relationship state. The audit gate also remains red.
 The report links actual runs and retained sanitized evidence.
 
+S3 proves TLS/JWT/Cedar admission and completion of the exact paced million-row
+Sail stream on native amd64 and arm64. General table authorization and ownership
+of admitted users' Sail sessions remain gaps. See [the S3 report](docs/spikes/S3-sail-gateway.md).
+
 The intended platform is one Rust program/image with `serve`, `sail-gateway`,
-`token-broker`, and `policy` roles. S1 implements only `serve` and schema validation
-under `policy`; other roles fail explicitly. A separate thin Lakekeeper binary
+`token-broker`, and `policy` roles. S1 implements `serve` and schema validation under `policy`. S3 adds the
+`sail-gateway` TLS/JWT/per-user admission experiment; `token-broker` still fails
+explicitly. S3 runtime status is tracked in [its report](docs/spikes/S3-sail-gateway.md). A separate thin Lakekeeper binary
 compiles the adapter into the catalog, using unmodified pinned upstream crates.
 
 `authz-core` embeds Cedar 4.14.1, a schema, resource hierarchy and grant evaluator.
@@ -34,3 +39,24 @@ The adapter requires `AUTHZ_ENDPOINT=https://…`, `AUTHZ_CA_FILE`, `AUTHZ_KEY_F
 The bootstrap principal defaults to `oidc~operator` and can be set with
 `AUTHZ_BOOTSTRAP_PRINCIPAL`. No default service secret exists.
 TLS to Lakekeeper uses the evaluation's approved loopback nginx proxy.
+
+## S3 gateway experiment
+
+Run the same `authz-serve` program with `sail-gateway`. Configure
+`AUTHZ_TLS_CERT`, `AUTHZ_TLS_KEY`, `AUTHZ_CA_FILE`, `AUTHZ_KEY_FILE`,
+`AUTHZ_ENDPOINT` (verified HTTPS Cedar service), `SAIL_JWKS_URL` (verified HTTPS),
+`SAIL_ISSUER`, `SAIL_AUDIENCE` (comma-separated exact audiences), and optionally
+`AUTHZ_LISTEN` (default `0.0.0.0:50051`). Sail must share its network namespace
+and bind only `127.0.0.1:50052`; the backend address is deliberately fixed.
+
+Cedar checks `execute_plan` on `Server::"sail"` for `oidc~<verified-sub>` on every
+supported RPC, including ExecutePlan and ReattachExecute. S1's `select` grants
+do not permit this action; the fixture uses a specific user owner grant on this
+server resource. This is broad per-user admission, not table/read-only policy.
+JWKS is fetched for each RPC without a stale-key cache. Unknown methods,
+gRPC-compressed request messages and streaming artifact uploads fail closed. Plans are
+limited to one uncompressed unary gRPC message of at most 4 MiB. These are
+spike constraints, not production defaults or a complete Spark Connect proxy.
+
+Sail keys sessions by session ID alone. Replacing Spark UserContext does not
+isolate sessions between admitted users; this remains a production blocker.

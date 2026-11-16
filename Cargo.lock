@@ -541,10 +541,15 @@ dependencies = [
  "authz-core",
  "axum",
  "axum-server",
+ "bytes",
+ "h2",
+ "http 1.5.0",
+ "jsonwebtoken 10.4.0",
  "rustls",
  "serde",
  "serde_json",
  "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]

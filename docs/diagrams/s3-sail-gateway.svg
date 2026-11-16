@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="540" viewBox="0 0 1100 540" role="img" aria-labelledby="title desc">
+<title id="title">S3: Sail gateway transport and authorization experiment</title>
+<desc id="desc">One platform image runs the gateway and serve roles separately. The TLS gateway verifies Rauthy JWTs, asks the Cedar serve role for per-user admission, and forwards Spark Connect to Sail on loopback in a shared network namespace. Independent HTTP/2 drivers handle control frames under bounded DATA backpressure. Table policies and production qualification are not established.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3z" fill="#546880"/></marker></defs>
+<rect width="1100" height="540" fill="#f5f7fb"/>
+<g font-family="sans-serif" fill="#14243b">
+<text x="35" y="40" font-size="24" font-weight="bold">S3 — Sail gateway spike</text>
+<text x="35" y="68" font-size="16">One platform binary / image · separate roles · runtime conclusions require native evidence</text>
+<rect x="35" y="240" width="190" height="100" rx="8" fill="#e3eefe" stroke="#476d9f"/>
+<text x="50" y="272" font-size="18">Spark Connect client</text><text x="50" y="302" font-size="14">JWT + HTTP/2 over TLS</text>
+<rect x="310" y="180" width="750" height="265" rx="12" fill="#e7f4ee" stroke="#2a7958" stroke-width="2"/>
+<text x="330" y="210" font-size="17">Shared network namespace; other containers cannot reach Sail's loopback</text>
+<rect x="335" y="240" width="340" height="160" rx="8" fill="#fff" stroke="#2a7958"/>
+<text x="350" y="268" font-size="19">datopsis-authz sail-gateway</text>
+<text x="350" y="296" font-size="14">TLS :50051 · RS256 / iss / aud / exp</text>
+<text x="350" y="322" font-size="14">Verified subject replaces Spark UserContext</text>
+<text x="350" y="348" font-size="14">Per-RPC Cedar gate; ExecutePlan included</text>
+<text x="350" y="374" font-size="14">Bounded DATA; independent h2 driver</text>
+<rect x="770" y="260" width="260" height="110" rx="8" fill="#fff" stroke="#2a7958"/>
+<text x="785" y="290" font-size="19">Unmodified Sail 0.7.3</text>
+<text x="785" y="319" font-size="14">127.0.0.1:50052 only</text>
+<text x="785" y="345" font-size="14">Original keepalive + paced workload</text>
+<rect x="335" y="90" width="300" height="65" rx="8" fill="#e3eefe" stroke="#476d9f"/>
+<text x="350" y="116" font-size="18">Rauthy</text><text x="350" y="139" font-size="14">HTTPS JWKS; fetch each RPC in S3</text>
+<rect x="725" y="90" width="335" height="65" rx="8" fill="#fff" stroke="#2a7958"/>
+<text x="740" y="116" font-size="18">datopsis-authz serve</text><text x="740" y="139" font-size="14">S1 Cedar + memory + stdout audit</text>
+<path d="M225 288H330 M485 240V160 M675 270H710V155 M675 315H765" fill="none" stroke="#546880" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="238" y="275" font-size="13">TLS</text><text x="680" y="195" font-size="13">HTTPS</text><text x="683" y="340" font-size="12">h2 loopback</text>
+<text x="35" y="485" font-size="16">Per-user admission covers opaque plans. Resolved table/action enforcement remains unqualified.</text>
+<text x="35" y="512" font-size="14">No new engine or image role; token-broker remains unimplemented. No C1–C8 assertion is weakened.</text>
+</g></svg>
