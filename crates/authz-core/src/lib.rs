@@ -55,10 +55,29 @@ pub struct Grant {
 pub struct Store {
     pub parents: BTreeMap<String, (Resource, Option<Resource>)>,
     pub grants: Vec<Grant>,
+    /// Trusted SQL-name bindings and obligations; populated only by fixture/admin.
+    #[serde(default)]
+    pub trino: BTreeMap<String, TrinoBinding>,
+    #[serde(default)]
+    pub regions: BTreeMap<String, String>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TrinoBinding {
+    pub resource: Resource,
+    pub region_column: Option<String>,
+    pub sensitive_column: Option<String>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Mutation {
+    BindTrino {
+        name: Vec<String>,
+        binding: TrinoBinding,
+    },
+    SetRegion {
+        principal: String,
+        region: String,
+    },
     Put {
         resource: Resource,
         parent: Option<Resource>,
@@ -75,6 +94,16 @@ pub enum Mutation {
 impl Store {
     pub fn mutate(&mut self, mutation: Mutation) -> Result<()> {
         match mutation {
+            Mutation::BindTrino { name, binding } => {
+                anyhow::ensure!(
+                    name.len() == 3 && binding.resource.kind == "Table",
+                    "invalid binding"
+                );
+                self.trino.insert(serde_json::to_string(&name)?, binding);
+            }
+            Mutation::SetRegion { principal, region } => {
+                self.regions.insert(principal, region);
+            }
             Mutation::Put {
                 resource,
                 parent,
@@ -104,7 +133,9 @@ impl Store {
                     .retain(|g| g.resource != resource && g.subject != resource);
             }
             Mutation::Grant { grant, remove } => {
-                if !["owner", "select"].contains(&grant.access.as_str()) {
+                if !["owner", "select", "unmask", "unrestricted_rows"]
+                    .contains(&grant.access.as_str())
+                {
                     bail!("unsupported grant");
                 }
                 if remove {
@@ -147,6 +178,10 @@ impl Store {
             let upward = discover && self.ancestors(&g.resource).contains(&check.resource);
             let actions = if g.access == "owner" {
                 "true"
+            } else if g.access == "unmask" {
+                "context.operation == \"unmask\""
+            } else if g.access == "unrestricted_rows" {
+                "context.operation == \"unrestricted_rows\""
             } else {
                 "[\"read_data\", \"get_metadata\", \"list_tables\", \"list_views\", \"list_namespaces\", \"include_in_list\", \"use\", \"get_config\"].contains(context.operation)"
             };

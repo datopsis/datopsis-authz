@@ -1,0 +1,64 @@
+{
+  "trino_tag": "484",
+  "tag_object": "db3822bfb9aec688f3f06ae8fe8194763b842f1d",
+  "source_commit": "e2d50bb733e193607c44be84ad80ce2430ba1d01",
+  "trino_ubi_commit": "685ff5bca0037d38e3c2e2ed47a60f2540dad7c2",
+  "files": {
+    "OpaAccessControl.java": {
+      "sha256": "7af0cdd82ae2905c16258ddad323102eef66525f839b15a2917d6b48095a658f",
+      "url": "https://github.com/trinodb/trino/blob/e2d50bb733e193607c44be84ad80ce2430ba1d01/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaAccessControl.java"
+    },
+    "OpaHighLevelClient.java": {
+      "sha256": "defee7bff7d8dbc6c8ab8c4d6f1b67c5a47a9668ff0a50c38a4c526c02cbc12e",
+      "url": "https://github.com/trinodb/trino/blob/e2d50bb733e193607c44be84ad80ce2430ba1d01/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaHighLevelClient.java"
+    },
+    "OpaBatchAccessControl.java": {
+      "sha256": "7947ce650604dc98cf82756b055b73cdf954f4a34881946e532740d386706c40",
+      "url": "https://github.com/trinodb/trino/blob/e2d50bb733e193607c44be84ad80ce2430ba1d01/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaBatchAccessControl.java"
+    },
+    "OpaConfig.java": {
+      "sha256": "99b0dcdd882d3a4ac716323f6622648668b13ab172422f7eb4bc50d996274899",
+      "url": "https://github.com/trinodb/trino/blob/e2d50bb733e193607c44be84ad80ce2430ba1d01/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaConfig.java"
+    },
+    "OpaHttpClient.java": {
+      "sha256": "1c4c224b2306b096e90a3c1e40bd5c7987b494a57bb9b6f2c1d058a546168033",
+      "url": "https://github.com/trinodb/trino/blob/e2d50bb733e193607c44be84ad80ce2430ba1d01/plugin/trino-opa/src/main/java/io/trino/plugin/opa/OpaHttpClient.java"
+    }
+  },
+  "opa_plugin": {
+    "url": "https://github.com/trinodb/trino/releases/download/484/trino-opa-484.zip",
+    "sha256": "f8627b3f2da8950e8209ddcf8fd436cc0e536459dd438c81261593ab8310dc24",
+    "size": 15384527,
+    "provenance": "GitHub release asset digest and locally verified bytes; no detached signature"
+  },
+  "pgdg_fallback": {
+    "owner_commit": "0ff367fae85d9685eed9d4851dce9203cccae2b2",
+    "trigger": "HTTP 404 or unsolicited partial response on exact original URL, build process only",
+    "packages": [
+      {
+        "filename": "postgresql18-18.6-1PGDG.rhel9.8.x86_64.rpm",
+        "url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9-x86_64/postgresql18-18.6-1PGDG.rhel9.8.x86_64.rpm",
+        "size": 2065203,
+        "sha256": "ae57ba32d87fa3c311da9545bc85682ae04dc41cfbabf60d7f6c185099604f8a",
+        "signing_key_fingerprint": "D4BF08AE67A0B4C7A1DBCCD240BCA2B408B40D20",
+        "fallback_url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9.8-x86_64/postgresql18-18.6-1PGDG.rhel9.8.x86_64.rpm"
+      },
+      {
+        "filename": "postgresql18-libs-18.6-1PGDG.rhel9.8.x86_64.rpm",
+        "url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9-x86_64/postgresql18-libs-18.6-1PGDG.rhel9.8.x86_64.rpm",
+        "size": 311486,
+        "sha256": "7a4d55c02b8bab1b359aa25ce53d81db77cd39026a980dd8f0210031a5c31654",
+        "signing_key_fingerprint": "D4BF08AE67A0B4C7A1DBCCD240BCA2B408B40D20",
+        "fallback_url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9.8-x86_64/postgresql18-libs-18.6-1PGDG.rhel9.8.x86_64.rpm"
+      },
+      {
+        "filename": "postgresql18-server-18.6-1PGDG.rhel9.8.x86_64.rpm",
+        "url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9-x86_64/postgresql18-server-18.6-1PGDG.rhel9.8.x86_64.rpm",
+        "size": 7606326,
+        "sha256": "f7f1915d63756f6a37f3f2e5cc84d03893d0d7a55dab8ac350871bd1c48a0754",
+        "signing_key_fingerprint": "D4BF08AE67A0B4C7A1DBCCD240BCA2B408B40D20",
+        "fallback_url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9.8-x86_64/postgresql18-server-18.6-1PGDG.rhel9.8.x86_64.rpm"
+      }
+    ]
+  }
+}

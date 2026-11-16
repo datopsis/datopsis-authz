@@ -1,3 +1,4 @@
+mod opa;
 use authz_core::{Check, Mutation, Store, Verdict};
 use axum::{
     Json, Router,
@@ -96,6 +97,7 @@ async fn main() -> anyhow::Result<()> {
         store: Arc::new(RwLock::new(Store::default())),
     };
     let router = Router::new()
+        .route("/opa/{endpoint}", post(opa::handle))
         .route("/decide", post(decide))
         .route("/mutate", post(mutate))
         .route("/snapshot", post(snapshot))

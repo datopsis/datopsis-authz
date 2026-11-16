@@ -48,6 +48,19 @@ def main():
             grant={'subject':{'kind':'Group','id':'readers'},'resource':check['resource'],'access':'select'}
             post('mutate',{'op':'grant','grant':grant,'remove':False})
             assert json.load(post('decide',[check]))[0]['allowed'] is True
+            post('mutate', {'op':'bind_trino','name':['iceberg','a','one'], 'binding':{'resource':check['resource'],'region_column':'region','sensitive_column':'secret'}})
+            post('mutate', {'op':'set_region','principal':'alice','region':"e'u"})
+            opa = {'input':{'context':{'identity':{'user':'alice','groups':['readers']},'properties':{'serviceKey':(root/'secret').read_text()}},'action':{'operation':'SelectFromColumns','resource':{'table':{'catalogName':'iceberg','schemaName':'a','tableName':'one'}}}}}
+            assert json.load(post('opa/allow',opa)) == {'result':True}
+            opa['input']['action']['operation'] = 'GetRowFilters'
+            assert json.load(post('opa/rows',opa)) == {'result':[{'expression':"\"region\" = 'e''u'"}]}
+            opa['input']['context']['properties'] = {}
+            try:
+                post('opa/allow',opa)
+            except urllib.error.HTTPError as exc:
+                assert exc.code == 401
+            else:
+                raise AssertionError('anonymous OPA assertion accepted')
             post('mutate',{'op':'grant','grant':grant,'remove':True})
             assert json.load(post('decide',[check]))[0]['allowed'] is False
             try:
