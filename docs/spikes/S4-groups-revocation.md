@@ -108,3 +108,22 @@ requests rustls. S1 copied UBI runtime libraries only into the catalog image.
 The correction collects dependencies from **both** binaries, includes them in
 both images, and probes **both** binaries against Micro before fixture builds.
 These attempts provide no C1–C8 or S4 runtime pass.
+
+[Run 43892123832](https://github.com/datopsis/datopsis-authz/actions/runs/43892123832)
+executed the real fixture on both CPUs: C1/C2/C4/C5/C6 passed, while C7/C8 retained
+the S1 state-loss failures. C3 failed with a strict **503**, never accepted as an
+authorization denial. The first removal exposed Rauthy's `UserResponse.groups`
+`skip_serializing_if=None`: an empty group list is omitted from the response.
+The resolver now accepts omission only after verifying the returned user ID and
+`enabled=true`; malformed/mismatched responses still fail closed. A regression
+unit test and local HTTPS check cover the exact omitted-field shape.
+
+The same run exposed Trino's short-lifetime incompatibility: its first query at
+30s TTL returned `ICEBERG_CATALOG_ERROR` and Rauthy logged `B64 decoding error`.
+C5's unchanged 1800s native-client assertions passed. The short-token experiment
+now records this failure and continues the other measurements. TokenIssued counts
+measure successful issuance; separate base64-error log counts expose known failed
+token requests. Failed Trino queries never count as successful reads. The
+[source credential parser](https://github.com/sebadob/rauthy/blob/fe6bcb95192e8a83c29e2b525bf4960933bea3bd/src/api_types/src/oidc.rs)
+at this pin attempts base64 decoding for any Authorization header; a Bearer-header
+interaction is a source-based hypothesis, not a captured-header runtime claim.

@@ -66,18 +66,7 @@ impl Live {
             .json()
             .await
             .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
-        let groups: Vec<String> = match user.get("groups") {
-            Some(serde_json::Value::Array(values)) => values
-                .iter()
-                .map(|v| {
-                    v.as_str()
-                        .map(str::to_owned)
-                        .ok_or(StatusCode::SERVICE_UNAVAILABLE)
-                })
-                .collect::<Result<_, _>>()?,
-            Some(serde_json::Value::Null) => vec![],
-            _ => return Err(StatusCode::SERVICE_UNAVAILABLE),
-        };
+        let groups = parse_groups(&user, subject)?;
         self.cache
             .write()
             .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?
@@ -87,6 +76,53 @@ impl Live {
             serde_json::json!({"membership_lookup_ms": start.elapsed().as_secs_f64()*1000.0})
         );
         Ok(Some(groups))
+    }
+}
+fn parse_groups(user: &serde_json::Value, subject: &str) -> Result<Vec<String>, StatusCode> {
+    if user.get("id").and_then(serde_json::Value::as_str) != Some(subject)
+        || user.get("enabled").and_then(serde_json::Value::as_bool) != Some(true)
+    {
+        return Err(StatusCode::SERVICE_UNAVAILABLE);
+    }
+    match user.get("groups") {
+        Some(serde_json::Value::Array(values)) => values
+            .iter()
+            .map(|v| {
+                v.as_str()
+                    .map(str::to_owned)
+                    .ok_or(StatusCode::SERVICE_UNAVAILABLE)
+            })
+            .collect(),
+        // Rauthy 0.37.2 uses skip_serializing_if=None for empty membership.
+        None | Some(serde_json::Value::Null) => Ok(vec![]),
+        _ => Err(StatusCode::SERVICE_UNAVAILABLE),
+    }
+}
+#[cfg(test)]
+mod membership_tests {
+    use super::*;
+    #[test]
+    fn pinned_rauthy_empty_membership_and_malformed_user() {
+        let empty = serde_json::json!({"id":"alice", "enabled":true});
+        assert_eq!(parse_groups(&empty, "alice").unwrap(), Vec::<String>::new());
+        assert!(parse_groups(&empty, "bob").is_err());
+        assert!(parse_groups(&serde_json::json!({}), "alice").is_err());
+        assert!(parse_groups(&serde_json::json!({"id":"alice","enabled":false}), "alice").is_err());
+        assert!(
+            parse_groups(
+                &serde_json::json!({"id":"alice","enabled":true,"groups":{}}),
+                "alice"
+            )
+            .is_err()
+        );
+        assert_eq!(
+            parse_groups(
+                &serde_json::json!({"id":"alice","enabled":true,"groups":["readers"]}),
+                "alice"
+            )
+            .unwrap(),
+            vec!["readers"]
+        );
     }
 }
 async fn membership(

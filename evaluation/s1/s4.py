@@ -211,10 +211,14 @@ def short_tokens(catalog, namespace, tuples):
                 break
             time.sleep(1)
         assert samples[-1]['status'] == 401
+        evidence.update({'old_token_exposure_seconds':samples[-1]['seconds'], 'samples':samples,
+                         'claim_lifetime_seconds':claims['exp']-claims['iat'], 'clock_allowance_seconds':60})
+        save('S4-short-tokens.json',evidence)
         evidence['C3_old_unexpired_token'] = 'FAIL: allowed until authentication expiry; 401 is not authorization denial'
         evidence['trino_after_expiry'] = trino_query(http)
         evidence['sail_stale_file'] = sail_query(provider)
-        assert evidence['sail_stale_file']['returncode'] != 0, 'Expired Sail file unexpectedly read successfully'
+        # Observe native caching/reload behavior; only C5 defines acceptance.
+        # A client incompatibility must not prevent the other measurements.
         fresh_file_token = provider.token()
         run('sudo','tee',WORK/'sail-authz/token',input=fresh_file_token)
         evidence['sail_rewritten_file'] = sail_query(provider)
@@ -241,6 +245,7 @@ def short_tokens(catalog, namespace, tuples):
         }
         for name, workload in workloads.items():
             before_ids = token_event_ids(provider)
+            before_errors = token_error_count(provider)
             tick = time.monotonic()
             outcomes = []
             acquisitions = 0
@@ -260,6 +265,7 @@ def short_tokens(catalog, namespace, tuples):
             evidence['clients'][name]['native_workload'] = {
                 'seconds':time.monotonic()-tick, 'requests':4, 'token_issued_events':len(after_ids-before_ids),
                 'external_file_acquisitions':acquisitions, 'outcomes':outcomes,
+                'base64_token_error_log_entries':token_error_count(provider)-before_errors,
                 'scope':'Isolated 0/20/40/60s fresh queries; Sail uses explicit external file renewal every 20s',
             }
             save('S4-short-tokens.json',evidence)
@@ -281,13 +287,15 @@ def trino_query(http):
                      data='SELECT * FROM iceberg.bakeoff.sample ORDER BY id',headers={'X-Trino-User':'evaluation'})
     rows=[]
     while True:
-        assert 'error' not in page, page.get('error',{}).get('errorName')
+        if 'error' in page:
+            return {'status':'fail','error_name':page['error'].get('errorName'),
+                    'message':page['error'].get('message','')[:1500]}
         rows.extend(page.get('data',[]))
         if 'nextUri' not in page:
             break
         page=http.json('GET',page['nextUri'])
     assert rows == [[1,'alpha'],[2,'beta']], rows
-    return {'rows':rows,'scope':'Long-running Trino process, fresh SQL after short-token expiry; token request count not instrumented'}
+    return {'status':'pass','rows':rows,'scope':'Long-running Trino process, fresh SQL after short-token expiry; token request count not instrumented'}
 
 
 def sail_query(provider):
@@ -320,3 +328,9 @@ def lookup_samples():
         except ValueError:
             pass
     return result
+
+
+def token_error_count(provider):
+    import subprocess
+    result = subprocess.run(['docker','logs',provider.container],capture_output=True,text=True,check=True)
+    return (result.stdout+result.stderr).count('B64 decoding error')
