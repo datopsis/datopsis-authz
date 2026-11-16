@@ -22,7 +22,9 @@ metadata. Never expose the decision/mutation API to catalog clients.
 
 See [the S1 report](docs/spikes/S1-lakekeeper-adapter.md) for coverage and limitations.
 
-S4 evaluates short tokens, per-user epochs and live membership. See the
+S4 passes full C3 with epochs and live membership on both native CPUs. A 30s
+token still permits about 90s of fresh catalog access, and native Trino/PyIceberg
+renewal fails. C7/C8 and the audit gate remain red. See the
 [groups and revocation report](docs/spikes/S4-groups-revocation.md) for native
 measurements and remaining gaps. This remains evaluation-only.
 
