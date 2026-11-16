@@ -92,9 +92,10 @@ No other repository was modified.
 
 The selected public-crate graph dynamically links OpenSSL. Unlike the upstream
 release binary, it cannot run in the owner-built minimal runtime without
-libssl.so.3/libcrypto.so.3. The spike copies this matching pair from the same
-native UBI compiler environment, records their SHA-256 values, and checks the
-catalog version command in the final image. These extra runtime RPMs are not
+libssl.so.3/libcrypto.so.3. The spike collects this matching pair and any additional non-glibc dependencies
+reported by ldd from the same native UBI compiler environment, records their
+SHA-256 values, and checks the catalog version command in the final image. A
+loader probe against the pinned UBI Micro base runs before expensive fixture builds. These extra runtime RPMs are not
 supply-chain-qualified; production RPM locking/scanning remains an MVP gap.
 
 ### Feasibility checks already observed

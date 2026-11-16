@@ -1,6 +1,6 @@
 # S1 compiler environment: same glibc generation as the UBI runtime.
 FROM registry.access.redhat.com/ubi9/ubi:9.7
-RUN dnf install -y gcc gcc-c++ make openssl-devel pkgconf-pkg-config curl-minimal git tar gzip findutils unzip \
+RUN dnf install -y gcc gcc-c++ make openssl-devel pkgconf-pkg-config curl-minimal git tar gzip findutils unzip python3 \
     && dnf clean all
 RUN case "$(uname -m)" in \
       x86_64) PROTO_ARCH=x86_64; PROTO_SHA=327e9397c6fb3ea2a542513a3221334c6f76f7aa524a7d2561142b67b312a01f;; \

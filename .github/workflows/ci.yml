@@ -64,7 +64,7 @@ jobs:
         run: |
           docker build -f Containerfile.builder -t s1-builder .
           mkdir -p .cargo-cache
-          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked && mkdir -p target/spike-libs && cp -L /usr/lib64/libssl.so.3 /usr/lib64/libcrypto.so.3 target/spike-libs/'
+          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked && python3 scripts/collect-runtime-libs.py target/debug/lakekeeper-bin-datopsis target/spike-libs'
           sudo chown -R "$(id -u):$(id -g)" target .cargo-cache
       - name: Save native compiler cache
         if: ${{ !cancelled() && steps.rust-cache.outcome == 'success' }}
@@ -75,6 +75,10 @@ jobs:
             .cargo-cache
           key: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-${{ github.sha }}
       - run: python3 scripts/tls-smoke.py
+      - name: Check runtime loader before expensive fixture builds
+        run: |
+          docker build -f Containerfile.spike --target loader-probe -t localhost/lakekeeper-loader:s1 .
+          docker run --rm localhost/lakekeeper-loader:s1 version
       - name: Build pinned owner fixture images without source changes
         run: |
           sudo apt-get install -y rpm podman gnupg argon2
