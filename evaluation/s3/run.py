@@ -16,6 +16,7 @@ assert subprocess.check_output(['git', '-C', str(INTEGRATION), 'rev-parse', 'HEA
 sys.path.extend([str(INTEGRATION/'evaluation/authz'), str(INTEGRATION/'evaluation/idp'), str(INTEGRATION/'integration')])
 import common
 common.OUT = ROOT/'reports/s3'
+common.WORK = ROOT/'.runtime/s3'
 from common import run, save, secret, wait, write, decode, WORK, NETWORK
 from fixture import container, database, leaf, BACKEND_NETWORK, transport
 from rauthy import Rauthy
@@ -24,8 +25,10 @@ ARCH = {'x86_64': 'amd64', 'aarch64': 'arm64'}[platform.machine()]
 assert ARCH == os.environ['INTEGRATION_ARCH']
 SAIL = INTEGRATION/'.sources/sail-ubi'
 PYTHON = INTEGRATION/'.sources/sail-venv/bin/python'
+CASES = ('valid', 'missing', 'wrong_audience', 'denied_user', 'wrong_key', 'expiry_before',
+         'expired', 'expiry_fresh', 'tls_plaintext', 'backend_isolation', 'paced_stream', 'revoked_user')
 RESULTS = dict(architecture=ARCH, machine=platform.machine(), run=os.environ.get('RUN_URL'),
-               integration=PIN, sail=SAIL_PIN, source=run('git', 'rev-parse', 'HEAD'), cases={})
+               integration=PIN, sail=SAIL_PIN, source=run('git', 'rev-parse', 'HEAD'), cases={name: dict(status='BLOCKED', reason='Runtime prerequisites not completed') for name in CASES})
 
 
 def case(name, fn):
@@ -64,6 +67,7 @@ def probe(name, token, code):
 
 
 def evaluate():
+    save('plan-inventory.json', json.loads(run(PYTHON, ROOT/'evaluation/s3/plan_inventory.py')))
     ca = common.pki()
     run('docker', 'network', 'create', '--internal', NETWORK)
     run('docker', 'network', 'create', '--internal', BACKEND_NETWORK)
@@ -89,21 +93,23 @@ def evaluate():
     write(WORK/'sail.json', json.dumps(dict(bind='127.0.0.1', port=50052, allow_unauthenticated_remote=False)))
     (WORK/'sail.json').chmod(0o644)
     container('sail', 'localhost/sail-ubi:integration', mounts=[(WORK/'sail.json', '/etc/sail/config.json')],
-              extra=[*restricted, '--memory=2g', '--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=128m,mode=1777'])
+              extra=[a if a != '--memory=512m' else '--memory=2g' for a in restricted] + ['--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=128m,mode=1777'])
     container('gateway', 'localhost/authz-serve:s3', ['sail-gateway'],
               env=dict(AUTHZ_TLS_CERT='/tls/cert.pem', AUTHZ_TLS_KEY='/tls/key.pem', AUTHZ_KEY_FILE='/run/key',
                        AUTHZ_CA_FILE='/ca.pem', AUTHZ_ENDPOINT='https://cedar:8443',
                        SAIL_JWKS_URL=provider.discovery['jwks_uri'], SAIL_ISSUER=provider.issuer,
-                       SAIL_AUDIENCE='lakekeeper,expiry', AUTHZ_LISTEN='0.0.0.0:50051'),
+                       SAIL_AUDIENCE='lakekeeper,expiry,operator', AUTHZ_LISTEN='0.0.0.0:50051'),
               mounts=[(leaf('sail'), '/tls'), (ca, '/ca.pem'), (WORK/'cedar-key', '/run/key')],
               extra=restricted, network='container:sail')
     wait(lambda: transport('sail', 50051, ca))
+    wait(lambda: run('docker', 'exec', 'sail', '/usr/bin/python3.12', '-c',
+                     "import socket; socket.create_connection(('127.0.0.1',50052),timeout=1).close(); print('ready')"))
     paths = {name: token_file(name, token) for name, token in tokens.items()}
     case('valid', lambda: probe('valid', paths['lakekeeper'], 'OK'))
     case('missing', lambda: probe('missing', '-', 'UNAUTHENTICATED'))
     case('wrong_audience', lambda: probe('aud', paths['wrong-audience'], 'UNAUTHENTICATED'))
-    # A correctly signed, accepted-audience token with no Cedar grant must reach authorization.
-    # Use the allowed audience's lakekeeper subject after removing its grant below for denial.
+    case('denied_user', lambda: probe('denied', paths['operator'], 'PERMISSION_DENIED'))
+    provider.human_token = tokens['lakekeeper']  # bad_token uses only this token's header/claims.
     from catalog import bad_token
     wrong = token_file('wrong-key', bad_token(provider, 'different_key'))
     case('wrong_key', lambda: probe('key', wrong, 'UNAUTHENTICATED'))
@@ -131,7 +137,7 @@ def evaluate():
     provider.http.request('POST', 'https://cedar:8443/mutate', headers=headers, json=dict(
         op='grant', remove=True, grant=dict(subject=dict(kind='User', id='oidc~'+decode(tokens['lakekeeper'])[1]['sub']),
                                           resource=dict(kind='Server', id='sail'), access='owner'))).raise_for_status()
-    case('denied_user', lambda: probe('denied', paths['lakekeeper'], 'PERMISSION_DENIED'))
+    case('revoked_user', lambda: probe('revoked', paths['lakekeeper'], 'PERMISSION_DENIED'))
     assert all(c['status'] == 'PASS' for c in RESULTS['cases'].values()), 'S3 failures; see results.json'
 
 
@@ -162,15 +168,24 @@ def stream(ca, path):
             if pid: run('sudo', 'kill', '-TERM', str(pid))
             assert observer.wait(timeout=10) == 0, 'Invalid packet capture'
     frames = [json.loads(line) for line in trace.read_text().splitlines()]
+    logs = run('docker', 'logs', 'gateway')
+    stalls = [json.loads(line) for line in logs.splitlines() if line.startswith('{') and 'downstream_backpressure' in line]
+    save('paced-backpressure.json', stalls)
     pairs = []
     for ping in frames:
         if ping.get('frame') == 'PING' and not ping['ack'] and ping['ports'][0] == 50052 and ping['seconds'] >= 50:
             ack = next(e for e in frames if e.get('frame') == 'PING' and e['ack'] and e['opaque'] == ping['opaque']
                        and e['ports'] == ping['ports'][::-1] and e['seconds'] >= ping['seconds'])
-            pairs.append(dict(ping_seconds=ping['seconds'], ack_ms=(ack['seconds']-ping['seconds'])*1000))
-    assert pairs and all(p['ack_ms'] < 10000 for p in pairs), pairs
+            pairs.append(dict(ping_seconds=ping['seconds'], ack_ms=(ack['seconds']-ping['seconds'])*1000,
+                              during_downstream_wait=any(s['start_unix'] <= ping['unix_time'] <= s['start_unix']+s['duration_seconds'] for s in stalls)))
     complete = [e for e in events if e['event'] == 'workload_complete']
     if result.returncode == 0:
+        assert pairs and all(p['ack_ms'] < 10000 for p in pairs), pairs
+        assert any(p['during_downstream_wait'] for p in pairs), ('No PING observed during downstream wait', pairs, stalls)
+        calls = [e for e in events if e['event'] == 'rpc_start']
+        done = [e for e in events if e['event'] == 'rpc_done']
+        assert len(calls) == len(done) == 1 and calls[0]['method'].endswith('/ExecutePlan'), (calls, done)
+        assert done[0]['code'] == 'OK' and done[0]['seconds'] - calls[0]['seconds'] >= 70, done
         assert len(complete) == 1
         end = complete[0]
         assert (end['rows'], end['unique_ids'], end['payload_hashes_verified'], end['total']) == (1000000,1000000,1000000,499999500000)
@@ -181,11 +196,17 @@ def stream(ca, path):
     from stream_contract import RESET_DETAILS
     errors = [e for e in events if e['event'] == 'workload_error']
     assert len(errors) == 1 and RESET_DETAILS in errors[0]['details'] and 70 <= errors[0]['elapsed'] <= 90
+    calls = [e for e in events if e['event'] == 'rpc_start']
+    done = [e for e in events if e['event'] == 'rpc_done']
+    assert len(calls) == len(done) == 1 and calls[0]['method'].endswith('/ExecutePlan'), (calls, done)
+    assert (done[0]['code'], done[0]['code_number'], done[0]['details']) == ('INTERNAL', 13, RESET_DETAILS), done
     raise AssertionError(dict(outcome='HISTORICAL_RESET', result=errors[0], pings=pairs))
 
 
 if __name__ == '__main__':
-    if sys.argv[1:] == ['build']:
+    if sys.argv[1:] == ['initialize']:
+        save('results.json', RESULTS)
+    elif sys.argv[1:] == ['build']:
         build()
     elif sys.argv[1:] == ['cleanup']:
         common.cleanup()

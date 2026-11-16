@@ -10,8 +10,9 @@ revocation and volatile relationship state. The audit gate also remains red.
 The report links actual runs and retained sanitized evidence.
 
 The intended platform is one Rust program/image with `serve`, `sail-gateway`,
-`token-broker`, and `policy` roles. S1 implements only `serve` and schema validation
-under `policy`; other roles fail explicitly. A separate thin Lakekeeper binary
+`token-broker`, and `policy` roles. S1 implements `serve` and schema validation under `policy`. S3 adds the
+`sail-gateway` TLS/JWT/per-user admission experiment; `token-broker` still fails
+explicitly. S3 runtime status is tracked in [its report](docs/spikes/S3-sail-gateway.md). A separate thin Lakekeeper binary
 compiles the adapter into the catalog, using unmodified pinned upstream crates.
 
 `authz-core` embeds Cedar 4.14.1, a schema, resource hierarchy and grant evaluator.
@@ -34,3 +35,21 @@ The adapter requires `AUTHZ_ENDPOINT=https://…`, `AUTHZ_CA_FILE`, `AUTHZ_KEY_F
 The bootstrap principal defaults to `oidc~operator` and can be set with
 `AUTHZ_BOOTSTRAP_PRINCIPAL`. No default service secret exists.
 TLS to Lakekeeper uses the evaluation's approved loopback nginx proxy.
+
+## S3 gateway experiment
+
+Run the same `authz-serve` program with `sail-gateway`. Configure
+`AUTHZ_TLS_CERT`, `AUTHZ_TLS_KEY`, `AUTHZ_CA_FILE`, `AUTHZ_KEY_FILE`,
+`AUTHZ_ENDPOINT` (verified HTTPS Cedar service), `SAIL_JWKS_URL` (verified HTTPS),
+`SAIL_ISSUER`, `SAIL_AUDIENCE` (comma-separated exact audiences), and optionally
+`AUTHZ_LISTEN` (default `0.0.0.0:50051`). Sail must share its network namespace
+and bind only `127.0.0.1:50052`; the backend address is deliberately fixed.
+
+Cedar checks `execute_plan` on `Server::"sail"` for `oidc~<verified-sub>` on every
+supported RPC, including ExecutePlan and ReattachExecute. S1's `select` grants
+do not permit this action; the fixture uses a specific user owner grant on this
+server resource. This is broad per-user admission, not table/read-only policy.
+JWKS is fetched for each RPC without a stale-key cache. Unknown methods,
+compressed requests and streaming artifact uploads fail closed. Plans are
+limited to one uncompressed unary gRPC message of at most 4 MiB. These are
+spike constraints, not production defaults or a complete Spark Connect proxy.

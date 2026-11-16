@@ -12,3 +12,8 @@ axum.workspace = true
 authz-core = { path = "../authz-core" }
 axum-server = { version = "0.7", features = ["tls-rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring"] }
+h2 = "=0.4.20"
+bytes = "=1.12.1"
+http = "=1.5.0"
+jsonwebtoken = { version = "=10.4.0", features = ["aws_lc_rs"] }
+tokio-rustls = "=0.26.6"

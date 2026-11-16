@@ -5,6 +5,7 @@ import sys
 import uuid
 from pathlib import Path
 
+import pyarrow as pa
 import grpc
 from pyspark.sql.connect.proto import base_pb2
 from pyspark.sql.connect.proto import base_pb2_grpc
@@ -21,8 +22,9 @@ metadata = [('authorization', 'Bearer ' + token)] if token else []
 try:
     responses = list(stub.ExecutePlan(request, metadata=metadata, timeout=20))
     assert expected == 'OK', 'Rejected-token operation succeeded'
-    assert any(r.HasField('arrow_batch') for r in responses), 'No real result'
-    print(json.dumps(dict(code='OK', result_batches=sum(r.HasField('arrow_batch') for r in responses))))
+    batches = [pa.ipc.open_stream(r.arrow_batch.data).read_all() for r in responses if r.HasField('arrow_batch')]
+    assert batches and pa.concat_tables(batches).to_pylist() == [{'answer': 42}], 'Incorrect result'
+    print(json.dumps(dict(code='OK', rows=[{'answer': 42}], result_batches=len(batches))))
 except grpc.RpcError as error:
     assert error.code().name == expected, (error.code().name, expected)
     print(json.dumps(dict(code=error.code().name)))
