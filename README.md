@@ -9,6 +9,10 @@ native amd64 and arm64. C1/C2/C4/C5/C6 pass; C3/C7/C8 fail on old-token membersh
 revocation and volatile relationship state. The audit gate also remains red.
 The report links actual runs and retained sanitized evidence.
 
+S3 proves TLS/JWT/Cedar admission and completion of the exact paced million-row
+Sail stream on native amd64 and arm64. General table authorization and ownership
+of admitted users' Sail sessions remain gaps. See [the S3 report](docs/spikes/S3-sail-gateway.md).
+
 The intended platform is one Rust program/image with `serve`, `sail-gateway`,
 `token-broker`, and `policy` roles. S1 implements `serve` and schema validation under `policy`. S3 adds the
 `sail-gateway` TLS/JWT/per-user admission experiment; `token-broker` still fails
@@ -53,3 +57,6 @@ JWKS is fetched for each RPC without a stale-key cache. Unknown methods,
 gRPC-compressed request messages and streaming artifact uploads fail closed. Plans are
 limited to one uncompressed unary gRPC message of at most 4 MiB. These are
 spike constraints, not production defaults or a complete Spark Connect proxy.
+
+Sail keys sessions by session ID alone. Replacing Spark UserContext does not
+isolate sessions between admitted users; this remains a production blocker.

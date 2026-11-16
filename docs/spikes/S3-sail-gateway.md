@@ -1,212 +1,208 @@
-# S3: Sail gateway (in progress)
+# S3: Sail gateway
 
-This is a bounded feasibility spike stacked on S1, not the MVP. No acceptance
-or runtime success is claimed yet. The gateway is implemented; native container evidence is pending. This report
-will record actual Actions outcomes before the spike is concluded.
+Status: **minimum S3 feasibility PASS on native amd64 and arm64.** The exact paced
+million-row workload completes without a retry or reset, and the result
+connection ACKs Sail's 60-second PING while downstream DATA is backpressured.
+General table authorization and admitted-user session isolation remain gaps.
+**Full platform acceptance and audit remain FAIL. This is not the MVP.**
 
-## Inputs
+[Stacked PR #4](https://github.com/datopsis/datopsis-authz/pull/4) targets the
+unmerged `room/datopsis-authz-spike-s1-lakekeeper-adapt-w46b` branch. No merge.
 
-Read README.md, AGENTS.md, CLAUDE.md and the S1 report on
-`room/datopsis-authz-spike-s1-lakekeeper-adapt-w46b` before starting.
+## Native evidence and answers
 
-- Platform plan section 4a and C1–C8 contract:
-  `datopsis/lakehouse-integration` main resolved to
-  `369dbdec67445eb1c2931b39b45f3364ec71ead4` when read.
-- Executable acceptance fixture stays pinned to S1's
-  `e8379a528bf413c05aad49e56bc8cd507b5e077a`.
-- Sail owner image, client locks, paced probe, passive HTTP/2 observer and reset
-  report: `datopsis/sail-ubi` at
-  `e96e068f926b8fecb3939e953389685ee4780032`.
-  Its artifact lock identifies Sail 0.7.3 source
-  `ac4690078021cf2a5402dc5c7b38a886f1916c73`.
-- Rauthy owner build: `1e114b84b01988bf15306b110b040378878488d3`.
+The authoritative [run 43895646867](https://github.com/datopsis/datopsis-authz/actions/runs/43895646867)
+tested PR source `dca2ef51ee416f083cb8500aeb5882e0d59221d7` through merge commit
+`3a4efae921497d341fc8266267e926ad20b5cceb`. Both native jobs' actual logs and sanitized
+artifacts were read. Final follow-up changes only record documentation/evidence.
 
-External checkouts are immutable evaluation inputs. No other repo is modified.
-S1's C1–C8 assertions and reported failures remain unchanged.
-
-## Questions and required evidence
-
-| Check | amd64 | arm64 |
+| Control | [amd64][amd64] | [arm64][arm64] |
 | --- | --- | --- |
-| Valid Rauthy JWT reaches real ExecutePlan and returns Arrow data | NOT RUN | NOT RUN |
-| Missing / genuine expired / wrong audience / different signing key refused | NOT RUN | NOT RUN |
-| Authenticated principal denied by Cedar receives PERMISSION_DENIED | NOT RUN | NOT RUN |
-| Verified TLS, wrong CA/name and plaintext refusal | NOT RUN | NOT RUN |
-| Backend 127.0.0.1:50052 unreachable from another container | NOT RUN | NOT RUN |
-| Million rows, first 16 Arrow batches paced at 5 seconds, exact IDs/sum/hashes | NOT RUN | NOT RUN |
-| Backend PING/ACK before deadline during that stream, lossless passive capture | NOT RUN | NOT RUN |
+| Genuine human token / real ExecutePlan, exact answer 42 | PASS | PASS |
+| Independent machine token / exact answer 42 | PASS | PASS |
+| Missing token | PASS — UNAUTHENTICATED (16) | PASS — 16 |
+| Genuine expired token, with before-expiry and fresh-token positive controls | PASS — OK / 16 / OK | PASS — OK / 16 / OK |
+| Genuine wrong-audience Rauthy token | PASS — 16 | PASS — 16 |
+| Token signed with a different RSA key, retaining genuine claims/kid | PASS — 16 | PASS — 16 |
+| Denied human and machine principals | PASS — PERMISSION_DENIED (7) | PASS — 7 |
+| Remove acknowledged Cedar grant; same unexpired human token on a fresh RPC | PASS — 7 | PASS — 7 |
+| Verified TLS; unknown CA, wrong name and plaintext refused | PASS — TLS 1.3 | PASS — TLS 1.3 |
+| Peer container reaches gateway :50051, cannot reach backend :50052 by IP | PASS — 0 / ECONNREFUSED (111) | PASS — 0 / 111 |
+| 1,000,000 rows, first 16 batches paced at 5 seconds, retries disabled | PASS — 85.962 s | PASS — 86.130 s |
+| Exact IDs / sum / every SHA-512 payload | PASS — 1,000,000 / 499,999,500,000 / 1,000,000 | PASS — same |
+| One ExecutePlan, 123 batches, final gRPC OK, no ReattachExecute | PASS | PASS |
+| Result-connection PING age / ACK latency during downstream wait | PASS — 60.001 s / 0.133 ms | PASS — 60.003 s / 0.219 ms |
+| Result DATA bytes / capture drops / reassembly gaps | 73,339,912 / 0 / 0 | 73,339,920 / 0 / 0 |
+| Duplicate identity-field and trailers-only error regression tests | PASS | PASS |
+| General table-level authorization | NOT IMPLEMENTED — source gap | Same |
+| Ownership of sessions between admitted users | FAIL — source gap below | Same |
 
-Run links and results are pending. Local `cargo check -p authz-serve --locked`,
-Python syntax compilation, YAML validation, formatting and LF checks pass; these
-are not runtime acceptance evidence.
+[amd64]: https://github.com/datopsis/datopsis-authz/actions/runs/43895646867/job/133398352978
+[arm64]: https://github.com/datopsis/datopsis-authz/actions/runs/43895646867/job/133398352465
+
+Durable sanitized evidence: [amd64](S3-results-amd64.json) and
+[arm64](S3-results-arm64.json). These retain exact controls, client RPC events,
+result-connection counters, PING/backpressure overlap, build provenance, binary
+hashes and raw-evidence digests. Full sanitized logs/control-frame JSONL are in
+the run artifacts for 14 days; no packets, DATA/HPACK bodies or TLS secrets are
+retained. Per-run CA private keys, service keys and JWTs are outside Git/artifacts.
+
+**Reset answer:** fixed for this exact finite workload on both CPUs. The
+[pinned nginx baseline](https://github.com/datopsis/sail-ubi/blob/e96e068f926b8fecb3939e953389685ee4780032/docs/evals/2026-11-13-sail-stream-reset.md)
+failed around 80 seconds with partial results and INTERNAL/RST_STREAM 2. S3 runs
+the owner's unmodified paced client with mode `none`, checks the complete unique
+ID set and hashes, and requires an active ExecutePlan RPC beyond 70 seconds.
+The client still requests reattachability, but performs no reattachment/retry.
+Sail's wheel, keepalive timers, workload and pacing are unchanged.
+
+The passive observer requires zero drops and contiguous TCP reassembly. The test
+selects the Sail-to-gateway connection carrying the largest result DATA volume,
+requires a PING after 50 seconds of that connection's age, matches its reverse
+ACK, and proves overlap with a gateway downstream-send wait. Initial PINGs on
+short ReleaseExecute/control connections cannot satisfy this assertion. This
+establishes control-frame progress under the tested pressure, not an arbitrary
+idle-duration, load or infinite-stream guarantee.
 
 ## Implemented boundary
 
-The existing authz-serve binary/image now implements `sail-gateway` alongside
-`serve` and `policy`; token-broker remains unimplemented. It authenticates RS256
-JWTs using HTTPS JWKS, issuer, audience, mandatory expiry and zero clock leeway.
-Each RPC fetches JWKS and calls the existing Cedar `/decide` over verified HTTPS
-with the per-run service credential. Upstream TLS uses the per-run CA; redirects
-and ambient proxy settings are not used. JWKS/decision calls time out after five
-seconds and fail closed. No credentials or raw plans appear in gateway logs.
+The existing `authz-serve` binary/image now implements `sail-gateway` alongside
+`serve` and the S1 `policy` schema check. `authz-core`, its schema and Cedar 4.14.1
+are reused without changes. `token-broker` remains explicitly unimplemented.
+See [the S3 topology](../diagrams/s3-sail-gateway.svg) and the updated
+[shared architecture](../diagrams/authz-architecture.svg).
 
-Every supported RPC, including ExecutePlan and ReattachExecute, asks Cedar for
-`execute_plan` on `Server::"sail"` with principal `oidc~<verified-sub>` and verified
-groups. Missing/invalid JWTs return gRPC UNAUTHENTICATED (16); Cedar denies return
-PERMISSION_DENIED (7); unavailable dependencies return UNAVAILABLE (14). S1's
-`select` grants do not permit this action. The fixture grants individual users
-owner access to this one server resource. This broad grant is per-user admission,
-not table or read-only authorization. No new Cedar policy language is invented.
+The gateway terminates TLS/HTTP2 and validates RS256 JWT signatures using a
+configured HTTPS JWKS endpoint, exact issuer/audience, mandatory subject/expiry,
+zero configured clock leeway and nbf validation. JWKS is fetched per RPC with
+no stale-key cache. It calls the existing Cedar `/decide` over verified HTTPS,
+authenticated by a per-run service key; neither redirects nor ambient proxies
+are used. JWKS/decision calls have a five-second timeout and fail closed.
 
-The gateway replaces all top-level protobuf UserContext fields with the verified
-subject, dropping asserted identity/extensions, and strips credentials and other
-identity headers before forwarding. This stops an unverified UserContext from
-becoming Sail's recorded user identity; it does not establish session ownership. It accepts only known unary Spark
-Connect methods, one uncompressed message up to 4 MiB; unknown methods,
-gRPC-compressed request messages and streaming AddArtifacts are refused. It does not decode
-or authorize individual plan nodes. Backend address is fixed at 127.0.0.1:50052;
-Sail shares the gateway's network namespace and listens only on loopback.
+Every supported RPC, including ExecutePlan, AnalyzePlan and ReattachExecute,
+checks `execute_plan` on `Server::"sail"` for `oidc~<verified-sub>` with verified
+groups. Invalid JWTs return gRPC 16; Cedar denies return 7; unavailable decision
+or JWKS dependencies return 14. The fixture grants individual users owner access
+to that server resource; S1 `select` grants do not admit execution. This is broad
+per-user admission, not read-only or table policy. Alice/Bob controls use genuine
+Rauthy PKCE access tokens; machine controls use independent client credentials.
 
-Independent h2 connection tasks drive frontend/backend control frames. Backend
-stream/connection receive windows start at 65,535 bytes; upstream DATA credit is
-returned only after downstream send capacity accepts the bytes. gRPC response
-headers, DATA and trailers are forwarded, preserving the real final status.
-Downstream waits of at least one second are recorded with timestamps so the
-passive PING capture can prove overlap with backpressure. The test selects the
-Sail-to-gateway connection carrying the largest result DATA volume, and requires
-a PING on that same connection after 50 seconds of connection age; initial PINGs
-on short ReleaseExecute/control connections cannot satisfy this assertion. This is bounded flow
-control, not buffering the complete result or changing Sail's keepalive timers.
-See [the S3 topology](../diagrams/s3-sail-gateway.svg); the shared architecture
-diagram also records the gateway role.
+The gateway replaces all top-level Spark UserContext occurrences with the
+verified subject, drops its untrusted extensions and strips bearer/identity
+headers before forwarding. Only known unary Spark methods are supported; unknown
+methods, streaming AddArtifacts and gRPC-compressed request messages are refused.
+One uncompressed unary request is limited to 4 MiB. The backend is fixed at
+127.0.0.1:50052 in the shared Sail/gateway network namespace. Sail binds loopback
+only. The fixture uses read-only roots, dropped capabilities, no-new-privileges,
+2 CPUs / 2 GiB for Sail and the owner's private 256 MiB writable tmpfs mounts.
+
+Independent h2 connection tasks drive control frames. Backend receive windows
+start at 65,535 bytes; DATA credit is returned only after downstream send capacity
+accepts the bytes. Response DATA and trailers are forwarded without collecting
+the whole result. A real-client local check caught trailers-only INVALID_ARGUMENT
+becoming UNKNOWN through an added empty DATA frame. The regression test failed
+before the fix; the relay now preserves END_STREAM on initial response HEADERS.
+That test passes natively on both CPUs. Supplemental controlled JWKS/Cedar/gRPC
+checks also verified wrong-issuer rejection, subject replacement, stripped tokens
+and preservation of backend errors; these are not Rauthy/Sail acceptance passes.
 
 ## Table-level answer: visible syntax, incomplete enforcement
 
-The hash-locked PySpark 4.2.0 descriptor probe passes locally and is repeated in
-native CI (`plan-inventory.json`). The
-[pinned Spark protocol](https://github.com/apache/spark/blob/32f7299601108917fb01920a54e084595b7b3bf8/sql/connect/common/src/main/protobuf/spark/connect/base.proto)
-puts the plan at ExecutePlanRequest field 3 and UserContext at field 2.
+The runtime `plan-inventory.json` probe uses the exact hash-locked PySpark 4.2.0
+client. The [pinned protocol](https://github.com/apache/spark/blob/32f7299601108917fb01920a54e084595b7b3bf8/sql/connect/common/src/main/protobuf/spark/connect/base.proto)
+puts Plan at ExecutePlanRequest field 3 and UserContext at field 2.
 
-| Plan surface | What a gateway can observe | Why it is insufficient for general table authorization |
+| Plan surface | Visible information | Remaining authorization problem |
 | --- | --- | --- |
-| Read.named_table | `unparsed_identifier`, e.g. catalog.namespace.table | Requires authoritative catalog/namespace resolution and distinction between temporary/session objects and catalog tables; no stable Lakekeeper table ID is provided. |
-| Read.data_source | Format and paths, e.g. parquet at s3://bucket/prefix | No catalog table identity; direct storage reads can bypass table naming entirely. |
-| Relation.sql / Command.sql_command | SQL query text and arguments | Requires Spark-compatible parsing, analysis, resolution, view expansion and action classification; string matching cannot establish the touched objects. |
-| Project/filter/join and other relation trees | Explicit child relations and expressions | A complete walker must cover every nested form, UDF/subquery and dependency, including views and session references. |
-| Commands | Write operations, view/function/data-source registration, merge, external/pipeline commands | ExecutePlan is not synonymous with read; relation-only checks would miss writes and state changes. |
-| Local/cached relations, extensions, unknowns and compressed_operation | Data or opaque references/payloads | No complete table set is present in the request; unknown/opaque forms require rejection or trusted engine analysis. |
+| Read.named_table | Unparsed identifier such as catalog.namespace.table | Authoritative catalog/namespace resolution, temporary objects and stable Lakekeeper IDs are absent. |
+| Read.data_source | Format and paths such as s3://bucket/prefix | No catalog table identity; direct storage paths bypass table naming. |
+| SQL relations / SQL commands | SQL text and arguments | Requires compatible parsing, analysis, resolution, view expansion and action classification. |
+| Relation trees and expressions | Explicit project/filter/join children | Must cover every nested dependency, subquery, UDF and session/cached reference. |
+| Commands | Writes, views, functions, data sources, merge, external/pipeline operations | ExecutePlan is not synonymous with read. |
+| Extensions / unknowns / compressed_operation | Opaque payload or reference | Reject or obtain trusted engine analysis; this gateway does not inspect plan nodes. Sail 0.7.3 itself rejects compressed_operation. |
 
-A strict subset gateway could reject every unrecognized form and admit only
-explicitly supported operations, with trusted name resolution. This spike does
-not implement that subset or resolve table identities. **The implemented gate is
-per-user admission to the Sail server, not per-table authorization.** An admitted
-user can submit arbitrary supported Sail plans, including writes and direct paths;
-no table-level or read-only guarantee is claimed. Full enforcement needs a
-trusted resolution/enforcement point in the engine/catalog and appropriately
-scoped storage credentials.
+A strict supported subset with trusted name resolution could be authorized at a
+gateway. S3 does not implement it. **An admitted user can submit arbitrary Sail-
+supported plans, including writes and direct paths.** Full table enforcement
+needs a trusted resolution/enforcement point and scoped storage credentials;
+S1 C5's catalog checks are not proof of gateway table authorization.
 
-**Additional source-level gap:** the pinned
-[Spark handler](https://github.com/lakehq/sail/blob/ac4690078021cf2a5402dc5c7b38a886f1916c73/crates/sail-spark-connect/src/server.rs)
-passes session_id and user_id separately, but the
+**Session gap:** the pinned [Spark handler](https://github.com/lakehq/sail/blob/ac4690078021cf2a5402dc5c7b38a886f1916c73/crates/sail-spark-connect/src/server.rs)
+passes session_id/user_id separately, but the
 [session manager](https://github.com/lakehq/sail/blob/ac4690078021cf2a5402dc5c7b38a886f1916c73/crates/sail-session/src/session_manager/actor/handler.rs)
-looks up an existing session by session_id without re-checking user_id. Merely
-replacing UserContext cannot isolate two admitted users who choose the same
-session ID. Denied users remain blocked on every RPC before reaching Sail.
-Session ownership enforcement, restart behavior and cross-user session tests
-remain unimplemented/unverified; this is a material limit for any multi-user MVP.
+looks up existing sessions by session_id without re-checking user_id. Replacing
+UserContext does not isolate two admitted users who choose the same session ID.
+Denied users remain blocked before Sail on every RPC. Session ownership and its
+restart semantics are unimplemented/unverified and block a multi-user MVP claim.
 
-The runtime controls use genuine human PKCE access tokens for Alice (allowed),
-Bob (denied) and the paced stream, through the unmodified pinned Rauthy helper.
-Independent machine-principal allow/deny controls are also retained. The
-short-lived machine token is minted immediately before its before-expiry
-positive control, then tested after expiry and against a fresh-token control.
+## C1–C8 and audit remain red
 
-The prepared harness reuses the owner's unmodified million-row probe with retry
-mode `none`, checking exact unique IDs, every SHA-512 payload and the ID sum.
-It records control frames through the pinned passive observer, never packet
-bodies, private keys or TLS session secrets. Any arbitrary transport failure is a
-failure; only the exact historical INTERNAL/RST_STREAM 2 at 70–90 seconds can be
-classified as the previous reset. No retry or alternate workload replaces it.
+No C-suite assertion was changed. S1's documented direct-claim adaptation remains,
+including its original old-token membership-removal assertion and durability/
+recovery assertions. The final native run retains the same failures:
 
-## Dependency constraint and checks
+| Case | amd64 | arm64 |
+| --- | --- | --- |
+| C1 exact namespace reads and write/other-namespace denials | PASS | PASS |
+| C2 inheritance / sibling isolation | PASS | PASS |
+| C3 groups plus old-token membership revocation | FAIL — old token still grants | FAIL — same |
+| C4 revoke within 30 seconds | PASS | PASS |
+| C5 PyIceberg / Trino / Sail | PASS — all three | PASS — all three |
+| C6 no denied storage credentials | PASS | PASS |
+| C7 outage and recovery | FAIL — recovery wait | FAIL — recovery wait |
+| C8 durable state and repeated migrations | FAIL — restart loses state | FAIL — same; migrations not reached |
 
-Coordinator approval permits exactly five new direct dependencies, each already
-resolved in S1: h2 0.4.20, bytes 1.12.1, http 1.5.0, jsonwebtoken 10.4.0 and
-tokio-rustls 0.26.6. Cargo.toml uses exact version constraints. The Cargo.lock diff
-contains only those five dependency edges on authz-serve: **zero new packages or
-versions**. `scripts/check-s3-lock.py` compares all 690 package identities,
-versions, sources and checksums, and all other dependency lists, against immutable
-S1 commit `070522db03217da42a8fcbca590ef5c78ebc6c99`. It runs in CI. All builds use
-`--locked`. The inherited `cargo audit` step remains unchanged; this repository
-has no cargo-deny invocation/configuration to alter. No advisory is suppressed.
+C3 reports `Denied operation succeeded`; C7 times out waiting for an allowed load
+after volatile-state loss; C8 reports `Cedar restart lost relationship/grant state`.
+S3 grant revocation is per fresh RPC, not IdP membership revocation or cancellation
+of an already admitted stream. The resets between destructive C7/C8 cases remain
+outside their assertions, as documented in S1.
 
-S3 runs before S1's unchanged C1–C8 assertions, using a separate runtime directory.
-Its test outcome remains blocking even though CI continues to collect the C-suite
-results after an S3 failure. No human sign-off, settings/permissions change, merge
-or force push is part of this spike. Per-run CA, keys and tokens stay outside Git
-and uploaded evidence; only sanitized reports and control-frame counters are
-retained for 14 days.
+The unchanged [audit job](https://github.com/datopsis/datopsis-authz/actions/runs/43895646867/job/133398353006)
+reports three inherited vulnerabilities: libsqlite3-sys 0.37.0 / RUSTSEC-2026-0459
+and quick-xml 0.40.1 / RUSTSEC-2026-0194, RUSTSEC-2026-0195, plus five warnings.
+No upgrade, suppression or gate change was made. No cargo-deny invocation/config
+exists in the base; none was disabled. Full security qualification, HA/load,
+policy bundles, durable audit/state, key-rotation behavior, comprehensive Spark
+compatibility and outbound token-broker/end-user propagation are not verified.
 
-## Audit status
+## Dependency constraint, inputs and acquisition
 
-The unchanged [lint job](https://github.com/datopsis/datopsis-authz/actions/runs/43884152945/job/133357613888)
-ran the lock inventory gate successfully, then `cargo audit` failed with three
-inherited vulnerabilities: libsqlite3-sys 0.37.0 / RUSTSEC-2026-0459 and
-quick-xml 0.40.1 / RUSTSEC-2026-0194, RUSTSEC-2026-0195. Five inherited warnings
-were also emitted. The actual job log was read. No dependency upgrade, suppression
-or audit-gate change was made. This spike cannot claim security qualification.
+Only five approved direct dependencies were added, each exactly pinned to S1's
+resolved version: **h2 0.4.20, bytes 1.12.1, http 1.5.0, jsonwebtoken 10.4.0,
+tokio-rustls 0.26.6**. Cargo.lock gains **zero crates or versions**: its diff adds
+only five authz-serve dependency edges. `scripts/check-s3-lock.py` verifies all
+690 package identities, versions, sources/checksums and every other dependency
+list against S1 `070522db03217da42a8fcbca590ef5c78ebc6c99`; it passes locally and in
+CI. All builds use `--locked`. Rust tests/Clippy, YAML validation, LF and diff
+checks pass. No GitHub settings/permissions/secrets were changed, no upstream
+repository was modified, and no sign-off/coauthor trailer or force push was used.
 
-## Fixture acquisition correction
+- Platform plan section 4a / evaluation contract read at
+  lakehouse-integration `369dbdec67445eb1c2931b39b45f3364ec71ead4`.
+- Executable acceptance fixture: `e8379a528bf413c05aad49e56bc8cd507b5e077a`.
+- Sail owner/client/probe/observer: `e96e068f926b8fecb3939e953389685ee4780032`,
+  wheel 0.7.3 / upstream `ac4690078021cf2a5402dc5c7b38a886f1916c73`.
+- Rauthy owner: `1e114b84b01988bf15306b110b040378878488d3`.
+- PostgreSQL owner: `0ff367fae85d9685eed9d4851dce9203cccae2b2`.
+  All other fixture source/image pins and provenance are retained in the summaries.
 
-The first [amd64 job](https://github.com/datopsis/datopsis-authz/actions/runs/43884152945/job/133357614232)
-compiled and tested the workspace, passed HTTPS smoke and the Micro loader probe,
-then stopped before runtime: the pinned PostgreSQL owner's rolling
-`rhel-9-x86_64` URLs returned 404 for PostgreSQL 18.6 RPMs. No S3 or C-suite runtime
-pass is claimed for that attempt.
+The pinned PostgreSQL rolling rhel-9 URLs returned 404, then an incomplete 200
+body (5,242,880 versus 7,606,326 locked bytes). The owner's verification correctly
+failed; these attempts are not passes. The explicit rhel-9.8 paths on the same
+publisher contain identical locked bytes: [all eight checked downloads](S3-pgdg-mirror-check.json).
+Build-only PYTHONPATH routing in `evaluation/s3/downloads/sitecustomize.py` applies
+only to that exact PostgreSQL 18.6/RHEL 9.8 package family. Original HTTPS host,
+size/SHA-256, key fingerprint, RPM signature and image provenance checks remain
+intact; owner sources/locks and acceptance assertions are unchanged.
 
-The publisher's explicit `rhel-9.8-{x86_64,aarch64}` directories contain the exact
-same eight locked packages. All eight downloads were SHA-256 checked against the
-immutable owner locks; see [the retained checks](S3-pgdg-mirror-check.json). The
-unmodified owner's downloader was also exercised locally with its original URL,
-locked size and SHA-256 checks, and completed through the fallback.
-
-A build-step-only PYTHONPATH loads `evaluation/s3/downloads/sitecustomize.py`.
-Only the exact PostgreSQL 18.6/RHEL 9.8 package family is routed to the same
-publisher's explicit minor-release path. Other URLs, versions and architectures
-retain their original behavior. The first correction retried only 404s; the
-[second amd64 job](https://github.com/datopsis/datopsis-authz/actions/runs/43886130893/job/133364641151)
-then correctly failed the owner's locked-size assertion because the rolling
-server-RPM alias returned an incomplete HTTP 200 body (5,242,880 bytes versus
-7,606,326 expected). Explicit routing avoids both alias failure modes. The
-unmodified owner downloader also passes locally for the complete server RPM
-using its exact locked size and SHA-256. Owner HTTPS host restrictions,
-size/hash verification, signing-key fingerprints, RPM signatures and provenance
-checks remain unchanged. No owner checkout or lockfile is modified. This changes
-artifact acquisition transport, not any acceptance assertion or shipped image
-input. The workaround is evaluation-only, not a general dependency mirror.
-
-### Build duration and runtime choice
-
-The cancelled second run's
-[actual arm64 log](https://github.com/datopsis/datopsis-authz/actions/runs/43886130893/job/133364641119)
-shows Sail's Docker image export complete at 14:35:38 UTC, followed by no console
-progress until cancellation at 14:45:14. **This does not prove that Sail/buildx
-stalled.** Later fixture helpers capture their output, and successful S1 owner
-builds took 27m20s on amd64 and 29m22s on arm64. The initial stall interpretation
-was withdrawn after checking those recorded step timings. Superseded attempts
-were cancelled; they provide no S3 runtime passes.
-
-The temporary Podman composition experiment was removed after checking these
-historical timings. The final fixture uses the original pinned owner's Docker
-build path. No builder-runtime fix is claimed or retained. S3 uses the owner's
-Sail resource limits and private writable mounts (2 CPUs, 2 GiB memory, 256 MiB
-0700 tmpfs mounts for /tmp and /var/lib/sail), with a read-only root filesystem.
-
-### gRPC trailers-only regression
-
-A local real-client check reproduced a transport bug: a backend trailers-only
-INVALID_ARGUMENT became client UNKNOWN because the proxy added an empty DATA
-END_STREAM after headers. The regression unit test failed before the fix. The
-relay now preserves END_STREAM on the backend's initial response HEADERS and
-returns without adding DATA. The unit test and real-client check pass after the
-fix. Normal streamed DATA/trailers retain their original flow-control path.
+Earlier attempts: [43884152945](https://github.com/datopsis/datopsis-authz/actions/runs/43884152945)
+and [43886130893](https://github.com/datopsis/datopsis-authz/actions/runs/43886130893)
+exposed those acquisition failures. A quiet period after Sail export was initially
+misread as a buildx stall; that interpretation was withdrawn after S1's successful
+build timings showed 27–29 minutes and later helpers captured output. The temporary
+builder override was removed. Superseded attempts were cancelled, not passed.
+[43890340285](https://github.com/datopsis/datopsis-authz/actions/runs/43890340285)
+then passed all S3 controls on both CPUs; its result-flow captures were inspected
+separately. The authoritative final run above includes the trailers-only fix and
+automated result-connection PING selector. Final source uses the owner's original
+build path. Containers never ran locally; Actions is the native runtime evidence.
