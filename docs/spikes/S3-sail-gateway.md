@@ -162,9 +162,15 @@ unmodified owner's downloader was also exercised locally with its original URL,
 locked size and SHA-256 checks, and completed through the fallback.
 
 A build-step-only PYTHONPATH loads `evaluation/s3/downloads/sitecustomize.py`.
-Only HTTP 404 for the exact PostgreSQL 18.6/RHEL 9.8 package family may retry the
-same publisher's explicit minor-release path. Other URLs, errors, versions and
-architectures retain their original behavior. Owner HTTPS host restrictions,
+Only the exact PostgreSQL 18.6/RHEL 9.8 package family is routed to the same
+publisher's explicit minor-release path. Other URLs, versions and architectures
+retain their original behavior. The first correction retried only 404s; the
+[second amd64 job](https://github.com/datopsis/datopsis-authz/actions/runs/43886130893/job/133364641151)
+then correctly failed the owner's locked-size assertion because the rolling
+server-RPM alias returned an incomplete HTTP 200 body (5,242,880 bytes versus
+7,606,326 expected). Explicit routing avoids both alias failure modes. The
+unmodified owner downloader also passes locally for the complete server RPM
+using its exact locked size and SHA-256. Owner HTTPS host restrictions,
 size/hash verification, signing-key fingerprints, RPM signatures and provenance
 checks remain unchanged. No owner checkout or lockfile is modified. This changes
 artifact acquisition transport, not any acceptance assertion or shipped image
