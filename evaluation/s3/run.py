@@ -99,7 +99,8 @@ def evaluate():
     write(WORK/'sail.json', json.dumps(dict(bind='127.0.0.1', port=50052, allow_unauthenticated_remote=False)))
     (WORK/'sail.json').chmod(0o644)
     container('sail', 'localhost/sail-ubi:integration', mounts=[(WORK/'sail.json', '/etc/sail/config.json')],
-              extra=[a if a != '--memory=512m' else '--memory=2g' for a in restricted] + ['--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=128m,mode=1777'])
+              extra=[a if a != '--memory=512m' else '--memory=2g' for a in restricted] + ['--tmpfs', '/tmp:rw,noexec,nosuid,nodev,size=128m,mode=1777',
+                     '--tmpfs', '/var/lib/sail:rw,noexec,nosuid,nodev,size=128m,uid=10001,gid=10001,mode=0700'])
     container('gateway', 'localhost/authz-serve:s3', ['sail-gateway'],
               env=dict(AUTHZ_TLS_CERT='/tls/cert.pem', AUTHZ_TLS_KEY='/tls/key.pem', AUTHZ_KEY_FILE='/run/key',
                        AUTHZ_CA_FILE='/ca.pem', AUTHZ_ENDPOINT='https://cedar:8443',
