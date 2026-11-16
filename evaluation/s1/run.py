@@ -29,6 +29,9 @@ elif sys.argv[1:] == ['build']:
     spec = importlib.util.spec_from_file_location('upstream_run',SOURCE/'evaluation/authz/run.py')
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    # The imported entry point sets its own output directory. Keep its data
+    # in this repository’s allowlisted, subsequently sanitized evidence tree.
+    common.OUT = ROOT/'reports/s1'
     module.build()
 else:
     acceptance.evaluate(arch)

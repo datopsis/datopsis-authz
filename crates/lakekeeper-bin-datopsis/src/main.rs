@@ -12,6 +12,13 @@ use lakekeeper_storage_postgres::{
 };
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    if std::env::args().nth(1).as_deref() == Some("version") {
+        println!(
+            "datopsis Lakekeeper adapter spike {} / Lakekeeper 0.13.4 source 9bd377162345b64a716f0a4fcffe4e7e7f3c7534",
+            env!("CARGO_PKG_VERSION")
+        );
+        return Ok(());
+    }
     let pool = get_writer_pool(CONFIG.to_pool_opts()).await?;
     if std::env::args().nth(1).as_deref() == Some("migrate") {
         lakekeeper_storage_postgres::migrations::migrate_core_only(&pool).await?;

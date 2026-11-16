@@ -6,6 +6,9 @@ LABEL org.opencontainers.image.source="https://github.com/datopsis/datopsis-auth
       io.datopsis.artifact-lock.sha256="${LOCK_SHA256}" \
       org.opencontainers.image.revision="${SOURCE_REVISION}" \
       io.datopsis.lakekeeper.source="9bd377162345b64a716f0a4fcffe4e7e7f3c7534"
+# The pinned public crate's selected dependency graph links OpenSSL, whereas
+# the upstream release binary used by the base image does not need these libs.
+COPY --chmod=0555 target/spike-libs/libssl.so.3 target/spike-libs/libcrypto.so.3 /usr/lib64/
 COPY --chmod=0555 target/debug/lakekeeper-bin-datopsis /usr/local/bin/lakekeeper-datopsis
 ENTRYPOINT ["/usr/local/bin/lakekeeper-datopsis"]
 CMD ["serve"]

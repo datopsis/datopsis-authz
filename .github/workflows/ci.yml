@@ -64,7 +64,7 @@ jobs:
         run: |
           docker build -f Containerfile.builder -t s1-builder .
           mkdir -p .cargo-cache
-          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked'
+          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked && mkdir -p target/spike-libs && cp -L /usr/lib64/libssl.so.3 /usr/lib64/libcrypto.so.3 target/spike-libs/'
           sudo chown -R "$(id -u):$(id -g)" target .cargo-cache
       - name: Save native compiler cache
         if: ${{ !cancelled() && steps.rust-cache.outcome == 'success' }}
@@ -83,6 +83,10 @@ jobs:
         run: |
           docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" --build-arg LOCK_SHA256="$(sha256sum Cargo.lock | cut -d ' ' -f 1)" -f Containerfile.spike --target catalog -t localhost/lakekeeper-datopsis:s1 .
           docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" --build-arg LOCK_SHA256="$(sha256sum Cargo.lock | cut -d ' ' -f 1)" -f Containerfile.spike --target decisions -t localhost/authz-serve:s1 .
+      - name: Runtime loader and policy schema smoke
+        run: |
+          docker run --rm localhost/lakekeeper-datopsis:s1 version
+          docker run --rm localhost/authz-serve:s1 policy
       - run: python3 scripts/image-evidence.py
       - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
         run: .venv/bin/python evaluation/s1/run.py

@@ -81,12 +81,21 @@ production operational CLI parity. The relationship store is **in memory**, as
 permitted for S1; restart durability and outage recovery are not implemented.
 Cedar policies are currently generated from grants per request. Policy mode parses the schema; generated policies undergo Cedar strict validation
 before evaluation. Full policy bundles, context-sensitive rules and analysis are
-MVP gaps. Audit is sanitized stdout, not durable or tamper-evident.
+MVP gaps. Audit is sanitized stdout, not durable or tamper-evident. Generated
+policy IDs currently depend on grant order; stable grant IDs and bundle hashes
+are needed for durable attribution.
 
 [Architecture SVG](../diagrams/authz-architecture.svg) shows the single program's
 roles and adapter. Only serve and a minimal policy schema check are implemented;
 sail-gateway, token-broker, OPA and policy analysis belong to later spikes/MVP.
 No other repository was modified.
+
+The selected public-crate graph dynamically links OpenSSL. Unlike the upstream
+release binary, it cannot run in the owner-built minimal runtime without
+libssl.so.3/libcrypto.so.3. The spike copies this matching pair from the same
+native UBI compiler environment, records their SHA-256 values, and checks the
+catalog version command in the final image. These extra runtime RPMs are not
+supply-chain-qualified; production RPM locking/scanning remains an MVP gap.
 
 ### Feasibility checks already observed
 
@@ -95,7 +104,8 @@ No other repository was modified.
 | Stable Rust out-of-tree workspace type-check | PASS locally | Rust 1.94.1, cargo check --workspace --locked |
 | Workspace Clippy with warnings denied | PASS locally | cargo clippy --workspace --locked -- -D warnings |
 | Cedar schema, inherited groups, write/sibling denial, revoke | PASS locally | core unit test, including strict validation |
-| Verified HTTPS allow/deny/revoke and API authentication | PASS locally | scripts/tls-smoke.py |
+| Verified HTTPS allow/deny/revoke, self-only identity read and API authentication | PASS locally | scripts/tls-smoke.py |
+| Harness denial safety | PASS locally | four pinned upstream harness tests plus adapted denial guard |
 | Native amd64 compilation, workspace tests, HTTPS smoke | PASS at 62b6be2 | [actual job logs](https://github.com/datopsis/datopsis-authz/actions/runs/43859108523/job/133270942721) |
 | Native arm64 compilation, workspace tests, HTTPS smoke | PASS at 62b6be2 | [actual job logs](https://github.com/datopsis/datopsis-authz/actions/runs/43859108523/job/133270942875) |
 
@@ -151,6 +161,18 @@ The compiler environment is evaluation tooling, not supply-chain-qualified.
 Per-run CA, service keys and tokens are never committed. Evidence upload is
 restricted to sanitized reports; `.runtime` and environment files are excluded.
 Container execution is unavailable locally; actual Actions logs are authoritative.
+
+### C6 source boundary
+
+Pinned [load_table](https://github.com/lakekeeper/lakekeeper/blob/9bd377162345b64a716f0a4fcffe4e7e7f3c7534/crates/lakekeeper/src/server/tables/load_table.rs)
+authorizes before fetching storage secrets and generating credentials. The
+[table authorization result](https://github.com/lakekeeper/lakekeeper/blob/9bd377162345b64a716f0a4fcffe4e7e7f3c7534/crates/lakekeeper/src/server/tables.rs)
+maps write to ReadWriteDelete, read to Read, and metadata-only to no storage
+permission. The [S3 implementation](https://github.com/lakekeeper/lakekeeper/blob/9bd377162345b64a716f0a4fcffe4e7e7f3c7534/crates/lakekeeper/src/service/storage/s3.rs)
+builds the inline STS policy from table location and permissions and caches issued
+temporary credentials. S1 uses the unchanged sts-enabled=false profile: read-only
+loads must return no S3 keys and denied loads no credentials. No SeaweedFS STS
+scope, issued-credential revocation or direct-storage isolation is qualified.
 
 ### Audit gate
 
