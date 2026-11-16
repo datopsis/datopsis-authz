@@ -72,7 +72,10 @@ stream/connection receive windows start at 65,535 bytes; upstream DATA credit is
 returned only after downstream send capacity accepts the bytes. gRPC response
 headers, DATA and trailers are forwarded, preserving the real final status.
 Downstream waits of at least one second are recorded with timestamps so the
-passive PING capture can prove overlap with backpressure. This is bounded flow
+passive PING capture can prove overlap with backpressure. The test selects the
+Sail-to-gateway connection carrying the largest result DATA volume, and requires
+a PING on that same connection after 50 seconds of connection age; initial PINGs
+on short ReleaseExecute/control connections cannot satisfy this assertion. This is bounded flow
 control, not buffering the complete result or changing Sail's keepalive timers.
 See [the S3 topology](../diagrams/s3-sail-gateway.svg); the shared architecture
 diagram also records the gateway role.

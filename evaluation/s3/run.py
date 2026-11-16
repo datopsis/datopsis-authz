@@ -180,12 +180,18 @@ def stream(ca, path):
     logs = run('docker', 'logs', 'gateway')
     stalls = [json.loads(line) for line in logs.splitlines() if line.startswith('{') and 'downstream_backpressure' in line]
     save('paced-backpressure.json', stalls)
+    capture = next(e for e in frames if e['event'] == 'capture_summary')
+    assert capture['drops'] == 0
+    result_flow = max((f for f in capture['flows'] if f['ports'][0] == 50052), key=lambda f: f['data_bytes'])
+    assert result_flow['data_bytes'] > 0
+    connected = next(e['seconds'] for e in frames if e['event'] == 'tcp_syn' and e['ports'] == result_flow['ports'])
     pairs = []
     for ping in frames:
-        if ping.get('frame') == 'PING' and not ping['ack'] and ping['ports'][0] == 50052 and ping['seconds'] >= 50:
+        if (ping.get('frame') == 'PING' and not ping['ack'] and ping['ports'] == result_flow['ports']
+                and ping['seconds'] - connected >= 50):
             ack = next(e for e in frames if e.get('frame') == 'PING' and e['ack'] and e['opaque'] == ping['opaque']
                        and e['ports'] == ping['ports'][::-1] and e['seconds'] >= ping['seconds'])
-            pairs.append(dict(ping_seconds=ping['seconds'], ack_ms=(ack['seconds']-ping['seconds'])*1000,
+            pairs.append(dict(ping_seconds=ping['seconds'], connection_age_seconds=ping['seconds']-connected, ack_ms=(ack['seconds']-ping['seconds'])*1000,
                               during_downstream_wait=any(s['start_unix'] <= ping['unix_time'] <= s['start_unix']+s['duration_seconds'] for s in stalls)))
     complete = [e for e in events if e['event'] == 'workload_complete']
     if result.returncode == 0:
@@ -199,7 +205,8 @@ def stream(ca, path):
         end = complete[0]
         assert (end['rows'], end['unique_ids'], end['payload_hashes_verified'], end['total']) == (1000000,1000000,1000000,499999500000)
         assert end['elapsed'] >= 75 and end['batches'] >= 16
-        return dict(outcome='COMPLETE', result=end, pings=pairs)
+        assert result_flow['pending_segments'] == result_flow['pending_bytes'] == 0
+        return dict(outcome='COMPLETE', result=end, pings=pairs, result_flow=result_flow, capture_drops=capture['drops'])
     # Preserve the exact historical failure oracle; other errors fail S3.
     sys.path.insert(0, str(SAIL/'tests'))
     from stream_contract import RESET_DETAILS
