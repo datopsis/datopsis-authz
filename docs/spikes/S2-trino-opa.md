@@ -1,26 +1,80 @@
 # S2: Trino 484 OPA enforcement backed by Cedar
 
-Status: implementation prepared; native runtime results pending. Evaluation only,
-stacked on the unmerged S1 branch. This is not the MVP or acceptance of S1's known
-C3/C7/C8 and audit failures.
+Status: **S2 feasibility PASS on native amd64 and arm64 with an explicit stock-plugin
+layer. The exact unmodified owner image lacks OPA (FAIL). Full C1-C8 acceptance and
+audit remain FAIL. Evaluation only; no MVP qualification.**
 
-## Questions and exact oracles
+The API is part of the existing `authz-serve serve` role, using `authz-core`'s Cedar
+policies and relationship store. No external repository was modified.
+[Updated architecture](../diagrams/authz-architecture.svg).
 
-| Question | amd64 | arm64 | Evidence |
+## Questions and native evidence
+
+All enforcement rows below use the derived image: unchanged owner base at the
+required pin plus the official digest-locked OPA 484 plugin. They do not claim OPA
+works in the unmodified owner image.
+
+| Question | [amd64][native-amd64] | [arm64][native-arm64] | Exact evidence |
 | --- | --- | --- | --- |
-| Unmodified owner pin includes the OPA plugin | BLOCKED | BLOCKED | Native inventory probe pending; source lock omits OPA |
-| Granted SELECT succeeds; denied table hidden from SHOW/information_schema and SELECT denied | BLOCKED | BLOCKED | S2.1 runtime pending |
-| Region attribute yields exactly rows 1 and 3, excluding US row 2 | BLOCKED | BLOCKED | S2.2 runtime pending |
-| Sensitive values NULL for reader; exact original values for privileged user | BLOCKED | BLOCKED | S2.3 runtime pending |
-| Same principal/table UUID allows and denies at Lakekeeper and OPA; shared revoke denies both | BLOCKED | BLOCKED | S2.4 runtime pending |
-| Serve unreachable from Trino: explicit OPA query failure, no rows, recovery | BLOCKED | BLOCKED | S2.5 runtime pending |
-| Nonbatched list and single-column-mask endpoints enforce exact same results | BLOCKED | BLOCKED | S2.single runtime pending |
+| Unmodified owner pin includes OPA | FAIL | FAIL | Native inventory probe: Iceberg present, OPA absent |
+| Granted SELECT; denied table hidden from SHOW/information_schema and SELECT denied | PASS | PASS | S2.1: only `allowed` listed; denied SELECT and INSERT are `PERMISSION_DENIED` |
+| Region attribute yields exactly permitted rows | PASS | PASS | S2.2: `[[1,"eu"],[3,"eu"]]`; US row 2 excluded |
+| Sensitive values hidden for reader, visible for privileged user | PASS | PASS | S2.3: `[[1,null],[3,null]]`; owner sees all three original sensitive values |
+| Same principal/table UUID decisions at Lakekeeper and OPA; shared revoke denies both | PASS | PASS | S2.4: catalog 200/404 matches OPA true/false; revoke gives catalog 404 and Trino `PERMISSION_DENIED` |
+| Serve unreachable from Trino fails closed and recovers | PASS | PASS | S2.5: explicit `OpaQueryException.QueryFailed`, no rows, positive controls before/after |
+| Nonbatched lists and scalar column masks | PASS | PASS | S2.single: same exact list, filtered/masked rows and typed denied SELECT |
 
-Native ubuntu-24.04 and ubuntu-24.04-arm Actions jobs run identical assertions.
-Containers cannot run in the development workspace. No unit/compile result is a
-runtime PASS. Reports initialize BLOCKED before builds; actual logs and sanitized
-artifacts must be read before completing this table. The unchanged C1-C8 suite
-runs separately after S2, with independent disposable fixture state.
+[native-amd64]: https://github.com/datopsis/datopsis-authz/actions/runs/43895840023/job/133399035048
+[native-arm64]: https://github.com/datopsis/datopsis-authz/actions/runs/43895840023/job/133399035169
+
+[Run 43895840023](https://github.com/datopsis/datopsis-authz/actions/runs/43895840023)
+tested PR source `ff12ed4e7e6f9e5a3c95eb0fad02747b59d11f17` through merge commit
+`859c60891eca723e69ab07d868f0609d2d34a1ce`. Native Actions logs, sanitized SQL
+results, Cedar wire logs and scalar Trino startup logs were read on both CPUs.
+Trino reported version **484**, loaded system access control **opa**, and passed
+verified TLS controls. No QEMU; runners were ubuntu-24.04 and ubuntu-24.04-arm.
+
+Durable sanitized evidence: [amd64](S2-results-amd64.json) and
+[arm64](S2-results-arm64.json). These retain exact rows/denials, principal/UUID
+parity, native input revisions, base/derived image IDs, ZIP/JAR hashes, labels,
+platform binary/library hashes and the unchanged C-suite outcomes. Full sanitized
+service artifacts remain in the run for 14 days. The final evidence-only commit
+does not change runtime code or assertions from the tested source above.
+
+The outage disconnected only Trino's private route to serve, leaving Lakekeeper
+and serve alive. A fresh otherwise-allowed query failed explicitly after
+**5.014674 s amd64 / 5.018196 s arm64**, matching the configured five-second OPA
+request timeout. No earlier response page contained rows; reconnecting restored
+exact permitted reads. This is a single-run observation, not an HA/revocation SLA.
+
+Both CPUs' Cedar wire logs recorded `/allow` 103 calls, `/batch` 9, `/rows` 8,
+`/batch_masks` 12 and `/mask` 17. Thus scalar and batched protocols were actually
+exercised. The batch Trino stdout-only log was empty; its stderr was not retained.
+The structured batch SQL outcomes and both-mode Cedar logs remain available;
+no claim is made to have retained that missing stderr stream.
+
+## Mandatory backend suite remains red
+
+S2 finishes and destroys its fixture before the unchanged S1 C1-C8 fixture starts.
+No acceptance assertion, denominator or original C3 adaptation was weakened.
+
+| Case | [amd64][native-amd64] | [arm64][native-arm64] |
+| --- | --- | --- |
+| C1 | PASS | PASS |
+| C2 | PASS | PASS |
+| C3 | FAIL — old-token IdP membership removal still permits | FAIL — same |
+| C4 | PASS — 26.870 ms, first fresh denial 404 | PASS — 33.123 ms, first fresh denial 404 |
+| C5 | PASS — Trino, PyIceberg and Sail | PASS — all three |
+| C6 | PASS | PASS |
+| C7 | FAIL — empty-state backend cannot recover allowed reads | FAIL — same |
+| C8 | FAIL — restart loses relationship/grant state | FAIL — same |
+
+C7 timed out waiting for recovery after restart; C8's strict state comparison
+failed. C8's repeated-migration assertions were not reached. Between-case fixture
+resets and the final unchanged-row control passed. These do not turn C7/C8 into
+passes. The [S1 report](S1-lakekeeper-adapter.md) documents the retained direct-claim
+C3 adaptation and known durability limits. Required `test` and `lint` remain red;
+this spike does not establish backend or production acceptance.
 
 ## Inputs
 
@@ -148,7 +202,8 @@ client can use the mutation API without that credential. Never enable
 logged wholesale by serve; audit records retain operations/results/policy IDs only.
 Trino alone joins the private backend network. No ports are published.
 
-The shared-revocation oracle requires OPA false and catalog 403/404, plus a Trino
+Both observed shared-revocation outcomes were `PERMISSION_DENIED: Cannot access catalog iceberg`.
+The oracle requires OPA false and catalog 403/404, plus a Trino
 permission error or exactly `CATALOG_NOT_FOUND` / code 44 / `USER_ERROR` with
 `line 1:15: Catalog 'iceberg' not found`. The latter can occur because revocation
 removes the user's last visible table and hence its catalog visibility. Positive
@@ -162,10 +217,10 @@ Python compilation, YAML parsing, LF checks and the real HTTPS smoke pass locall
 The smoke additionally exercises OPA service authentication and escaped region SQL.
 These are not native runtime passes.
 
-[The actual lint job](https://github.com/datopsis/datopsis-authz/actions/runs/43883430072/job/133355080856)
+[The actual lint job](https://github.com/datopsis/datopsis-authz/actions/runs/43895840023/job/133399035091)
 passed formatting/YAML/LF and failed the unchanged Cargo audit gate: three
 vulnerabilities (`RUSTSEC-2026-0459`, `RUSTSEC-2026-0195`, `RUSTSEC-2026-0194`)
-in the inherited lockfile, plus five warnings. No suppression or dependency update
+in the inherited lockfile, plus five warnings. No Cargo advisory suppression or Rust dependency update
 was made for this spike.
 
 ## Gaps and limits
@@ -185,3 +240,14 @@ was made for this spike.
   mutation-capable; decision-only engine credentials are not implemented.
 - No changes to external repositories, repository settings, secrets or permissions.
   CA private keys, tokens, passwords and context credentials exist per run only.
+
+## Earlier non-passing attempts
+
+Early runs were cancelled before runtime as protocol/fixture corrections landed;
+none are runtime passes. The documented amd64 attempts stopped on locked PostgreSQL
+404/partial responses. The [first arm64 composition attempt](https://github.com/datopsis/datopsis-authz/actions/runs/43889078338/job/133375035575)
+proved the baseline OPA omission but stopped because the generated `Containerfile`
+was not explicitly selected by Docker. The corrected final run above built the
+layer and passed every S2 assertion on both CPUs. The mode-switch fixture reuses
+its protected per-run certificate, rather than trying to overwrite its root-owned
+key; this does not relax key permissions or reuse secrets across runs.

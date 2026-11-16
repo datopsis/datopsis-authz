@@ -21,7 +21,9 @@ Lakekeeper verifies OIDC tokens and passes verified `groups` through its token-r
 metadata. Never expose the decision/mutation API to catalog clients.
 
 S2 adds Trino 484 OPA-compatible decisions, list filtering, row-filter and mask
-endpoints to the same serve role; see [the S2 report](docs/spikes/S2-trino-opa.md).
+endpoints to the same serve role. S2 passes natively on both CPUs with a pinned
+stock-plugin layer; the exact owner Trino image omits OPA.
+See [the S2 report](docs/spikes/S2-trino-opa.md).
 
 See [the S1 report](docs/spikes/S1-lakekeeper-adapter.md) for coverage and limitations.
 
