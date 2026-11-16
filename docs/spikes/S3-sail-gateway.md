@@ -60,10 +60,10 @@ not table or read-only authorization. No new Cedar policy language is invented.
 
 The gateway replaces all top-level protobuf UserContext fields with the verified
 subject, dropping asserted identity/extensions, and strips credentials and other
-identity headers before forwarding. This prevents client-selected user IDs from
-selecting another principal's Sail session. It accepts only known unary Spark
+identity headers before forwarding. This stops an unverified UserContext from
+becoming Sail's recorded user identity; it does not establish session ownership. It accepts only known unary Spark
 Connect methods, one uncompressed message up to 4 MiB; unknown methods,
-compressed requests and streaming AddArtifacts are refused. It does not decode
+gRPC-compressed request messages and streaming AddArtifacts are refused. It does not decode
 or authorize individual plan nodes. Backend address is fixed at 127.0.0.1:50052;
 Sail shares the gateway's network namespace and listens only on loopback.
 
@@ -77,12 +77,40 @@ control, not buffering the complete result or changing Sail's keepalive timers.
 See [the S3 topology](../diagrams/s3-sail-gateway.svg); the shared architecture
 diagram also records the gateway role.
 
-Table-level authorization is an open question in this spike. A Spark Connect plan
-can contain named relations, SQL text, paths, temporary/session objects, commands
-and extensions. Extracting visible names alone does not establish a complete,
-resolved set of table accesses or trustworthy read/write semantics. S3 must
-report the actual boundary without claiming that a per-user gate enforces table
-policy. A diagram update is required when the implemented design is established.
+## Table-level answer: visible syntax, incomplete enforcement
+
+The hash-locked PySpark 4.2.0 descriptor probe passes locally and is repeated in
+native CI (`plan-inventory.json`). The
+[pinned Spark protocol](https://github.com/apache/spark/blob/32f7299601108917fb01920a54e084595b7b3bf8/sql/connect/common/src/main/protobuf/spark/connect/base.proto)
+puts the plan at ExecutePlanRequest field 3 and UserContext at field 2.
+
+| Plan surface | What a gateway can observe | Why it is insufficient for general table authorization |
+| --- | --- | --- |
+| Read.named_table | `unparsed_identifier`, e.g. catalog.namespace.table | Requires authoritative catalog/namespace resolution and distinction between temporary/session objects and catalog tables; no stable Lakekeeper table ID is provided. |
+| Read.data_source | Format and paths, e.g. parquet at s3://bucket/prefix | No catalog table identity; direct storage reads can bypass table naming entirely. |
+| Relation.sql / Command.sql_command | SQL query text and arguments | Requires Spark-compatible parsing, analysis, resolution, view expansion and action classification; string matching cannot establish the touched objects. |
+| Project/filter/join and other relation trees | Explicit child relations and expressions | A complete walker must cover every nested form, UDF/subquery and dependency, including views and session references. |
+| Commands | Write operations, view/function/data-source registration, merge, external/pipeline commands | ExecutePlan is not synonymous with read; relation-only checks would miss writes and state changes. |
+| Local/cached relations, extensions, unknowns and compressed_operation | Data or opaque references/payloads | No complete table set is present in the request; unknown/opaque forms require rejection or trusted engine analysis. |
+
+A strict subset gateway could reject every unrecognized form and admit only
+explicitly supported operations, with trusted name resolution. This spike does
+not implement that subset or resolve table identities. **The implemented gate is
+per-user admission to the Sail server, not per-table authorization.** An admitted
+user can submit arbitrary supported Sail plans, including writes and direct paths;
+no table-level or read-only guarantee is claimed. Full enforcement needs a
+trusted resolution/enforcement point in the engine/catalog and appropriately
+scoped storage credentials.
+
+**Additional source-level gap:** the pinned
+[Spark handler](https://github.com/lakehq/sail/blob/ac4690078021cf2a5402dc5c7b38a886f1916c73/crates/sail-spark-connect/src/server.rs)
+passes session_id and user_id separately, but the
+[session manager](https://github.com/lakehq/sail/blob/ac4690078021cf2a5402dc5c7b38a886f1916c73/crates/sail-session/src/session_manager/actor/handler.rs)
+looks up an existing session by session_id without re-checking user_id. Merely
+replacing UserContext cannot isolate two admitted users who choose the same
+session ID. Denied users remain blocked on every RPC before reaching Sail.
+Session ownership enforcement, restart behavior and cross-user session tests
+remain unimplemented/unverified; this is a material limit for any multi-user MVP.
 
 The prepared harness reuses the owner's unmodified million-row probe with retry
 mode `none`, checking exact unique IDs, every SHA-512 payload and the ID sum.
@@ -109,3 +137,35 @@ results after an S3 failure. No human sign-off, settings/permissions change, mer
 or force push is part of this spike. Per-run CA, keys and tokens stay outside Git
 and uploaded evidence; only sanitized reports and control-frame counters are
 retained for 14 days.
+
+## Audit status
+
+The unchanged [lint job](https://github.com/datopsis/datopsis-authz/actions/runs/43884152945/job/133357613888)
+ran the lock inventory gate successfully, then `cargo audit` failed with three
+inherited vulnerabilities: libsqlite3-sys 0.37.0 / RUSTSEC-2026-0459 and
+quick-xml 0.40.1 / RUSTSEC-2026-0194, RUSTSEC-2026-0195. Five inherited warnings
+were also emitted. The actual job log was read. No dependency upgrade, suppression
+or audit-gate change was made. This spike cannot claim security qualification.
+
+## Fixture acquisition correction
+
+The first [amd64 job](https://github.com/datopsis/datopsis-authz/actions/runs/43884152945/job/133357614232)
+compiled and tested the workspace, passed HTTPS smoke and the Micro loader probe,
+then stopped before runtime: the pinned PostgreSQL owner's rolling
+`rhel-9-x86_64` URLs returned 404 for PostgreSQL 18.6 RPMs. No S3 or C-suite runtime
+pass is claimed for that attempt.
+
+The publisher's explicit `rhel-9.8-{x86_64,aarch64}` directories contain the exact
+same eight locked packages. All eight downloads were SHA-256 checked against the
+immutable owner locks; see [the retained checks](S3-pgdg-mirror-check.json). The
+unmodified owner's downloader was also exercised locally with its original URL,
+locked size and SHA-256 checks, and completed through the fallback.
+
+A build-step-only PYTHONPATH loads `evaluation/s3/downloads/sitecustomize.py`.
+Only HTTP 404 for the exact PostgreSQL 18.6/RHEL 9.8 package family may retry the
+same publisher's explicit minor-release path. Other URLs, errors, versions and
+architectures retain their original behavior. Owner HTTPS host restrictions,
+size/hash verification, signing-key fingerprints, RPM signatures and provenance
+checks remain unchanged. No owner checkout or lockfile is modified. This changes
+artifact acquisition transport, not any acceptance assertion or shipped image
+input. The workaround is evaluation-only, not a general dependency mirror.

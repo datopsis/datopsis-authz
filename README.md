@@ -50,6 +50,6 @@ supported RPC, including ExecutePlan and ReattachExecute. S1's `select` grants
 do not permit this action; the fixture uses a specific user owner grant on this
 server resource. This is broad per-user admission, not table/read-only policy.
 JWKS is fetched for each RPC without a stale-key cache. Unknown methods,
-compressed requests and streaming artifact uploads fail closed. Plans are
+gRPC-compressed request messages and streaming artifact uploads fail closed. Plans are
 limited to one uncompressed unary gRPC message of at most 4 MiB. These are
 spike constraints, not production defaults or a complete Spark Connect proxy.

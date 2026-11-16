@@ -186,8 +186,8 @@ fn refuse(mut respond: SendResponse<Bytes>, code: u8) -> Result<()> {
 
 // Decode only the protobuf envelope, preserving every plan byte. All supported
 // unary methods have UserContext at field 2. Replace it, including duplicate
-// occurrences and unknown extensions, with the verified JWT subject. This keeps
-// client-supplied user_id from selecting another user's backend session.
+// occurrences and unknown extensions, with the verified JWT subject. Sail keys
+// sessions by session_id alone, so this does not establish session ownership.
 fn varint(input: &[u8], cursor: &mut usize) -> Result<u64> {
     let mut result = 0;
     for shift in (0..70).step_by(7) {

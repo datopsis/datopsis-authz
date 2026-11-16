@@ -1,0 +1,66 @@
+[
+  {
+    "architecture": "amd64",
+    "url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9.8-x86_64/postgresql18-18.6-1PGDG.rhel9.8.x86_64.rpm",
+    "sha256": "ae57ba32d87fa3c311da9545bc85682ae04dc41cfbabf60d7f6c185099604f8a",
+    "expected": "ae57ba32d87fa3c311da9545bc85682ae04dc41cfbabf60d7f6c185099604f8a",
+    "size": 2065203,
+    "match": true
+  },
+  {
+    "architecture": "amd64",
+    "url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9.8-x86_64/postgresql18-contrib-18.6-1PGDG.rhel9.8.x86_64.rpm",
+    "sha256": "705fd7f054754400269f435adde37dc3d0d678b31e1ba287a014b5fffc23feb6",
+    "expected": "705fd7f054754400269f435adde37dc3d0d678b31e1ba287a014b5fffc23feb6",
+    "size": 775538,
+    "match": true
+  },
+  {
+    "architecture": "amd64",
+    "url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9.8-x86_64/postgresql18-libs-18.6-1PGDG.rhel9.8.x86_64.rpm",
+    "sha256": "7a4d55c02b8bab1b359aa25ce53d81db77cd39026a980dd8f0210031a5c31654",
+    "expected": "7a4d55c02b8bab1b359aa25ce53d81db77cd39026a980dd8f0210031a5c31654",
+    "size": 311486,
+    "match": true
+  },
+  {
+    "architecture": "amd64",
+    "url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9.8-x86_64/postgresql18-server-18.6-1PGDG.rhel9.8.x86_64.rpm",
+    "sha256": "f7f1915d63756f6a37f3f2e5cc84d03893d0d7a55dab8ac350871bd1c48a0754",
+    "expected": "f7f1915d63756f6a37f3f2e5cc84d03893d0d7a55dab8ac350871bd1c48a0754",
+    "size": 7606326,
+    "match": true
+  },
+  {
+    "architecture": "arm64",
+    "url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9.8-aarch64/postgresql18-18.6-1PGDG.rhel9.8.aarch64.rpm",
+    "sha256": "3ec399a4d57b43cbba03f610adc4a4c6daaea0dc8b4f3d73175b1dedf7e2bddf",
+    "expected": "3ec399a4d57b43cbba03f610adc4a4c6daaea0dc8b4f3d73175b1dedf7e2bddf",
+    "size": 2057655,
+    "match": true
+  },
+  {
+    "architecture": "arm64",
+    "url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9.8-aarch64/postgresql18-contrib-18.6-1PGDG.rhel9.8.aarch64.rpm",
+    "sha256": "068412c0d465f83cff148064f77d77e3fa1ed431af98b9488203b010b9999f41",
+    "expected": "068412c0d465f83cff148064f77d77e3fa1ed431af98b9488203b010b9999f41",
+    "size": 755039,
+    "match": true
+  },
+  {
+    "architecture": "arm64",
+    "url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9.8-aarch64/postgresql18-libs-18.6-1PGDG.rhel9.8.aarch64.rpm",
+    "sha256": "662bac810d50ece9d32f7ab6960f01e8e1416cc0a0634a4ea7f7ec8ea744146b",
+    "expected": "662bac810d50ece9d32f7ab6960f01e8e1416cc0a0634a4ea7f7ec8ea744146b",
+    "size": 308340,
+    "match": true
+  },
+  {
+    "architecture": "arm64",
+    "url": "https://download.postgresql.org/pub/repos/yum/18/redhat/rhel-9.8-aarch64/postgresql18-server-18.6-1PGDG.rhel9.8.aarch64.rpm",
+    "sha256": "761001b6e560041f2f6f0d7abe9e57b30a98a2c039b81682d77969928a366add",
+    "expected": "761001b6e560041f2f6f0d7abe9e57b30a98a2c039b81682d77969928a366add",
+    "size": 7450321,
+    "match": true
+  }
+]

@@ -87,6 +87,8 @@ jobs:
           docker build -f Containerfile.spike --target loader-probe -t localhost/lakekeeper-loader:s1 .
           docker run --rm localhost/lakekeeper-loader:s1 version
       - name: Build pinned owner fixture images without source changes
+        env:
+          PYTHONPATH: ${{ github.workspace }}/evaluation/s3/downloads
         run: |
           sudo apt-get install -y rpm podman gnupg argon2
           .venv/bin/python evaluation/s1/run.py build
