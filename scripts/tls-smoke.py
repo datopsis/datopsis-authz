@@ -5,6 +5,7 @@ import glob
 import json
 import os
 from pathlib import Path
+import signal
 import socket
 import ssl
 import subprocess
@@ -60,10 +61,12 @@ def main():
                         self.send_error(401); return
                     if state['outage']:
                         self.send_error(503); return
+                    body = json.dumps({'id':'alice','enabled':True,'groups':state['groups']}).encode()
                     self.send_response(200)
                     self.send_header('Content-Type','application/json')
+                    self.send_header('Content-Length',str(len(body)))
                     self.end_headers()
-                    self.wfile.write(json.dumps({'id':'alice','enabled':True,'groups':state['groups']}).encode())
+                    self.wfile.write(body)
             server = ThreadingHTTPServer(('127.0.0.1',0),Idp)
             ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             ctx.load_cert_chain(root/'cert.pem',root/'key.pem')
@@ -100,7 +103,10 @@ def main():
                 else: raise AssertionError('Expected HTTP rejection')
             start()
             check = {'principal':'oidc~alice','groups':['forged'],'action':'read_data','resource':{'kind':'Table','id':'one'}}
-            assert post('decide',[check])[0]['allowed'] is False
+            try:
+                assert post('decide',[check])[0]['allowed'] is False
+            except urllib.error.HTTPError as exc:
+                raise AssertionError(sql('SELECT reason FROM authz_audit ORDER BY id DESC LIMIT 1')) from exc
             grant = {'subject':{'kind':'Group','id':'readers'},'resource':check['resource'],'access':'select'}
             post('mutate',{'op':'grant','grant':grant,'remove':False})
             assert post('decide',[check])[0]['allowed'] is True
@@ -122,7 +128,7 @@ def main():
             assert sql("SELECT reason FROM authz_audit ORDER BY id DESC LIMIT 1") == 'identity_provider_unavailable'
             state['outage'] = False
             assert post('decide',[check])[0]['allowed'] is True
-            postgres.terminate(); postgres.wait(timeout=10)
+            postgres.send_signal(signal.SIGINT); postgres.wait(timeout=10)
             denied_status(lambda:post('decide',[check]),503)
             postgres = subprocess.Popen(pgargs,stdout=logfile,stderr=logfile)
             for _ in range(100):
@@ -145,7 +151,7 @@ def main():
             if service and service.poll() is None:
                 service.terminate(); service.wait(timeout=10)
             if postgres.poll() is None:
-                postgres.terminate(); postgres.wait(timeout=10)
+                postgres.send_signal(signal.SIGINT); postgres.wait(timeout=10)
             if server: server.shutdown(); server.server_close()
             logfile.close()
 

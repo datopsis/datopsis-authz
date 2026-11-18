@@ -1,7 +1,8 @@
 //! Cedar evaluation of a transactionally loaded relationship graph.
 use anyhow::{Result, bail};
 use cedar_policy::{
-    Authorizer, Context, Decision, Entities, PolicySet, Request, Schema, ValidationMode, Validator,
+    Authorizer, Context, Decision, Entities, Policy, PolicyId, PolicySet, Request, Schema,
+    ValidationMode, Validator,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -176,9 +177,8 @@ impl Store {
         for group in &check.groups {
             entities.push(json!({"uid":{"type":"Group","id":group},"attrs":{},"parents":[]}));
         }
-        let mut text = String::from(
-            "@id(\"self-read\") permit(principal, action, resource) when { context.operation == \"read_self\" && resource == principal };\n",
-        );
+        let mut policies = PolicySet::new();
+        policies.add(Policy::parse(Some(PolicyId::new("self-read")), "permit(principal, action, resource) when { context.operation == \"read_self\" && resource == principal };")?)?;
         for g in &self.grants {
             use sha2::{Digest, Sha256};
             let i = format!("{:x}", Sha256::digest(serde_json::to_vec(g)?));
@@ -191,9 +191,8 @@ impl Store {
             } else {
                 "[\"read_data\", \"get_metadata\", \"list_tables\", \"list_views\", \"list_namespaces\", \"include_in_list\", \"use\", \"get_config\"].contains(context.operation)"
             };
-            text.push_str(&format!("@id(\"grant-{i}\") permit(principal in {}, action, resource) when {{ ({actions}) && (resource in {} || {}) }};\n", g.subject.cedar(), g.resource.cedar(), upward));
+            policies.add(Policy::parse(Some(PolicyId::new(format!("grant-{i}"))), format!("@id(\"grant-{i}\") permit(principal in {}, action, resource) when {{ ({actions}) && (resource in {} || {}) }};\n", g.subject.cedar(), g.resource.cedar(), upward))?)?;
         }
-        let policies: PolicySet = text.parse()?;
         let validation = Validator::new(schema()?).validate(&policies, ValidationMode::Strict);
         anyhow::ensure!(
             validation.validation_passed(),

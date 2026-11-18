@@ -104,6 +104,13 @@ def evaluate(arch):
         reader = catalog.pyiceberg(human)
         namespaces = reader.list_namespaces()
         assert namespaces == [("bakeoff",)], namespaces
+        grant_url = catalog.base + '/management/v1/permissions/namespace/' + namespace.split(':',1)[1] + '/grants'
+        for method in ('GET','POST'):
+            response = http.request(method, grant_url, headers={'Authorization':'Bearer '+human},
+                **({'json':{'subject':{'kind':'User','id':'oidc~'+claims['sub']},'access':'owner'}} if method == 'POST' else {}))
+            assert response.status_code == 403, ('reader_grant_management',method,response.status_code)
+        unsupported = http.request('POST',catalog.base+'/management/v1/permissions/unsupported',headers={'Authorization':'Bearer '+operator},json={})
+        assert unsupported.status_code == 403, unsupported.status_code
         return {
             "namespaces": namespaces,
             "allowed": catalog.read(reader),

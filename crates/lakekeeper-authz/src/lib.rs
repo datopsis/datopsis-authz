@@ -83,7 +83,10 @@ impl Authorizer for CedarAuthorizer {
     ) -> Result<bool, AuthzBackendErrorOrBadRequest> {
         self.check_denied(
             _request_metadata,
-            vec![(Resource::new("Role", "unsupported"), "assume_role".into())],
+            vec![(
+                Resource::new("Role", _assumed_role.id),
+                "assume_role".into(),
+            )],
         )
         .await
         .map_err(|_| {
@@ -187,9 +190,9 @@ impl Authorizer for CedarAuthorizer {
             _metadata,
             roles_with_actions
                 .iter()
-                .map(|(_, action)| {
+                .map(|(role, action)| {
                     (
-                        Resource::new("Role", "unsupported"),
+                        Resource::new("Role", role.id),
                         action.action_descriptor().action_name.to_owned(),
                     )
                 })
@@ -664,6 +667,7 @@ impl CedarAuthorizer {
         anyhow::ensure!(endpoint.starts_with("https://"), "verified HTTPS required");
         let ca = reqwest::Certificate::from_pem(&std::fs::read(std::env::var("AUTHZ_CA_FILE")?)?)?;
         let client = reqwest::Client::builder()
+            .use_rustls_tls()
             .tls_built_in_root_certs(false)
             .add_root_certificate(ca)
             .redirect(reqwest::redirect::Policy::none())

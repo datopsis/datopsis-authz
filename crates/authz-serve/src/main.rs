@@ -49,7 +49,10 @@ impl Live {
             .header("authorization", &self.key)
             .send()
             .await
-            .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
+            .map_err(|_| {
+                eprintln!("membership transport failed");
+                StatusCode::SERVICE_UNAVAILABLE
+            })?;
         if response.status() == reqwest::StatusCode::NOT_FOUND {
             return if self.machines.iter().any(|p| p == principal) {
                 Ok(Some(vec![]))
@@ -59,11 +62,19 @@ impl Live {
         }
         let user: serde_json::Value = response
             .error_for_status()
-            .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?
+            .map_err(|_| {
+                eprintln!("membership HTTP failed");
+                StatusCode::SERVICE_UNAVAILABLE
+            })?
             .json()
             .await
-            .map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
-        let groups = parse_groups(&user, subject)?;
+            .map_err(|_| {
+                eprintln!("membership JSON failed");
+                StatusCode::SERVICE_UNAVAILABLE
+            })?;
+        let groups = parse_groups(&user, subject).inspect_err(|_| {
+            eprintln!("membership validation failed");
+        })?;
         {
             let mut cache = self.cache.write().map_err(unavailable)?;
             if cache.len() >= 10000 {
@@ -176,7 +187,8 @@ async fn decide(
                 });
                 (v, reason)
             }
-            Err(_) => {
+            Err(error) => {
+                eprintln!("Cedar evaluation failed: {error}");
                 failed = true;
                 (
                     Verdict {
@@ -319,6 +331,8 @@ async fn main() -> anyhow::Result<()> {
         Live {
             client: reqwest::Client::builder()
                 .https_only(true)
+                .use_rustls_tls()
+                .tls_built_in_root_certs(false)
                 .add_root_certificate(ca)
                 .redirect(reqwest::redirect::Policy::none())
                 .timeout(Duration::from_secs(2))

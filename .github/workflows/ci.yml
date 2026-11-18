@@ -65,7 +65,9 @@ jobs:
             target
             .cargo-cache
           key: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-${{ github.sha }}
-          restore-keys: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-
+          restore-keys: |
+            s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-
+            s1-rust-${{ runner.arch }}-
       - name: Native UBI compiler, workspace tests and both binaries
         run: |
           docker build -f Containerfile.builder -t s1-builder .
