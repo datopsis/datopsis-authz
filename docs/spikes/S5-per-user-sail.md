@@ -60,8 +60,8 @@ human tokens. It measures prebuilt-image process cold start (not image pulls or
 builds), socket readiness, Sail PID RSS from `/proc`, total cgroup v2 memory, and
 cgroup peak memory. A direct loopback tunnel establishes the same engine's
 baseline `SELECT 42`; the representative finite query sums a million range rows
-and requires exactly 499999500000. Polls every 50 ms are supplemented by the
-kernel's peak counter. Stop time includes container removal and credential deletion.
+and counts distinct IDs, requiring exactly 499999500000 and 1000000 respectively. Polls every 50 ms are supplemented by the
+kernel's peak counter. Stop time uses forced container removal and credential deletion; graceful shutdown is not measured.
 
 Gateway latency is timed at ExecutePlan, including a fresh TLS channel, live JWKS
 lookup, live Cedar call, lifecycle and relay. Later-query samples reuse the user's
@@ -77,7 +77,9 @@ Each reads only its granted namespace, denies the other's namespace and catalog
 writes, inherits access to a newly created table, then moves to a single-table
 grant and denies its sibling. Fresh sessions are used for fresh catalog checks
 following grant changes. Separate temp-view and cross-container socket/tmpfs
-controls exercise the process/session boundary. A 768 MiB allocation under the
+controls exercise the process/session boundary. Five simultaneous first queries
+for one user must create exactly one instance. The unchanged owner-paced million-row
+stream must outlive the idle timeout without reaping the active instance. A 768 MiB allocation under the
 512 MiB cap must increment `oom_kill`; four busy processes must increment CPU
 throttling counters under the one-CPU quota. Neither failure qualifies as an
 authorization denial.

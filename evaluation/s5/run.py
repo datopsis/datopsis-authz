@@ -160,6 +160,13 @@ def evaluate():
         write(path, users)
     Rauthy.config_rauthy = provision
     catalog, operator, key = setup(ARCH, record)
+    RESULTS['provenance'] = {}
+    for image in ('localhost/sail-ubi:integration','localhost/rauthy-ubi:authz'):
+        obj = json.loads(run('docker','image','inspect',image))[0]
+        assert obj['Architecture']==ARCH
+        revision = RESULTS['sail'] if 'sail-ubi' in image else RESULTS['rauthy']
+        assert obj['Config']['Labels']['org.opencontainers.image.revision']==revision
+        RESULTS['provenance'][image] = dict(image_id=obj['Id'], architecture=obj['Architecture'],labels=obj['Config']['Labels'])
     provider = catalog.provider
     users = [secret(provider.human()['access_token']),
              secret(provider.human(email='bob@idp.test', password=provider.bob_password)['access_token'])]
@@ -246,8 +253,8 @@ def evaluate():
                 foreign = denied(token, f'SELECT * FROM bakeoff.{other}.sample', session)
                 writes = [denied(token, sql, session) for sql in (
                     f'INSERT INTO bakeoff.{label}.sample VALUES (99)',
-                    f'UPDATE bakeoff.{label}.sample SET id=99 WHERE id=11',
-                    f'DELETE FROM bakeoff.{label}.sample WHERE id=11',
+                    f'UPDATE bakeoff.{label}.sample SET id=99 WHERE id>0',
+                    f'DELETE FROM bakeoff.{label}.sample WHERE id>0',
                     f'DROP TABLE bakeoff.{label}.sample',
                     f'CREATE TABLE bakeoff.{label}.forbidden (id BIGINT) USING iceberg')]
                 # Namespace grant inheritance includes a newly created table.
@@ -288,6 +295,8 @@ def evaluate():
             return dict(results=values,instances_created=starts)
         record('same_user_concurrent_start',coalesced)
         record('idle_after_coalesced',idle)
+        record('active_stream_lease',lambda: active_stream(users[0]))
+        record('idle_after_active_stream',idle)
         for n in (1,5,20):
             def scale_run(n=n):
                 event_count = len(run('sudo','cat',WORK/'lifecycle.jsonl').splitlines())
@@ -315,6 +324,43 @@ def evaluate():
         log.close()
         stop_all()
     assert all(c['status']=='PASS' for c in RESULTS['cases'].values()), 'S5 incomplete; see results.json'
+
+
+def active_stream(token):
+    # Unmodified pinned workload; construct its argv inside Python so the JWT
+    # is never exposed in operating-system process arguments.
+    path=WORK/'stream-token'
+    write(path,token)
+    wrapper = ("import os,sys,runpy; from pathlib import Path; "
+        "sys.argv=[os.environ['S5_PROBE'], 'sc://sail:50051/;use_ssl=true;token='+Path(os.environ['S5_STREAM_TOKEN']).read_text(), "
+        "'1000000','5','16','none']; runpy.run_path(sys.argv[0],run_name='__main__')")
+    probe=SOURCE/'.sources/sail-ubi/tests/stream_probe.py'
+    with (common.OUT/'active-stream.log').open('w') as output:
+        process=subprocess.Popen([str(PYTHON),'-c',wrapper],stdout=output,stderr=subprocess.STDOUT,
+            env=dict(os.environ,S5_PROBE=str(probe),S5_STREAM_TOKEN=str(path),
+                     GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=str(WORK/'ca/ca.pem')))
+        try:
+            wait(lambda: len(names())==1,30)
+            instance=objects()[0]['Name']
+            # Outlive the 15-second idle timeout while the client backpressures.
+            time.sleep(25)
+            assert process.poll() is None,'Paced stream exited early'
+            assert [o['Name'] for o in objects()]==[instance],'Active instance was reaped'
+            assert process.wait(timeout=220)==0,'Paced stream failed; see active-stream.log'
+        finally:
+            if process.poll() is None:
+                process.terminate(); process.wait(timeout=10)
+            path.unlink(missing_ok=True)
+    events=[json.loads(line) for line in (common.OUT/'active-stream.log').read_text().splitlines() if line.startswith('{')]
+    complete=[e for e in events if e['event']=='workload_complete']
+    assert len(complete)==1
+    end=complete[0]
+    assert (end['rows'],end['unique_ids'],end['payload_hashes_verified'],end['total'])==(1000000,1000000,1000000,499999500000),end
+    assert end['elapsed']>=75
+    calls=[e for e in events if e['event']=='rpc_start']
+    done=[e for e in events if e['event']=='rpc_done']
+    assert len(calls)==len(done)==1 and calls[0]['method'].endswith('/ExecutePlan') and done[0]['code']=='OK'
+    return dict(same_instance_after_seconds=25,idle_timeout_seconds=15,result=end,execute_plan_calls=1)
 
 
 def security():
