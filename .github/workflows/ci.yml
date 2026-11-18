@@ -88,11 +88,15 @@ jobs:
           docker build -f Containerfile.spike --target loader-probe -t localhost/lakekeeper-loader:s1 .
           docker run --rm localhost/lakekeeper-loader:s1 version
       - name: Build pinned owner fixture images without source changes
+        id: owners
         env:
           PYTHONPATH: ${{ github.workspace }}/evaluation/s3/downloads
         run: |
           sudo apt-get install -y rpm podman gnupg argon2
           .venv/bin/python evaluation/s1/run.py build
+      - name: Independent Sail engine measurements if identity acquisition is blocked
+        if: ${{ always() && steps.owners.outcome == 'failure' }}
+        run: .venv/bin/python evaluation/s5/engine_only.py
       - name: Compose spike images into fixture
         run: |
           docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" --build-arg LOCK_SHA256="$(sha256sum Cargo.lock | cut -d ' ' -f 1)" -f Containerfile.spike --target catalog -t localhost/lakekeeper-datopsis:s1 .

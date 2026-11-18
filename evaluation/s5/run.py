@@ -145,6 +145,52 @@ def launch_gateway(catalog, key):
     return proc, log, config
 
 
+def single(token):
+    started = time.monotonic()
+    instance = lifecycle(dict(op='ensure', token=token))
+    elapsed = time.monotonic()-started
+    idle = memory()
+    name = instance['name']
+    # Representative finite SQL aggregate scans a million generated rows;
+    # polling captures current RSS; cgroup memory.peak catches between polls.
+    samples = []
+    done = threading.Event()
+    def sample():
+        while not done.is_set():
+            samples.append(memory())
+            done.wait(0.05)
+    thread = threading.Thread(target=sample)
+    thread.start()
+    # Direct namespace transport to separate engine cost from gateway.
+    tunnel = subprocess.Popen(['sudo', '-E', 'socat',
+        'TCP4-LISTEN:50053,bind=127.0.0.1,reuseaddr,fork',
+        'EXEC:'+str(HELPER)+' relay '+name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    def direct(sql):
+        value = json.loads(run(PYTHON, ROOT/'evaluation/s5/client.py', input=json.dumps(dict(
+            token='', sql=sql, endpoint='127.0.0.1:50053', tls=False))))
+        assert value['status']=='OK', value
+        return value
+    try:
+        import socket
+        def ready():
+            with socket.create_connection(('127.0.0.1',50053),timeout=1): return True
+        wait(ready,10)
+        first = direct('SELECT 42 AS answer')
+        later = [direct('SELECT 42 AS answer') for _ in range(5)]
+        result = direct('SELECT sum(id) AS total, count(DISTINCT id) AS distinct_ids FROM range(1000000)')
+        assert result['rows']==[{'total':499999500000,'distinct_ids':1000000}],result
+    finally:
+        done.set(); thread.join()
+        run('sudo','kill','-TERM',str(tunnel.pid))
+        tunnel.wait(timeout=10)
+    under = memory()
+    stopped = time.monotonic()
+    lifecycle(dict(op='stop', name=name))
+    return dict(ready=instance, cold_to_ready_seconds=elapsed, idle=idle, after_query=under,
+        peak_sampled_rss_bytes=max(s['total_rss_bytes'] for s in samples), query=result, direct_first=first, direct_later=later,
+        stop_seconds=time.monotonic()-stopped)
+
+
 def evaluate():
     passwords = {}
     original = Rauthy.config_rauthy
@@ -196,51 +242,7 @@ def evaluate():
             assert not names()
             return dict(missing=missing,denied_machine=machine,no_instances=True)
         record('admission_before_start',admission)
-        def single():
-            started = time.monotonic()
-            instance = lifecycle(dict(op='ensure', token=users[0]))
-            elapsed = time.monotonic()-started
-            idle = memory()
-            name = instance['name']
-            # Representative finite SQL aggregate scans a million generated rows;
-            # polling captures current RSS; cgroup memory.peak catches between polls.
-            samples = []
-            done = threading.Event()
-            def sample():
-                while not done.is_set():
-                    samples.append(memory())
-                    done.wait(0.05)
-            thread = threading.Thread(target=sample)
-            thread.start()
-            # Direct namespace transport to separate engine cost from gateway.
-            tunnel = subprocess.Popen(['sudo', '-E', 'socat',
-                'TCP4-LISTEN:50053,bind=127.0.0.1,reuseaddr,fork',
-                'EXEC:'+str(HELPER)+' relay '+name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            def direct(sql):
-                value = json.loads(run(PYTHON, ROOT/'evaluation/s5/client.py', input=json.dumps(dict(
-                    token='', sql=sql, endpoint='127.0.0.1:50053', tls=False))))
-                assert value['status']=='OK', value
-                return value
-            try:
-                import socket
-                def ready():
-                    with socket.create_connection(('127.0.0.1',50053),timeout=1): return True
-                wait(ready,10)
-                first = direct('SELECT 42 AS answer')
-                later = [direct('SELECT 42 AS answer') for _ in range(5)]
-                result = direct('SELECT sum(id) AS total, count(DISTINCT id) AS distinct_ids FROM range(1000000)')
-                assert result['rows']==[{'total':499999500000,'distinct_ids':1000000}],result
-            finally:
-                done.set(); thread.join()
-                run('sudo','kill','-TERM',str(tunnel.pid))
-                tunnel.wait(timeout=10)
-            under = memory()
-            stopped = time.monotonic()
-            lifecycle(dict(op='stop', name=name))
-            return dict(ready=instance, cold_to_ready_seconds=elapsed, idle=idle, after_query=under,
-                peak_sampled_rss_bytes=max(s['total_rss_bytes'] for s in samples), query=result, direct_first=first, direct_later=later,
-                stop_seconds=time.monotonic()-stopped)
-        record('single', single)
+        record('single', lambda: single(users[0]))
         stop_all()
         def isolation():
             result = {}
