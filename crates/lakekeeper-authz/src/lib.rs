@@ -69,10 +69,7 @@ impl Authorizer for CedarAuthorizer {
                 "/permissions/{kind}/{id}/grants",
                 get(read_grants::<C, S>).post(write_grants::<C, S>),
             )
-            .route(
-                "/permissions/{*unsupported}",
-                axum::routing::any(unsupported_permission::<C, S>),
-            )
+            .fallback(unsupported_permission::<C, S>)
     }
 
     async fn check_assume_role_impl(

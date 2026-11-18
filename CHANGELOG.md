@@ -7,8 +7,6 @@
 - Catalog owner grant-management API and native C1–C8 fixture coverage with 15-minute tokens.
 - Runtime dependency audit classification; unconditional Azure/quick-xml remains blocking.
 
-# Changelog
-
 ## Unreleased
 
 - Start S1: pinned Lakekeeper trait analysis, Cedar core, HTTPS decision API,

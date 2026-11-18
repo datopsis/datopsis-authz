@@ -60,10 +60,18 @@ execution deny. Unsupported permission paths return 403; OpenAPI composition is
 not implemented. Health reporting is not yet qualified. The complete trait
 inventory remains in the S1 spike report. Rename still uses Lakekeeper's
 before/after hooks rather than a distributed transaction with the catalog DB;
-a failed attach denies access until repair, and cross-database reconciliation is
+a failed attach denies inherited access until repair, and cross-database reconciliation is
 not implemented.
 
 ## Validation and dependency boundary
+
+The immutable Rauthy image build is currently blocked by its FIDO metadata
+checksum: locked blob 301 is no longer at the mutable download URL (blob 302).
+The fixture preflight rejects mismatches before expensive compilation. Both the
+owner's original acquisition check and image provenance gates remain unchanged.
+A newer reviewed owner pin or the exact locked blob is needed; another blob cannot
+be substituted. Native catalog assertions have not run. Fresh human tokens with
+empty group claims also retain the upstream RoleSourceIdError compatibility gap.
 
 C1–C8 preserve the original assertion IDs and strict typed denial oracle, including
 C3's retained old token and C8's complete state comparison and two repetitions

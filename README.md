@@ -5,6 +5,11 @@ Apache-2.0 catalog authorization service, slice 1 of the owner-approved MVP
 open as evidence. Native C1–C8 and dependency-gate results are recorded in the PR;
 unverified work is not an acceptance pass.
 
+Acceptance is currently blocked: the Rauthy pin locks FIDO blob 301, while its
+mutable download URL serves blob 302 with a different checksum. The original
+checksum guard remains strict. The runtime dependency gate also blocks on
+Lakekeeper's unconditional Azure/quick-xml path. No C1–C8 pass is claimed.
+
 One Rust workspace produces the platform program (`authz-serve`, installed as
 `datopsis-authz`) and a thin Lakekeeper binary containing `lakekeeper-authz`.
 `serve` evaluates Cedar against a PostgreSQL relationship/grant store.
@@ -17,7 +22,8 @@ Implemented catalog behavior: owner and select grants, inherited resource
 permissions, item-filtered discovery, namespace/table/view lifecycle hooks,
 rename detach/attach, and owner-authorized grant read/add/remove endpoints.
 Unsupported role assumption, delegated checks, role administration and other
-permission routes deny. See [architecture](docs/ARCHITECTURE.md) for the API and
+permission routes deny. Fresh human JWTs with empty group claims retain the
+upstream RoleSourceIdError compatibility gap; C3 checks the retained old token. See [architecture](docs/ARCHITECTURE.md) for the API and
 limits, and [security](SECURITY.md) for deployment requirements.
 
 Human membership is looked up live against Rauthy over verified HTTPS with a
