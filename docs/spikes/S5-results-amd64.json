@@ -1,0 +1,1270 @@
+{
+  "status": "PARTIAL_AUTHENTICATED_SUITE_BLOCKED",
+  "blocker": "S5-rauthy-acquisition.json",
+  "native_job": "https://github.com/datopsis/datopsis-authz/actions/runs/44243517929/job/134596809437",
+  "tested_pr_source": "ba6fb502e795d482754540a946ce5efc70d758b1",
+  "tested_merge": "9eb47439ff578b166b8bdd212c143c631c20e968",
+  "native_log_sha256": "fbe769118a272d4086535e9cbe9d3ff4f71196d35850ae844a85d6578619ca9e",
+  "authenticated_suite": {
+    "architecture": "amd64",
+    "machine": "x86_64",
+    "source": "9eb47439ff578b166b8bdd212c143c631c20e968",
+    "run": "https://github.com/datopsis/datopsis-authz/actions/runs/44243517929",
+    "sail": "e96e068f926b8fecb3939e953389685ee4780032",
+    "rauthy": "1e114b84b01988bf15306b110b040378878488d3",
+    "cases": {
+      "single": {
+        "status": "BLOCKED",
+        "reason": "Runtime prerequisites not completed"
+      },
+      "per_user_C1_C2": {
+        "status": "BLOCKED",
+        "reason": "Runtime prerequisites not completed"
+      },
+      "security": {
+        "status": "BLOCKED",
+        "reason": "Runtime prerequisites not completed"
+      },
+      "idle_cleanup": {
+        "status": "BLOCKED",
+        "reason": "Runtime prerequisites not completed"
+      },
+      "crash": {
+        "status": "BLOCKED",
+        "reason": "Runtime prerequisites not completed"
+      },
+      "scale_1": {
+        "status": "BLOCKED",
+        "reason": "Runtime prerequisites not completed"
+      },
+      "scale_5": {
+        "status": "BLOCKED",
+        "reason": "Runtime prerequisites not completed"
+      },
+      "scale_20": {
+        "status": "BLOCKED",
+        "reason": "Runtime prerequisites not completed"
+      },
+      "resource_limits": {
+        "status": "BLOCKED",
+        "reason": "Runtime prerequisites not completed"
+      }
+    },
+    "host": {
+      "logical_cpus": 4,
+      "kernel": "7.0.0-1017-azure",
+      "mem_total_bytes": 16760344576
+    }
+  },
+  "engine_only": {
+    "architecture": "amd64",
+    "machine": "x86_64",
+    "source": "9eb47439ff578b166b8bdd212c143c631c20e968",
+    "run": "https://github.com/datopsis/datopsis-authz/actions/runs/44243517929",
+    "host": {
+      "logical_cpus": 4,
+      "kernel": "7.0.0-1017-azure",
+      "mem_total_bytes": 16760344576
+    },
+    "sail": "e96e068f926b8fecb3939e953389685ee4780032",
+    "scope": "Engine only: no JWT authentication, gateway routing or Lakekeeper grant assertions",
+    "cases": {
+      "single": {
+        "status": "PASS",
+        "evidence": {
+          "ready": {
+            "name": "s5-f0735f35bbf64666b799db8631362b9c",
+            "reused": false,
+            "ready_seconds": 0.6262745239999958
+          },
+          "cold_to_ready_seconds": 0.6739747660000148,
+          "idle": {
+            "instances": [
+              {
+                "name": "/s5-f0735f35bbf64666b799db8631362b9c",
+                "pid": 12548,
+                "rss_bytes": 70979584,
+                "cgroup_bytes": 31825920,
+                "cgroup_peak_bytes": 36995072,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 70979584,
+            "total_cgroup_bytes": 31825920,
+            "gateway_rss_bytes": null
+          },
+          "after_query": {
+            "instances": [
+              {
+                "name": "/s5-f0735f35bbf64666b799db8631362b9c",
+                "pid": 12548,
+                "rss_bytes": 235794432,
+                "cgroup_bytes": 156360704,
+                "cgroup_peak_bytes": 161968128,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 235794432,
+            "total_cgroup_bytes": 156360704,
+            "gateway_rss_bytes": null
+          },
+          "peak_sampled_rss_bytes": 235794432,
+          "query": {
+            "status": "OK",
+            "seconds": 0.24323653500005094,
+            "rows": [
+              {
+                "total": 499999500000,
+                "distinct_ids": 1000000
+              }
+            ]
+          },
+          "direct_first": {
+            "status": "OK",
+            "seconds": 0.24404556500007857,
+            "rows": [
+              {
+                "answer": 42
+              }
+            ]
+          },
+          "direct_later": [
+            {
+              "status": "OK",
+              "seconds": 0.1966250330000321,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.11438668799996776,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.20307362799997009,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.20914613700006157,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.19523248200005128,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            }
+          ],
+          "stop_seconds": 0.1371672679999847
+        }
+      },
+      "instances_1": {
+        "status": "PASS",
+        "evidence": {
+          "n": 1,
+          "instances": [
+            {
+              "status": "READY",
+              "name": "s5-0b44f6ba0f714c2591bd3266e7e33da8",
+              "reused": false,
+              "ready_seconds": 0.22656257799997093,
+              "total_seconds": 0.27312341000003926
+            }
+          ],
+          "ready_memory": {
+            "instances": [
+              {
+                "name": "/s5-0b44f6ba0f714c2591bd3266e7e33da8",
+                "pid": 14462,
+                "rss_bytes": 73023488,
+                "cgroup_bytes": 33861632,
+                "cgroup_peak_bytes": 39067648,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 73023488,
+            "total_cgroup_bytes": 33861632,
+            "gateway_rss_bytes": null
+          },
+          "memory": {
+            "instances": [
+              {
+                "name": "/s5-0b44f6ba0f714c2591bd3266e7e33da8",
+                "pid": 14462,
+                "rss_bytes": 238141440,
+                "cgroup_bytes": 158191616,
+                "cgroup_peak_bytes": 163758080,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 238141440,
+            "total_cgroup_bytes": 158191616,
+            "gateway_rss_bytes": null
+          },
+          "queries": [
+            {
+              "status": "OK",
+              "seconds": 0.2669640879998951,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            }
+          ],
+          "query_failures": 0,
+          "aggregate_cgroup_peak_bytes": 163758080,
+          "cold_to_ready_seconds": [
+            0.27312341000003926
+          ],
+          "min_seconds": 0.27312341000003926,
+          "median_seconds": 0.27312341000003926,
+          "max_seconds": 0.27312341000003926,
+          "failures": 0
+        }
+      },
+      "instances_5": {
+        "status": "PASS",
+        "evidence": {
+          "n": 5,
+          "instances": [
+            {
+              "status": "READY",
+              "name": "s5-3caa1547f2db4bf89a2ef5dce0198f6a",
+              "reused": false,
+              "ready_seconds": 0.4856794269999227,
+              "total_seconds": 0.5609333020000804
+            },
+            {
+              "status": "READY",
+              "name": "s5-5dfa2069d24c4027b7fe88dbd2d7ffad",
+              "reused": false,
+              "ready_seconds": 0.5167495389999885,
+              "total_seconds": 0.6243350839999948
+            },
+            {
+              "status": "READY",
+              "name": "s5-fff17037c291442a9e7045e62a75cd4b",
+              "reused": false,
+              "ready_seconds": 0.5104545440000265,
+              "total_seconds": 0.6103269420000288
+            },
+            {
+              "status": "READY",
+              "name": "s5-130cdb6e917f438bbfea141d594ff042",
+              "reused": false,
+              "ready_seconds": 0.5695064129999992,
+              "total_seconds": 0.6342150909999873
+            },
+            {
+              "status": "READY",
+              "name": "s5-b2d48c52042940fb942e29b471a8c77c",
+              "reused": false,
+              "ready_seconds": 0.5469292129999985,
+              "total_seconds": 0.620878308999977
+            }
+          ],
+          "ready_memory": {
+            "instances": [
+              {
+                "name": "/s5-5dfa2069d24c4027b7fe88dbd2d7ffad",
+                "pid": 14953,
+                "rss_bytes": 62259200,
+                "cgroup_bytes": 31383552,
+                "cgroup_peak_bytes": 36573184,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-fff17037c291442a9e7045e62a75cd4b",
+                "pid": 14941,
+                "rss_bytes": 69242880,
+                "cgroup_bytes": 31375360,
+                "cgroup_peak_bytes": 36302848,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-130cdb6e917f438bbfea141d594ff042",
+                "pid": 14950,
+                "rss_bytes": 62427136,
+                "cgroup_bytes": 31608832,
+                "cgroup_peak_bytes": 36839424,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-b2d48c52042940fb942e29b471a8c77c",
+                "pid": 14965,
+                "rss_bytes": 62238720,
+                "cgroup_bytes": 31621120,
+                "cgroup_peak_bytes": 36777984,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-3caa1547f2db4bf89a2ef5dce0198f6a",
+                "pid": 14864,
+                "rss_bytes": 71147520,
+                "cgroup_bytes": 31150080,
+                "cgroup_peak_bytes": 36540416,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 327315456,
+            "total_cgroup_bytes": 157138944,
+            "gateway_rss_bytes": null
+          },
+          "memory": {
+            "instances": [
+              {
+                "name": "/s5-5dfa2069d24c4027b7fe88dbd2d7ffad",
+                "pid": 14953,
+                "rss_bytes": 239341568,
+                "cgroup_bytes": 160026624,
+                "cgroup_peak_bytes": 165765120,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-fff17037c291442a9e7045e62a75cd4b",
+                "pid": 14941,
+                "rss_bytes": 242626560,
+                "cgroup_bytes": 163082240,
+                "cgroup_peak_bytes": 168468480,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-130cdb6e917f438bbfea141d594ff042",
+                "pid": 14950,
+                "rss_bytes": 227340288,
+                "cgroup_bytes": 148414464,
+                "cgroup_peak_bytes": 153784320,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-b2d48c52042940fb942e29b471a8c77c",
+                "pid": 14965,
+                "rss_bytes": 228921344,
+                "cgroup_bytes": 150011904,
+                "cgroup_peak_bytes": 155594752,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-3caa1547f2db4bf89a2ef5dce0198f6a",
+                "pid": 14864,
+                "rss_bytes": 226152448,
+                "cgroup_bytes": 145666048,
+                "cgroup_peak_bytes": 151097344,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 1164382208,
+            "total_cgroup_bytes": 767201280,
+            "gateway_rss_bytes": null
+          },
+          "queries": [
+            {
+              "status": "OK",
+              "seconds": 0.4477974589999576,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.5139238379999824,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.5136262409999972,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.5576773320000257,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.5482165459999351,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            }
+          ],
+          "query_failures": 0,
+          "aggregate_cgroup_peak_bytes": 794710016,
+          "cold_to_ready_seconds": [
+            0.5609333020000804,
+            0.6103269420000288,
+            0.620878308999977,
+            0.6243350839999948,
+            0.6342150909999873
+          ],
+          "min_seconds": 0.5609333020000804,
+          "median_seconds": 0.620878308999977,
+          "max_seconds": 0.6342150909999873,
+          "failures": 0
+        }
+      },
+      "instances_20": {
+        "status": "PASS",
+        "evidence": {
+          "n": 20,
+          "instances": [
+            {
+              "status": "READY",
+              "name": "s5-8621d4080fa045218434f37d03882830",
+              "reused": false,
+              "ready_seconds": 1.727367107999953,
+              "total_seconds": 2.4186850950000007
+            },
+            {
+              "status": "READY",
+              "name": "s5-ebc07b1df8734ac1b5c7077955414540",
+              "reused": false,
+              "ready_seconds": 1.592262478000066,
+              "total_seconds": 2.375509582999939
+            },
+            {
+              "status": "READY",
+              "name": "s5-f3d3051059594e3e919e40836eba88f9",
+              "reused": false,
+              "ready_seconds": 0.8754012750000584,
+              "total_seconds": 1.178667179999934
+            },
+            {
+              "status": "READY",
+              "name": "s5-084efa4c8be547439884add4993b5d76",
+              "reused": false,
+              "ready_seconds": 1.309531637999953,
+              "total_seconds": 1.6615043850000575
+            },
+            {
+              "status": "READY",
+              "name": "s5-dc7cddff98f344e6841dbc180ad3a322",
+              "reused": false,
+              "ready_seconds": 1.1258799649999673,
+              "total_seconds": 1.5676415329999145
+            },
+            {
+              "status": "READY",
+              "name": "s5-de8d7c30428b486c96b00b3f683d2a46",
+              "reused": false,
+              "ready_seconds": 1.2692776840000306,
+              "total_seconds": 1.5586101430000099
+            },
+            {
+              "status": "READY",
+              "name": "s5-2de9013feb2c47da8f615bb80586debf",
+              "reused": false,
+              "ready_seconds": 1.4066158540000515,
+              "total_seconds": 2.084061416000054
+            },
+            {
+              "status": "READY",
+              "name": "s5-ed8b144798464b8b8cfb6fa77e05537a",
+              "reused": false,
+              "ready_seconds": 1.3747395820000747,
+              "total_seconds": 2.442639518000078
+            },
+            {
+              "status": "READY",
+              "name": "s5-2548ecc1f8cb40e5bc624f0a09c2382e",
+              "reused": false,
+              "ready_seconds": 1.4911832939999385,
+              "total_seconds": 2.4852461740000535
+            },
+            {
+              "status": "READY",
+              "name": "s5-42fd83c8b5e54a5583b5bd284e531bc8",
+              "reused": false,
+              "ready_seconds": 1.3306950910000523,
+              "total_seconds": 2.1650925940000434
+            },
+            {
+              "status": "READY",
+              "name": "s5-4b85e3346fb4455c9381804362178532",
+              "reused": false,
+              "ready_seconds": 1.4649077999999918,
+              "total_seconds": 1.795712328000036
+            },
+            {
+              "status": "READY",
+              "name": "s5-3aa9c588139a42b694d995b3230d7452",
+              "reused": false,
+              "ready_seconds": 1.6986902769999688,
+              "total_seconds": 2.031463686000052
+            },
+            {
+              "status": "READY",
+              "name": "s5-2c6a5b29245e4f59a617fd8047ad06b8",
+              "reused": false,
+              "ready_seconds": 1.02471476300002,
+              "total_seconds": 1.719088966000072
+            },
+            {
+              "status": "READY",
+              "name": "s5-8f69a6dca7114e00a027a87c59a1b534",
+              "reused": false,
+              "ready_seconds": 1.6124456830000327,
+              "total_seconds": 2.4945330369999965
+            },
+            {
+              "status": "READY",
+              "name": "s5-73d09eda200249b7b46c8b320d6f8d00",
+              "reused": false,
+              "ready_seconds": 1.3281085390000271,
+              "total_seconds": 2.3193956170000547
+            },
+            {
+              "status": "READY",
+              "name": "s5-7351f72e31ad4bea807da23be20ede66",
+              "reused": false,
+              "ready_seconds": 1.7279929939999192,
+              "total_seconds": 2.141653801000075
+            },
+            {
+              "status": "READY",
+              "name": "s5-015df0f203654d86bea8809f84ae9c4d",
+              "reused": false,
+              "ready_seconds": 1.5085322350000752,
+              "total_seconds": 2.5329419550000694
+            },
+            {
+              "status": "READY",
+              "name": "s5-618c0cfdd7f549e6b2b9621d9cc7f14b",
+              "reused": false,
+              "ready_seconds": 0.9591381189999311,
+              "total_seconds": 1.703105882999921
+            },
+            {
+              "status": "READY",
+              "name": "s5-d9b195d2a20b420ba96f851924cd5bc8",
+              "reused": false,
+              "ready_seconds": 1.071181212000056,
+              "total_seconds": 2.4228398340000012
+            },
+            {
+              "status": "READY",
+              "name": "s5-2a8c4cccc8c045348e5acd8eb939b911",
+              "reused": false,
+              "ready_seconds": 0.8318475730000046,
+              "total_seconds": 1.138221681999994
+            }
+          ],
+          "ready_memory": {
+            "instances": [
+              {
+                "name": "/s5-015df0f203654d86bea8809f84ae9c4d",
+                "pid": 17544,
+                "rss_bytes": 62394368,
+                "cgroup_bytes": 31698944,
+                "cgroup_peak_bytes": 36663296,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-2548ecc1f8cb40e5bc624f0a09c2382e",
+                "pid": 17464,
+                "rss_bytes": 62394368,
+                "cgroup_bytes": 31588352,
+                "cgroup_peak_bytes": 36798464,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-8f69a6dca7114e00a027a87c59a1b534",
+                "pid": 17522,
+                "rss_bytes": 62320640,
+                "cgroup_bytes": 31199232,
+                "cgroup_peak_bytes": 36470784,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-ebc07b1df8734ac1b5c7077955414540",
+                "pid": 17256,
+                "rss_bytes": 62255104,
+                "cgroup_bytes": 31158272,
+                "cgroup_peak_bytes": 36327424,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-d9b195d2a20b420ba96f851924cd5bc8",
+                "pid": 17153,
+                "rss_bytes": 61456384,
+                "cgroup_bytes": 33243136,
+                "cgroup_peak_bytes": 38359040,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-73d09eda200249b7b46c8b320d6f8d00",
+                "pid": 17164,
+                "rss_bytes": 59318272,
+                "cgroup_bytes": 31150080,
+                "cgroup_peak_bytes": 36343808,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-ed8b144798464b8b8cfb6fa77e05537a",
+                "pid": 16998,
+                "rss_bytes": 62300160,
+                "cgroup_bytes": 31145984,
+                "cgroup_peak_bytes": 36720640,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-8621d4080fa045218434f37d03882830",
+                "pid": 17160,
+                "rss_bytes": 62808064,
+                "cgroup_bytes": 31125504,
+                "cgroup_peak_bytes": 36413440,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-2de9013feb2c47da8f615bb80586debf",
+                "pid": 16821,
+                "rss_bytes": 62652416,
+                "cgroup_bytes": 31129600,
+                "cgroup_peak_bytes": 36278272,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-7351f72e31ad4bea807da23be20ede66",
+                "pid": 16806,
+                "rss_bytes": 62820352,
+                "cgroup_bytes": 31158272,
+                "cgroup_peak_bytes": 36438016,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-42fd83c8b5e54a5583b5bd284e531bc8",
+                "pid": 16706,
+                "rss_bytes": 70578176,
+                "cgroup_bytes": 31154176,
+                "cgroup_peak_bytes": 36290560,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-4b85e3346fb4455c9381804362178532",
+                "pid": 16648,
+                "rss_bytes": 70647808,
+                "cgroup_bytes": 31154176,
+                "cgroup_peak_bytes": 36618240,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-2c6a5b29245e4f59a617fd8047ad06b8",
+                "pid": 16546,
+                "rss_bytes": 70795264,
+                "cgroup_bytes": 31150080,
+                "cgroup_peak_bytes": 36372480,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-de8d7c30428b486c96b00b3f683d2a46",
+                "pid": 16433,
+                "rss_bytes": 71049216,
+                "cgroup_bytes": 31129600,
+                "cgroup_peak_bytes": 36278272,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-3aa9c588139a42b694d995b3230d7452",
+                "pid": 16475,
+                "rss_bytes": 70774784,
+                "cgroup_bytes": 31141888,
+                "cgroup_peak_bytes": 36372480,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-618c0cfdd7f549e6b2b9621d9cc7f14b",
+                "pid": 16314,
+                "rss_bytes": 70447104,
+                "cgroup_bytes": 31145984,
+                "cgroup_peak_bytes": 36216832,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-2a8c4cccc8c045348e5acd8eb939b911",
+                "pid": 16259,
+                "rss_bytes": 72982528,
+                "cgroup_bytes": 33243136,
+                "cgroup_peak_bytes": 38305792,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-084efa4c8be547439884add4993b5d76",
+                "pid": 16251,
+                "rss_bytes": 70742016,
+                "cgroup_bytes": 31150080,
+                "cgroup_peak_bytes": 36339712,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-dc7cddff98f344e6841dbc180ad3a322",
+                "pid": 16151,
+                "rss_bytes": 70594560,
+                "cgroup_bytes": 31129600,
+                "cgroup_peak_bytes": 36257792,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-f3d3051059594e3e919e40836eba88f9",
+                "pid": 16147,
+                "rss_bytes": 70647808,
+                "cgroup_bytes": 31129600,
+                "cgroup_peak_bytes": 36319232,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 1329979392,
+            "total_cgroup_bytes": 628125696,
+            "gateway_rss_bytes": null
+          },
+          "memory": {
+            "instances": [
+              {
+                "name": "/s5-015df0f203654d86bea8809f84ae9c4d",
+                "pid": 17544,
+                "rss_bytes": 237711360,
+                "cgroup_bytes": 158158848,
+                "cgroup_peak_bytes": 163991552,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-2548ecc1f8cb40e5bc624f0a09c2382e",
+                "pid": 17464,
+                "rss_bytes": 236806144,
+                "cgroup_bytes": 157741056,
+                "cgroup_peak_bytes": 163311616,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-8f69a6dca7114e00a027a87c59a1b534",
+                "pid": 17522,
+                "rss_bytes": 224604160,
+                "cgroup_bytes": 145362944,
+                "cgroup_peak_bytes": 151175168,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-ebc07b1df8734ac1b5c7077955414540",
+                "pid": 17256,
+                "rss_bytes": 227627008,
+                "cgroup_bytes": 148467712,
+                "cgroup_peak_bytes": 154046464,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-d9b195d2a20b420ba96f851924cd5bc8",
+                "pid": 17153,
+                "rss_bytes": 213897216,
+                "cgroup_bytes": 144293888,
+                "cgroup_peak_bytes": 149864448,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-73d09eda200249b7b46c8b320d6f8d00",
+                "pid": 17164,
+                "rss_bytes": 229482496,
+                "cgroup_bytes": 159965184,
+                "cgroup_peak_bytes": 165740544,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-ed8b144798464b8b8cfb6fa77e05537a",
+                "pid": 16998,
+                "rss_bytes": 233578496,
+                "cgroup_bytes": 154320896,
+                "cgroup_peak_bytes": 159776768,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-8621d4080fa045218434f37d03882830",
+                "pid": 17160,
+                "rss_bytes": 238198784,
+                "cgroup_bytes": 158429184,
+                "cgroup_peak_bytes": 163991552,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-2de9013feb2c47da8f615bb80586debf",
+                "pid": 16821,
+                "rss_bytes": 229261312,
+                "cgroup_bytes": 149344256,
+                "cgroup_peak_bytes": 155176960,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-7351f72e31ad4bea807da23be20ede66",
+                "pid": 16806,
+                "rss_bytes": 230805504,
+                "cgroup_bytes": 150736896,
+                "cgroup_peak_bytes": 156516352,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-42fd83c8b5e54a5583b5bd284e531bc8",
+                "pid": 16706,
+                "rss_bytes": 238456832,
+                "cgroup_bytes": 159485952,
+                "cgroup_peak_bytes": 165109760,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-4b85e3346fb4455c9381804362178532",
+                "pid": 16648,
+                "rss_bytes": 235376640,
+                "cgroup_bytes": 156262400,
+                "cgroup_peak_bytes": 161886208,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-2c6a5b29245e4f59a617fd8047ad06b8",
+                "pid": 16546,
+                "rss_bytes": 232194048,
+                "cgroup_bytes": 152481792,
+                "cgroup_peak_bytes": 158289920,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-de8d7c30428b486c96b00b3f683d2a46",
+                "pid": 16433,
+                "rss_bytes": 237961216,
+                "cgroup_bytes": 158195712,
+                "cgroup_peak_bytes": 164012032,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-3aa9c588139a42b694d995b3230d7452",
+                "pid": 16475,
+                "rss_bytes": 229347328,
+                "cgroup_bytes": 149626880,
+                "cgroup_peak_bytes": 155607040,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-618c0cfdd7f549e6b2b9621d9cc7f14b",
+                "pid": 16314,
+                "rss_bytes": 226836480,
+                "cgroup_bytes": 147464192,
+                "cgroup_peak_bytes": 153210880,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-2a8c4cccc8c045348e5acd8eb939b911",
+                "pid": 16259,
+                "rss_bytes": 230252544,
+                "cgroup_bytes": 150568960,
+                "cgroup_peak_bytes": 156205056,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-084efa4c8be547439884add4993b5d76",
+                "pid": 16251,
+                "rss_bytes": 217059328,
+                "cgroup_bytes": 137535488,
+                "cgroup_peak_bytes": 143327232,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-dc7cddff98f344e6841dbc180ad3a322",
+                "pid": 16151,
+                "rss_bytes": 231149568,
+                "cgroup_bytes": 151482368,
+                "cgroup_peak_bytes": 157310976,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-f3d3051059594e3e919e40836eba88f9",
+                "pid": 16147,
+                "rss_bytes": 217133056,
+                "cgroup_bytes": 137969664,
+                "cgroup_peak_bytes": 143765504,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 4597739520,
+            "total_cgroup_bytes": 3027894272,
+            "gateway_rss_bytes": null
+          },
+          "queries": [
+            {
+              "status": "OK",
+              "seconds": 0.9660142190000442,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.2102012059999652,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.8526128789999348,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.113766683999984,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.24725041399995,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.5506531730000006,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.769548861999965,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.077987890999907,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.9670460040000535,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.291480514,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.2587753930000645,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.2638435329999993,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.1183866720000424,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.8432997749999913,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.255832987999952,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.2193582869999773,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.849384617999931,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.9911911919999739,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.7735040310000159,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.143146635999983,
+              "rows": [
+                {
+                  "total": 499999500000,
+                  "distinct_ids": 1000000
+                }
+              ]
+            }
+          ],
+          "query_failures": 0,
+          "aggregate_cgroup_peak_bytes": 3142316032,
+          "cold_to_ready_seconds": [
+            1.138221681999994,
+            1.178667179999934,
+            1.5586101430000099,
+            1.5676415329999145,
+            1.6615043850000575,
+            1.703105882999921,
+            1.719088966000072,
+            1.795712328000036,
+            2.031463686000052,
+            2.084061416000054,
+            2.141653801000075,
+            2.1650925940000434,
+            2.3193956170000547,
+            2.375509582999939,
+            2.4186850950000007,
+            2.4228398340000012,
+            2.442639518000078,
+            2.4852461740000535,
+            2.4945330369999965,
+            2.5329419550000694
+          ],
+          "min_seconds": 1.138221681999994,
+          "median_seconds": 2.1128576085000645,
+          "max_seconds": 2.5329419550000694,
+          "failures": 0
+        }
+      },
+      "resource_limits": {
+        "status": "PASS",
+        "evidence": {
+          "memory_cap_bytes": 536870912,
+          "cpu_cap": 1.0,
+          "allocation_bytes": 805306368,
+          "allocation_exit": 137,
+          "cpu_before": {
+            "usage_usec": 158483,
+            "user_usec": 104639,
+            "system_usec": 53843,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 2,
+            "nr_throttled": 1,
+            "throttled_usec": 31523,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          },
+          "cpu_after": {
+            "usage_usec": 3275959,
+            "user_usec": 3197936,
+            "system_usec": 78022,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 34,
+            "nr_throttled": 32,
+            "throttled_usec": 9167864,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          },
+          "memory_events_before": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0,
+            "sock_throttled": 0
+          },
+          "memory_events_after": {
+            "low": 0,
+            "high": 0,
+            "max": 38,
+            "oom": 1,
+            "oom_kill": 1,
+            "oom_group_kill": 0,
+            "sock_throttled": 0
+          },
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": true,
+            "Dead": false,
+            "Pid": 20838,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-11-18T05:29:20.596380962Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Health": {
+              "Status": "starting",
+              "FailingStreak": 0,
+              "Log": []
+            }
+          }
+        }
+      }
+    },
+    "image": {
+      "id": "sha256:18f53fabdd10f329ef4decd3b835c5ec0d8848a57a334ca7fa6bc68c794619f4",
+      "labels": {
+        "architecture": "x86_64",
+        "build-date": "2026-11-09T00:38:17Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.45.0",
+        "io.datopsis.artifact-lock.sha256": "7b66571efcca5f6e856b5922090ddc9c728489d300f20a12ca93b577ab4b4c38",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.base.name": "registry.access.redhat.com/ubi9/ubi-micro:9.8@sha256:d3499a0896e2d6a1642f922615831bc5c2fd513bbb34f3446cabba530d9d54a2",
+        "org.opencontainers.image.created": "2026-11-13T06:35:25-06:00",
+        "org.opencontainers.image.description": "Rootless local Spark Connect server",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.revision": "e96e068f926b8fecb3939e953389685ee4780032",
+        "org.opencontainers.image.source": "https://github.com/datopsis/sail-ubi",
+        "org.opencontainers.image.title": "Sail on Red Hat UBI 9",
+        "org.opencontainers.image.version": "0.7.3",
+        "release": "1794184668",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "180abe1db345daeb7a00ed9fda71e3ad05c261b7",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.8"
+      }
+    },
+    "cleanup": {
+      "runtime_removed": true,
+      "instances_remaining": 0
+    }
+  }
+}

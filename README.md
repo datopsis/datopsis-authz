@@ -13,6 +13,12 @@ S3 proves TLS/JWT/Cedar admission and completion of the exact paced million-row
 Sail stream on native amd64 and arm64. General table authorization and ownership
 of admitted users' Sail sessions remain gaps. See [the S3 report](docs/spikes/S3-sail-gateway.md).
 
+S5 adds an opt-in per-user Sail supervisor and measures native engine costs for
+1/5/20 concurrent engines. Authenticated per-user lifecycle and Lakekeeper
+isolation remain blocked by a pinned Rauthy artifact acquisition failure.
+See [the S5 report](docs/spikes/S5-per-user-sail.md); this does not close S3's
+session isolation gap as a qualified deployment.
+
 The intended platform is one Rust program/image with `serve`, `sail-gateway`,
 `token-broker`, and `policy` roles. S1 implements `serve` and schema validation under `policy`. S3 adds the
 `sail-gateway` TLS/JWT/per-user admission experiment; `token-broker` still fails
