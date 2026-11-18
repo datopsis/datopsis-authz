@@ -71,7 +71,7 @@ impl Authorizer for CedarAuthorizer {
             )
             .route(
                 "/permissions/{*unsupported}",
-                axum::routing::any(unsupported_permission),
+                axum::routing::any(unsupported_permission::<C, S>),
             )
     }
 
@@ -85,14 +85,24 @@ impl Authorizer for CedarAuthorizer {
             _request_metadata,
             vec![(Resource::new("Role", "unsupported"), "assume_role".into())],
         )
-        .await?;
+        .await
+        .map_err(|_| {
+            AuthorizationBackendUnavailable::new(std::io::Error::other(
+                "decision audit unavailable",
+            ))
+        })?;
         Ok(false)
     }
 
-    async fn can_bootstrap(&self, _metadata: &RequestMetadata) -> Result<()> {
-        if _metadata.user_id().map(ToString::to_string).as_deref()
+    async fn can_bootstrap(&self, metadata: &RequestMetadata) -> Result<()> {
+        use lakekeeper::service::events::AuthorizationFailureSource;
+        let server = Resource::new("Server", self.server_id);
+        if metadata.user_id().map(ToString::to_string).as_deref()
             != Some(&std::env::var("AUTHZ_BOOTSTRAP_PRINCIPAL").unwrap_or("oidc~operator".into()))
         {
+            self.check_denied(metadata, vec![(server, "bootstrap".into())])
+                .await
+                .map_err(|e| e.into_error_model())?;
             return Err(lakekeeper::api::ErrorModel::forbidden(
                 "Bootstrap principal required",
                 "Forbidden",
@@ -100,6 +110,12 @@ impl Authorizer for CedarAuthorizer {
             )
             .into());
         }
+        // Initialize the designated bootstrap owner's graph before checking it;
+        // the hook repeats this idempotently after Lakekeeper commits bootstrap.
+        self.put(metadata, server.clone(), None).await?;
+        self.check(metadata, None, vec![(server, "bootstrap".into())])
+            .await
+            .map_err(|e| e.into_error_model())?;
         Ok(())
     }
 
@@ -126,7 +142,12 @@ impl Authorizer for CedarAuthorizer {
                 "search_users".into(),
             )],
         )
-        .await?;
+        .await
+        .map_err(|_| {
+            AuthorizationBackendUnavailable::new(std::io::Error::other(
+                "decision audit unavailable",
+            ))
+        })?;
         Ok(false)
     }
 
@@ -796,8 +817,23 @@ struct GrantChange {
     #[serde(default)]
     remove: bool,
 }
-async fn unsupported_permission() -> axum::http::StatusCode {
-    axum::http::StatusCode::FORBIDDEN
+async fn unsupported_permission<C: CatalogStore, S: SecretStore>(
+    axum::extract::State(ctx): axum::extract::State<ApiContext<State<CedarAuthorizer, C, S>>>,
+    axum::Extension(metadata): axum::Extension<RequestMetadata>,
+) -> Result<axum::http::StatusCode> {
+    use lakekeeper::service::events::AuthorizationFailureSource;
+    ctx.v1_state
+        .authz
+        .check_denied(
+            &metadata,
+            vec![(
+                Resource::new("Server", ctx.v1_state.authz.server_id),
+                "unsupported_permission".into(),
+            )],
+        )
+        .await
+        .map_err(|e| e.into_error_model())?;
+    Ok(axum::http::StatusCode::FORBIDDEN)
 }
 async fn read_grants<C: CatalogStore, S: SecretStore>(
     axum::extract::State(ctx): axum::extract::State<ApiContext<State<CedarAuthorizer, C, S>>>,

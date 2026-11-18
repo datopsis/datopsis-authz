@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Local TLS/PostgreSQL integration check; separate from native C1-C8."""
+import getpass
 import glob
 import json
 import os
@@ -28,6 +29,11 @@ def main():
         def command(*args, **kwargs):
             return subprocess.run(args, check=True, capture_output=True, text=True, **kwargs).stdout
         command('openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',str(root/'key.pem'),'-out',str(root/'cert.pem'),'-days','1','-subj','/CN=localhost','-addext','subjectAltName=DNS:localhost')
+        (root/'cert.pem').rename(root/'ca.pem')
+        (root/'key.pem').rename(root/'ca-key.pem')
+        command('openssl','req','-new','-newkey','rsa:2048','-nodes','-keyout',str(root/'key.pem'),'-out',str(root/'leaf.csr'),'-subj','/CN=localhost')
+        (root/'extensions').write_text('basicConstraints=CA:FALSE\nsubjectAltName=DNS:localhost\nextendedKeyUsage=serverAuth\n')
+        command('openssl','x509','-req','-in',str(root/'leaf.csr'),'-CA',str(root/'ca.pem'),'-CAkey',str(root/'ca-key.pem'),'-CAcreateserial','-days','1','-extfile',str(root/'extensions'),'-out',str(root/'cert.pem'))
         for name in ('secret','db-password','reader-key'):
             (root/name).write_text(os.urandom(32).hex())
         command(str(pg_bin/'initdb'),'-D',str(root/'pg'),'--auth-local=trust','--auth-host=scram-sha-256','--pwfile',str(root/'db-password'))
@@ -63,9 +69,9 @@ def main():
             ctx.load_cert_chain(root/'cert.pem',root/'key.pem')
             server.socket = ctx.wrap_socket(server.socket,server_side=True)
             threading.Thread(target=server.serve_forever,daemon=True).start()
-            url = f'postgres://{os.environ["USER"]}:{(root/"db-password").read_text()}@localhost:{dbport}/postgres?sslmode=verify-full'
+            url = f'postgres://{getpass.getuser()}:{(root/"db-password").read_text()}@localhost:{dbport}/postgres?sslmode=verify-full'
             (root/'db-url').write_text(url)
-            env = dict(os.environ,AUTHZ_LISTEN=f'127.0.0.1:{serviceport}',AUTHZ_TLS_CERT=str(root/'cert.pem'),AUTHZ_TLS_KEY=str(root/'key.pem'),AUTHZ_KEY_FILE=str(root/'secret'),AUTHZ_DATABASE_URL_FILE=str(root/'db-url'),AUTHZ_DATABASE_CA_FILE=str(root/'cert.pem'),AUTHZ_RAUTHY_USERS_URL=f'https://localhost:{server.server_port}/auth/v1/users',AUTHZ_RAUTHY_CA_FILE=str(root/'cert.pem'),AUTHZ_RAUTHY_KEY_FILE=str(root/'reader-key'))
+            env = dict(os.environ,AUTHZ_LISTEN=f'127.0.0.1:{serviceport}',AUTHZ_TLS_CERT=str(root/'cert.pem'),AUTHZ_TLS_KEY=str(root/'key.pem'),AUTHZ_KEY_FILE=str(root/'secret'),AUTHZ_DATABASE_URL_FILE=str(root/'db-url'),AUTHZ_DATABASE_CA_FILE=str(root/'ca.pem'),AUTHZ_RAUTHY_USERS_URL=f'https://localhost:{server.server_port}/auth/v1/users',AUTHZ_RAUTHY_CA_FILE=str(root/'ca.pem'),AUTHZ_RAUTHY_KEY_FILE=str(root/'reader-key'))
             # verify-full must reject both an unknown CA and a wrong hostname.
             command('openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',str(root/'other-key.pem'),'-out',str(root/'other.pem'),'-days','1','-subj','/CN=unknown')
             invalid = [dict(env,AUTHZ_DATABASE_CA_FILE=str(root/'other.pem'))]
@@ -74,7 +80,7 @@ def main():
             for bad_env in invalid:
                 result = subprocess.run(['target/debug/authz-serve','migrate'],env=bad_env,capture_output=True,timeout=15)
                 assert result.returncode != 0, 'PostgreSQL TLS downgrade accepted'
-            client_ctx = ssl.create_default_context(cafile=str(root/'cert.pem'))
+            client_ctx = ssl.create_default_context(cafile=str(root/'ca.pem'))
             def post(path, body, context=client_ctx, key=True):
                 request = urllib.request.Request(f'https://localhost:{serviceport}/{path}',data=json.dumps(body).encode(),headers={'Content-Type':'application/json',**({'Authorization':'Bearer '+(root/'secret').read_text()} if key else {})})
                 with urllib.request.urlopen(request,context=context,timeout=10) as response:

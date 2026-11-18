@@ -1,4 +1,4 @@
-name: S1
+name: Catalog MVP
 on:
   pull_request:
   push:
@@ -17,7 +17,13 @@ jobs:
           python3 -m pip install PyYAML==6.0.2
           python3 -c 'import yaml,pathlib; [yaml.safe_load(p.read_text()) for p in pathlib.Path(".github/workflows").glob("*.yml")]'
       - run: cargo install cargo-audit --version 0.22.2 --locked
-      - run: cargo audit
+      - run: python3 scripts/dependency-audit.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: dependency-audit
+          path: reports/audit/
+          if-no-files-found: error
   native:
     name: native (${{ matrix.runner }})
     strategy:
@@ -42,7 +48,7 @@ jobs:
           test "$(uname -m)" = "$EXPECTED_MACHINE"
           df -h
           sudo apt-get update -qq
-          sudo apt-get install -y protobuf-compiler libssl-dev pkg-config
+          sudo apt-get install -y protobuf-compiler libssl-dev pkg-config postgresql
       - name: Pinned acceptance fixture and blocked-result initialization
         run: |
           git clone https://github.com/datopsis/lakehouse-integration .sources/lakehouse-integration
@@ -64,7 +70,7 @@ jobs:
         run: |
           docker build -f Containerfile.builder -t s1-builder .
           mkdir -p .cargo-cache
-          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked && python3 scripts/collect-runtime-libs.py target/debug/lakekeeper-bin-datopsis target/spike-libs'
+          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked && python3 scripts/collect-runtime-libs.py target/debug/lakekeeper-bin-datopsis target/debug/authz-serve target/spike-libs'
           sudo chown -R "$(id -u):$(id -g)" target .cargo-cache
       - name: Save native compiler cache
         if: ${{ !cancelled() && steps.rust-cache.outcome == 'success' }}
@@ -79,6 +85,7 @@ jobs:
         run: |
           docker build -f Containerfile.spike --target loader-probe -t localhost/lakekeeper-loader:s1 .
           docker run --rm localhost/lakekeeper-loader:s1 version
+          docker run --rm --entrypoint /usr/local/bin/datopsis-authz localhost/lakekeeper-loader:s1 policy
       - name: Build pinned owner fixture images without source changes
         run: |
           sudo apt-get install -y rpm podman gnupg argon2
