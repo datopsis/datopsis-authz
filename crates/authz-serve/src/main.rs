@@ -1,4 +1,5 @@
 mod gateway;
+mod lifecycle;
 
 use authz_core::{Check, Mutation, Store, Verdict};
 use axum::{

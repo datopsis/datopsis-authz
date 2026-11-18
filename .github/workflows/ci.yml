@@ -45,7 +45,7 @@ jobs:
           test "$(uname -m)" = "$EXPECTED_MACHINE"
           df -h
           sudo apt-get update -qq
-          sudo apt-get install -y protobuf-compiler libssl-dev pkg-config
+          sudo apt-get install -y protobuf-compiler libssl-dev pkg-config socat
       - name: Pinned acceptance fixture and blocked-result initialization
         run: |
           git clone https://github.com/datopsis/lakehouse-integration .sources/lakehouse-integration
@@ -56,6 +56,7 @@ jobs:
       - run: |
           .venv/bin/python evaluation/s1/run.py initialize
           .venv/bin/python evaluation/s3/run.py initialize
+          .venv/bin/python evaluation/s5/run.py initialize
       - name: Restore native compiler cache
         id: rust-cache
         uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
@@ -101,6 +102,21 @@ jobs:
           docker run --rm localhost/lakekeeper-datopsis:s1 version
           docker run --rm localhost/authz-serve:s1 policy
       - run: python3 scripts/image-evidence.py
+      - name: S5 per-user Sail lifecycle, isolation, scale and resource limits
+        id: s5
+        continue-on-error: true
+        run: .venv/bin/python evaluation/s5/run.py
+      - name: Cleanup and sanitize S5 evidence
+        if: ${{ always() && steps.s5.outcome != 'skipped' }}
+        run: .venv/bin/python evaluation/s5/run.py cleanup
+      - name: Retain S5 sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: s5-${{ matrix.arch }}-${{ github.run_id }}
+          path: reports/s5/
+          if-no-files-found: error
+          retention-days: 14
       - name: S3 Sail gateway authentication, isolation and unchanged paced stream
         id: s3
         continue-on-error: true
@@ -120,6 +136,11 @@ jobs:
           retention-days: 14
       - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
         run: .venv/bin/python evaluation/s1/run.py
+      - name: S5 blocking outcome
+        if: ${{ always() && steps.s5.outcome != 'skipped' }}
+        run: test "$S5_RESULT" = success
+        env:
+          S5_RESULT: ${{ steps.s5.outcome }}
       - name: S3 blocking outcome
         if: ${{ always() && steps.s3.outcome != 'skipped' }}
         run: test "$S3_RESULT" = success
