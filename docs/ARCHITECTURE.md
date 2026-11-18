@@ -51,6 +51,10 @@ All nine action batch methods forward catalog checks; project discovery requests
 item filtering rather than claiming global visibility. Lifecycle hooks persist
 server/project/warehouse/namespace/tabular ancestry and resource owners.
 Select grants cover metadata/read/discovery, never write or ListEverything.
+Configured instance-admin bypass is rejected at adapter startup because it skips
+the pluggable authorizer and its durable audit. In-process Lakekeeper maintenance
+uses upstream internal privilege/auditing; this is not a user-grant path and its
+event stream is not durably integrated with serve in this slice.
 Role actions/assumption/administration, other-user inspection and delegated
 execution deny. Unsupported permission paths return 403; OpenAPI composition is
 not implemented. Health reporting is not yet qualified. The complete trait

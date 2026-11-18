@@ -13,7 +13,9 @@ asserts the verified principal to serve over verified TLS using a protected
 service credential. Serve's mutation/snapshot APIs are trusted control-plane APIs;
 never expose them to clients. Catalog grant routes bind identity to RequestMetadata,
 never request headers or supplied principal JSON. Owners can grant owner/select;
-readers cannot administer grants. The service key is mutation-capable: key scoping,
+readers cannot administer grants. Instance-admin bypass configuration is rejected;
+use Cedar owner grants. Upstream in-process maintenance auditing is not persisted
+by serve. The service key is mutation-capable: key scoping,
 rotation and mTLS are not implemented.
 
 Rauthy access is mandatory. Use a separate Users/read API key and a private CA.

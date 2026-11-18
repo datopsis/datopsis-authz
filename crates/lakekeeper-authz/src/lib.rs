@@ -100,8 +100,11 @@ impl Authorizer for CedarAuthorizer {
     async fn can_bootstrap(&self, metadata: &RequestMetadata) -> Result<()> {
         use lakekeeper::service::events::AuthorizationFailureSource;
         let server = Resource::new("Server", self.server_id);
-        if metadata.user_id().map(ToString::to_string).as_deref()
-            != Some(&std::env::var("AUTHZ_BOOTSTRAP_PRINCIPAL").unwrap_or("oidc~operator".into()))
+        if !matches!(metadata.actor(), lakekeeper::service::Actor::Principal(_))
+            || metadata.user_id().map(ToString::to_string).as_deref()
+                != Some(
+                    &std::env::var("AUTHZ_BOOTSTRAP_PRINCIPAL").unwrap_or("oidc~operator".into()),
+                )
         {
             self.check_denied(metadata, vec![(server, "bootstrap".into())])
                 .await
@@ -116,9 +119,18 @@ impl Authorizer for CedarAuthorizer {
         // Initialize the designated bootstrap owner's graph before checking it;
         // the hook repeats this idempotently after Lakekeeper commits bootstrap.
         self.put(metadata, server.clone(), None).await?;
-        self.check(metadata, None, vec![(server, "bootstrap".into())])
+        let decisions = self
+            .check(metadata, None, vec![(server, "bootstrap".into())])
             .await
             .map_err(|e| e.into_error_model())?;
+        if decisions.iter().any(|decision| !decision.allowed) {
+            return Err(lakekeeper::api::ErrorModel::forbidden(
+                "Bootstrap denied",
+                "Forbidden",
+                None,
+            )
+            .into());
+        }
         Ok(())
     }
 
@@ -663,6 +675,10 @@ use lakekeeper::service::authz::{
 };
 impl CedarAuthorizer {
     pub fn from_env(server_id: ServerId) -> anyhow::Result<Self> {
+        anyhow::ensure!(
+            lakekeeper::CONFIG.instance_admins.is_empty(),
+            "instance-admin bypass is unsupported: use audited Cedar owner grants"
+        );
         let endpoint = std::env::var("AUTHZ_ENDPOINT")?;
         anyhow::ensure!(endpoint.starts_with("https://"), "verified HTTPS required");
         let ca = reqwest::Certificate::from_pem(&std::fs::read(std::env::var("AUTHZ_CA_FILE")?)?)?;
@@ -871,6 +887,16 @@ async fn permission_request(
         "view" => "View",
         "generic-table" => "GenericTable",
         _ => {
+            authz
+                .check_denied(
+                    metadata,
+                    vec![(
+                        Resource::new("Server", authz.server_id),
+                        "unsupported_permission".into(),
+                    )],
+                )
+                .await
+                .map_err(|e| e.into_error_model())?;
             return Err(lakekeeper::api::ErrorModel::forbidden(
                 "Unsupported resource",
                 "Forbidden",
