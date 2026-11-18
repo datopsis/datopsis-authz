@@ -168,21 +168,54 @@ def evaluate(arch):
                 "unmapped_claim_denied": negative,
                 "mapped_group_exact_rows": allowed,
                 "removed_mapping_old_token_denied": denied,
-                "adaptation": "Verified JWT groups used directly; no membership synchronization",
+                "adaptation": "Live authoritative groups with mandatory 250ms cache; JWT groups ignored",
             })
             # Keep the original old-token membership-removal control strict.
             # A stateless claim adapter is expected to FAIL here: the JWT still
             # contains lake-readers. Mapping revocation above is not a substitute.
             tuples("group:lake-readers", "select", namespace)
-            removed = provider.remove_group(claims["sub"])
-            assert "lake-readers" not in (removed.get("groups") or [])
-            old_token_denied = denial(lambda: catalog.read(reader))
-            return {"old_token_after_IdP_removal": old_token_denied}
+            user_url = provider.base + '/auth/v1/users/' + claims['sub']
+            original_user = http.json('GET', user_url, headers=provider.admin)
+            try:
+                removed = provider.remove_group(claims['sub'])
+                acknowledged = time.monotonic()
+                assert "lake-readers" not in (removed.get("groups") or [])
+                samples = []
+                while time.monotonic() - acknowledged < 30:
+                    response = http.request('GET', catalog.base + f'/catalog/v1/{catalog.warehouse_id}/namespaces/bakeoff/tables/sample', headers={'Authorization':'Bearer '+human})
+                    samples.append({'seconds_since_ack':time.monotonic()-acknowledged,'status':response.status_code})
+                    assert response.status_code in (200,403,404), response.status_code
+                    if response.status_code in (403,404): break
+                    time.sleep(.025)
+                assert samples[-1]['status'] in (403,404), samples
+                assert decode(human)[1]['exp'] > time.time(), 'Must deny old unexpired token'
+                old_token_denied = denial(lambda: catalog.read(reader))
+            finally:
+                http.json('PUT', user_url, headers=provider.admin, json=original_user)
+                time.sleep(.3)
+            return {"old_token_after_IdP_removal": old_token_denied, "samples":samples}
         finally:
             tuples("group:lake-readers", "select", namespace, True)
             tuples(human_id, "select", namespace)
 
     record("C3", groups)
+    def idp_outage():
+        # Positive control, then a real IdP outage after cache expiry.
+        catalog.read(reader)
+        run('docker','stop',provider.container)
+        try:
+            time.sleep(.3)
+            response = http.request('GET', catalog.base + f'/catalog/v1/{catalog.warehouse_id}/namespaces/bakeoff/tables/sample', headers={'Authorization':'Bearer '+human})
+            assert response.status_code in (403,500,503), response.status_code
+            body = response.json()
+            assert body.get('error',{}).get('type'), body
+            assert not any(k in body for k in ('metadata','config','storage-credentials'))
+        finally:
+            run('docker','start',provider.container)
+            wait(lambda:http.request('GET',provider.base+'/auth/v1/health').status_code==200,180)
+        catalog.read(reader)
+        return {'outage_status':response.status_code,'error_type':body['error']['type'],'recovered':True}
+    record('idp_outage_fail_closed', idp_outage, required=True)
 
     def revoke():
         catalog.read(catalog.pyiceberg(human))
@@ -283,8 +316,7 @@ def evaluate(arch):
     record("fixture_reset_before_C8", lambda: restore(catalog, key, state_before_outage), required=True)
 
     def operations():
-        # The grant assertion remains strict: an in-memory backend is expected
-        # to FAIL this test, never be counted as a successful restart.
+        # Retain the complete graph and decisions across a process restart.
         catalog.read(catalog.pyiceberg())
         from s1_fixture import snapshot
         before = snapshot(catalog, key)

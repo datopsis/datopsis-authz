@@ -55,7 +55,7 @@ impl Authorizer for CedarAuthorizer {
     type RoleAction = CatalogRoleAction;
 
     fn implementation_name() -> &'static str {
-        "datopsis-cedar-s1"
+        "datopsis-cedar"
     }
 
     fn server_id(&self) -> ServerId {
@@ -63,7 +63,16 @@ impl Authorizer for CedarAuthorizer {
     }
 
     fn new_router<C: CatalogStore, S: SecretStore>(&self) -> Router<ApiContext<State<Self, C, S>>> {
+        use axum::routing::get;
         Router::new()
+            .route(
+                "/permissions/{kind}/{id}/grants",
+                get(read_grants::<C, S>).post(write_grants::<C, S>),
+            )
+            .route(
+                "/permissions/{*unsupported}",
+                axum::routing::any(unsupported_permission),
+            )
     }
 
     async fn check_assume_role_impl(
@@ -72,6 +81,11 @@ impl Authorizer for CedarAuthorizer {
         _assumed_role: &Role,
         _request_metadata: &RequestMetadata,
     ) -> Result<bool, AuthzBackendErrorOrBadRequest> {
+        self.check_denied(
+            _request_metadata,
+            vec![(Resource::new("Role", "unsupported"), "assume_role".into())],
+        )
+        .await?;
         Ok(false)
     }
 
@@ -105,6 +119,14 @@ impl Authorizer for CedarAuthorizer {
         &self,
         _metadata: &RequestMetadata,
     ) -> Result<bool, AuthzBackendErrorOrBadRequest> {
+        self.check_denied(
+            _metadata,
+            vec![(
+                Resource::new("Server", self.server_id),
+                "search_users".into(),
+            )],
+        )
+        .await?;
         Ok(false)
     }
 
@@ -140,10 +162,19 @@ impl Authorizer for CedarAuthorizer {
         _for_user: Option<&UserOrRole>,
         roles_with_actions: &[(&Role, Self::RoleAction)],
     ) -> Result<Vec<AuthorizationDecision>, IsAllowedActionError> {
-        Ok(vec![
-            AuthorizationDecision::deny();
-            roles_with_actions.len()
-        ])
+        self.check_denied(
+            _metadata,
+            roles_with_actions
+                .iter()
+                .map(|(_, action)| {
+                    (
+                        Resource::new("Role", "unsupported"),
+                        action.action_descriptor().action_name.to_owned(),
+                    )
+                })
+                .collect(),
+        )
+        .await
     }
 
     async fn are_allowed_server_actions_impl(
@@ -247,7 +278,25 @@ impl Authorizer for CedarAuthorizer {
         )],
     ) -> Result<Vec<AuthorizationDecision>, IsAllowedActionError> {
         if actions.iter().any(|(_, a)| a.user.is_some()) {
-            return Ok(vec![AuthorizationDecision::deny(); actions.len()]);
+            return self
+                .check_denied(
+                    _metadata,
+                    actions
+                        .iter()
+                        .map(|(_, a)| {
+                            (
+                                Resource::new("Table", a.info.table_id()),
+                                a.action
+                                    .clone()
+                                    .into()
+                                    .action_descriptor()
+                                    .action_name
+                                    .to_owned(),
+                            )
+                        })
+                        .collect(),
+                )
+                .await;
         }
         self.check(
             _metadata,
@@ -281,7 +330,25 @@ impl Authorizer for CedarAuthorizer {
         )],
     ) -> Result<Vec<AuthorizationDecision>, IsAllowedActionError> {
         if actions.iter().any(|(_, a)| a.user.is_some()) {
-            return Ok(vec![AuthorizationDecision::deny(); actions.len()]);
+            return self
+                .check_denied(
+                    _metadata,
+                    actions
+                        .iter()
+                        .map(|(_, a)| {
+                            (
+                                Resource::new("View", a.info.view_id()),
+                                a.action
+                                    .clone()
+                                    .into()
+                                    .action_descriptor()
+                                    .action_name
+                                    .to_owned(),
+                            )
+                        })
+                        .collect(),
+                )
+                .await;
         }
         self.check(
             _metadata,
@@ -317,7 +384,25 @@ impl Authorizer for CedarAuthorizer {
         )],
     ) -> Result<Vec<AuthorizationDecision>, IsAllowedActionError> {
         if actions.iter().any(|(_, a)| a.user.is_some()) {
-            return Ok(vec![AuthorizationDecision::deny(); actions.len()]);
+            return self
+                .check_denied(
+                    _metadata,
+                    actions
+                        .iter()
+                        .map(|(_, a)| {
+                            (
+                                Resource::new("GenericTable", a.info.generic_table_id()),
+                                a.action
+                                    .clone()
+                                    .into()
+                                    .action_descriptor()
+                                    .action_name
+                                    .to_owned(),
+                            )
+                        })
+                        .collect(),
+                )
+                .await;
         }
         self.check(
             _metadata,
@@ -370,7 +455,10 @@ impl Authorizer for CedarAuthorizer {
     }
 
     async fn delete_user(&self, _metadata: &RequestMetadata, _user_id: UserId) -> Result<()> {
-        Ok(())
+        self.mutate(Mutation::Delete {
+            resource: Resource::new("User", _user_id),
+        })
+        .await
     }
 
     async fn create_role(
@@ -379,11 +467,21 @@ impl Authorizer for CedarAuthorizer {
         _role_id: RoleId,
         _parent_project_id: ArcProjectId,
     ) -> Result<()> {
-        Ok(())
+        Err(lakekeeper::api::ErrorModel::forbidden(
+            "Role management is not implemented",
+            "Forbidden",
+            None,
+        )
+        .into())
     }
 
     async fn delete_role(&self, _metadata: &RequestMetadata, _role_id: RoleId) -> Result<()> {
-        Ok(())
+        Err(lakekeeper::api::ErrorModel::forbidden(
+            "Role management is not implemented",
+            "Forbidden",
+            None,
+        )
+        .into())
     }
 
     async fn create_project(
@@ -592,35 +690,48 @@ impl CedarAuthorizer {
         for_user: Option<&UserOrRole>,
         actions: Vec<(Resource, String)>,
     ) -> Result<Vec<AuthorizationDecision>, IsAllowedActionError> {
-        // S1 does not implement inspection/delegated execution or role assumption.
-        if for_user.is_some()
-            || !matches!(metadata.actor(), lakekeeper::service::Actor::Principal(_))
-        {
-            return Ok(vec![AuthorizationDecision::deny(); actions.len()]);
-        }
+        let deny = for_user.is_some()
+            || !matches!(metadata.actor(), lakekeeper::service::Actor::Principal(_));
         let principal = metadata
             .user_id()
             .map(ToString::to_string)
             .unwrap_or_default();
-        let groups = metadata
-            .token_roles()
-            .map(|r| {
-                r.roles()
-                    .iter()
-                    .filter(|r| r.provider_id().to_string() == "oidc")
-                    .map(|r| r.source_id().to_string())
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
         let checks: Vec<_> = actions
             .into_iter()
             .map(|(resource, action)| Check {
+                deny,
                 principal: principal.clone(),
-                groups: groups.clone(),
+                groups: vec![],
                 action,
                 resource,
             })
             .collect();
+        self.send_checks(checks).await
+    }
+    async fn check_denied(
+        &self,
+        metadata: &RequestMetadata,
+        actions: Vec<(Resource, String)>,
+    ) -> Result<Vec<AuthorizationDecision>, IsAllowedActionError> {
+        let checks = actions
+            .into_iter()
+            .map(|(resource, action)| Check {
+                deny: true,
+                principal: metadata
+                    .user_id()
+                    .map(ToString::to_string)
+                    .unwrap_or_default(),
+                groups: vec![],
+                action,
+                resource,
+            })
+            .collect();
+        self.send_checks(checks).await
+    }
+    async fn send_checks(
+        &self,
+        checks: Vec<Check>,
+    ) -> Result<Vec<AuthorizationDecision>, IsAllowedActionError> {
         let results: Vec<Verdict> = self
             .client
             .post(format!("{}/decide", self.endpoint))
@@ -651,7 +762,7 @@ impl CedarAuthorizer {
                                 policy_id,
                                 name: None,
                                 effect: lakekeeper::service::authz::PolicyEffect::Permit,
-                                source: Some("s1-generated-grants".into()),
+                                source: Some("catalog-grants".into()),
                             },
                         )
                         .collect(),
@@ -676,4 +787,97 @@ fn tabular_resource(tabular: lakekeeper::service::TabularId) -> Resource {
         TabularId::View(id) => Resource::new("View", id),
         TabularId::GenericTable(id) => Resource::new("GenericTable", id),
     }
+}
+
+#[derive(serde::Deserialize)]
+struct GrantChange {
+    subject: Resource,
+    access: String,
+    #[serde(default)]
+    remove: bool,
+}
+async fn unsupported_permission() -> axum::http::StatusCode {
+    axum::http::StatusCode::FORBIDDEN
+}
+async fn read_grants<C: CatalogStore, S: SecretStore>(
+    axum::extract::State(ctx): axum::extract::State<ApiContext<State<CedarAuthorizer, C, S>>>,
+    axum::Extension(metadata): axum::Extension<RequestMetadata>,
+    axum::extract::Path((kind, id)): axum::extract::Path<(String, String)>,
+) -> Result<axum::Json<Vec<authz_core::Grant>>> {
+    permission_request(&ctx.v1_state.authz, &metadata, kind, id, None).await
+}
+async fn write_grants<C: CatalogStore, S: SecretStore>(
+    axum::extract::State(ctx): axum::extract::State<ApiContext<State<CedarAuthorizer, C, S>>>,
+    axum::Extension(metadata): axum::Extension<RequestMetadata>,
+    axum::extract::Path((kind, id)): axum::extract::Path<(String, String)>,
+    axum::Json(change): axum::Json<GrantChange>,
+) -> Result<axum::Json<Vec<authz_core::Grant>>> {
+    permission_request(&ctx.v1_state.authz, &metadata, kind, id, Some(change)).await
+}
+async fn permission_request(
+    authz: &CedarAuthorizer,
+    metadata: &RequestMetadata,
+    kind: String,
+    id: String,
+    change: Option<GrantChange>,
+) -> Result<axum::Json<Vec<authz_core::Grant>>> {
+    use lakekeeper::service::events::AuthorizationFailureSource;
+    let kind = match kind.as_str() {
+        "server" => "Server",
+        "project" => "Project",
+        "warehouse" => "Warehouse",
+        "namespace" => "Namespace",
+        "table" => "Table",
+        "view" => "View",
+        "generic-table" => "GenericTable",
+        _ => {
+            return Err(lakekeeper::api::ErrorModel::forbidden(
+                "Unsupported resource",
+                "Forbidden",
+                None,
+            )
+            .into());
+        }
+    };
+    let resource = Resource::new(kind, id);
+    let check = Check {
+        deny: !matches!(metadata.actor(), lakekeeper::service::Actor::Principal(_)),
+        principal: metadata
+            .user_id()
+            .map(ToString::to_string)
+            .unwrap_or_default(),
+        groups: vec![],
+        action: "manage_grants".into(),
+        resource: resource.clone(),
+    };
+    let remove = change.as_ref().is_some_and(|c| c.remove);
+    let grant = change.map(|c| authz_core::Grant {
+        subject: c.subject,
+        resource,
+        access: c.access,
+    });
+    let response = authz
+        .client
+        .post(format!("{}/permissions", authz.endpoint))
+        .bearer_auth(&authz.key)
+        .json(&serde_json::json!({"check": check, "grant": grant, "remove":remove}))
+        .send()
+        .await
+        .map_err(|e| AuthorizationBackendUnavailable::new(e).into_error_model())?;
+    if response.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err(lakekeeper::api::ErrorModel::forbidden(
+            "Grant owner required",
+            "Forbidden",
+            None,
+        )
+        .into());
+    }
+    Ok(axum::Json(
+        response
+            .error_for_status()
+            .map_err(|e| AuthorizationBackendUnavailable::new(e).into_error_model())?
+            .json()
+            .await
+            .map_err(|e| AuthorizationBackendUnavailable::new(e).into_error_model())?,
+    ))
 }

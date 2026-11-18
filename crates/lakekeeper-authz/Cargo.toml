@@ -11,3 +11,4 @@ axum.workspace = true
 lakekeeper.workspace = true
 authz-core = { path = "../authz-core" }
 async-trait = "0.1"
+serde.workspace = true

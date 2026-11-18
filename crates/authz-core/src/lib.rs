@@ -1,4 +1,4 @@
-//! S1 only: trusted adapter assertions, an in-memory graph, and Cedar evaluation.
+//! Cedar evaluation of a transactionally loaded relationship graph.
 use anyhow::{Result, bail};
 use cedar_policy::{
     Authorizer, Context, Decision, Entities, PolicySet, Request, Schema, ValidationMode, Validator,
@@ -35,6 +35,8 @@ impl Resource {
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Check {
+    #[serde(default)]
+    pub deny: bool,
     pub principal: String,
     pub groups: Vec<String>,
     pub action: String,
@@ -80,6 +82,20 @@ impl Store {
                 parent,
                 owner,
             } => {
+                let allowed_parent = match resource.kind.as_str() {
+                    "Server" => None,
+                    "Project" => Some(&["Server"][..]),
+                    "Warehouse" => Some(&["Project"][..]),
+                    "Namespace" => Some(&["Warehouse", "Namespace"][..]),
+                    "Table" | "View" | "GenericTable" => Some(&["Namespace"][..]),
+                    _ => bail!("unsupported hierarchy resource"),
+                };
+                if let Some(p) = &parent {
+                    anyhow::ensure!(
+                        allowed_parent.is_some_and(|kinds| kinds.contains(&p.kind.as_str())),
+                        "invalid parent type"
+                    );
+                }
                 if let Some(p) = &parent
                     && (p == &resource || self.ancestors(p).contains(&resource))
                 {
@@ -104,6 +120,23 @@ impl Store {
                     .retain(|g| g.resource != resource && g.subject != resource);
             }
             Mutation::Grant { grant, remove } => {
+                anyhow::ensure!(
+                    ["User", "Group"].contains(&grant.subject.kind.as_str()),
+                    "unsupported subject"
+                );
+                anyhow::ensure!(
+                    [
+                        "Server",
+                        "Project",
+                        "Warehouse",
+                        "Namespace",
+                        "Table",
+                        "View",
+                        "GenericTable"
+                    ]
+                    .contains(&grant.resource.kind.as_str()),
+                    "unsupported resource"
+                );
                 if !["owner", "select"].contains(&grant.access.as_str()) {
                     bail!("unsupported grant");
                 }
@@ -129,6 +162,12 @@ impl Store {
         result
     }
     pub fn decide(&self, check: &Check) -> Result<Verdict> {
+        if check.deny || check.principal.is_empty() {
+            return Ok(Verdict {
+                allowed: false,
+                policies: vec![],
+            });
+        }
         let mut entities: Vec<Value> = self.parents.values().map(|(r, p)| json!({
             "uid": r.uid(), "attrs": {}, "parents": p.iter().map(Resource::uid).collect::<Vec<_>>()
         })).collect();
@@ -140,7 +179,9 @@ impl Store {
         let mut text = String::from(
             "@id(\"self-read\") permit(principal, action, resource) when { context.operation == \"read_self\" && resource == principal };\n",
         );
-        for (i, g) in self.grants.iter().enumerate() {
+        for g in &self.grants {
+            use sha2::{Digest, Sha256};
+            let i = format!("{:x}", Sha256::digest(serde_json::to_vec(g)?));
             // Visibility travels up only for discovery, never for data or mutations.
             let discover = ["include_in_list", "use", "get_config", "list_namespaces"]
                 .contains(&check.action.as_str());
@@ -199,6 +240,7 @@ mod tests {
     fn identity_read_is_self_only() -> Result<()> {
         let store = Store::default();
         let mut check = Check {
+            deny: false,
             principal: "alice".into(),
             groups: vec![],
             action: "read_self".into(),
@@ -228,6 +270,7 @@ mod tests {
             access: "select".into(),
         };
         let mut c = Check {
+            deny: false,
             principal: "alice".into(),
             groups: vec!["readers".into()],
             action: "read_data".into(),
@@ -239,6 +282,16 @@ mod tests {
             remove: false,
         })?;
         assert!(s.decide(&c)?.allowed);
+        let policy_ids = s.decide(&c)?.policies;
+        s.grants.insert(
+            0,
+            Grant {
+                subject: Resource::new("User", "unrelated"),
+                resource: Resource::new("Table", "elsewhere"),
+                access: "select".into(),
+            },
+        );
+        assert_eq!(s.decide(&c)?.policies, policy_ids);
         c.action = "write_data".into();
         assert!(!s.decide(&c)?.allowed);
         c.action = "read_data".into();

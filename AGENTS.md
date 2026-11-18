@@ -1,8 +1,8 @@
 # Agent instructions
 
-This is S1, not the MVP. Preserve the owner's one-monorepo, one-platform-program
+Owner approved the MVP on 2026-11-17. This branch implements catalog slice 1. Preserve the owner's one-monorepo, one-platform-program
 with roles decision. The Lakekeeper adapter is compiled into a separate catalog
-binary. Do not begin the MVP without the owner's go/no-go.
+binary. Trino enforcement, Sail gateway and hardened images are later slices.
 
 Pin external repositories by full commit; do not modify them. Lakekeeper source:
 9bd377162345b64a716f0a4fcffe4e7e7f3c7534. Acceptance harness:

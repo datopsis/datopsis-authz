@@ -2,6 +2,7 @@
 FROM registry.access.redhat.com/ubi9/ubi-micro:9.8@sha256:6d9eff186ce3ccf399c1835265e7fd3f83bd112cc3422da2d39fd44e234aab59 AS loader-probe
 COPY --chmod=0555 target/spike-libs/ /usr/lib64/
 COPY --chmod=0555 target/debug/lakekeeper-bin-datopsis /usr/local/bin/lakekeeper-datopsis
+COPY --chmod=0555 target/debug/authz-serve /usr/local/bin/datopsis-authz
 USER 999:0
 ENTRYPOINT ["/usr/local/bin/lakekeeper-datopsis"]
 CMD ["version"]
@@ -26,6 +27,7 @@ ARG LOCK_SHA256
 LABEL org.opencontainers.image.source="https://github.com/datopsis/datopsis-authz" \
       io.datopsis.artifact-lock.sha256="${LOCK_SHA256}" \
       org.opencontainers.image.revision="${SOURCE_REVISION}"
+COPY --chmod=0555 target/spike-libs/ /usr/lib64/
 COPY --chmod=0555 target/debug/authz-serve /usr/local/bin/datopsis-authz
 ENTRYPOINT ["/usr/local/bin/datopsis-authz"]
 CMD ["serve"]

@@ -32,6 +32,21 @@ elif sys.argv[1:] == ['build']:
     # The imported entry point sets its own output directory. Keep its data
     # in this repository’s allowlisted, subsequently sanitized evidence tree.
     common.OUT = ROOT/'reports/s1'
+    # Build the additional extension-free relationship-store image at the reviewed pin.
+    os.environ['PYTHONPATH'] = str(ROOT/'evaluation/artifact_transport')
     module.build()
+    import build as owner
+    import json
+    revision = 'd5b45103f8b3d5eb3827736b3ff367118da3b80d'
+    source = ROOT/'.sources/postgresql-ubi'
+    common.run('git','clone','https://github.com/datopsis/postgresql-ubi',source)
+    common.run('git','-C',source,'checkout','--detach',revision)
+    common.run('bash','scripts/build-offline.sh',cwd=source,
+        env=dict(os.environ,CONTAINER_RUNTIME='docker',IMAGE='localhost/postgresql-ubi:integration',RELEASE_REVISION=revision))
+    obj = json.loads(common.run('docker','image','inspect','localhost/postgresql-ubi:integration'))[0]
+    lock = source/f'artifacts/locks/{arch}.json'
+    assert not owner.provenance_errors(obj,revision,owner.sha(lock),arch)
+    assert not common.run('git','-C',source,'status','--porcelain')
+    common.save('relationship-database-image.json', {'revision':revision,'lock_sha256':owner.sha(lock),'architecture':obj['Architecture'],'labels':obj['Config']['Labels']})
 else:
     acceptance.evaluate(arch)

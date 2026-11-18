@@ -1,36 +1,60 @@
 # datopsis-authz (working name)
 
-Apache-2.0 authorization platform spike. The owner will rename this repository.
-**S1 is evaluation-only, not an MVP or a production authorizer.** An owner go/no-go
-is required before MVP work.
+Apache-2.0 catalog authorization service, slice 1 of the owner-approved MVP
+(2026-11-17). The owner will rename this repository. The four spike PRs remain
+open as evidence. Native C1–C8 and dependency-gate results are recorded in the PR;
+unverified work is not an acceptance pass.
 
-S1 proves unmodified-source Lakekeeper composition and the Cedar catalog path on
-native amd64 and arm64. C1/C2/C4/C5/C6 pass; C3/C7/C8 fail on old-token membership
-revocation and volatile relationship state. The audit gate also remains red.
-The report links actual runs and retained sanitized evidence.
+One Rust workspace produces the platform program (`authz-serve`, installed as
+`datopsis-authz`) and a thin Lakekeeper binary containing `lakekeeper-authz`.
+`serve` evaluates Cedar against a PostgreSQL relationship/grant store.
+`migrate` applies the repeatable schema. `policy` validates the Cedar schema.
+`sail-gateway` and `token-broker` return an explicit unsupported-role error.
+Trino enforcement, Sail admission, policy bundles/analysis and hardened release
+images belong to later slices. The existing C5 engine/client catalog checks remain.
 
-The intended platform is one Rust program/image with `serve`, `sail-gateway`,
-`token-broker`, and `policy` roles. S1 implements only `serve` and schema validation
-under `policy`; other roles fail explicitly. A separate thin Lakekeeper binary
-compiles the adapter into the catalog, using unmodified pinned upstream crates.
+Implemented catalog behavior: owner and select grants, inherited resource
+permissions, item-filtered discovery, namespace/table/view lifecycle hooks,
+rename detach/attach, and owner-authorized grant read/add/remove endpoints.
+Unsupported role assumption, delegated checks, role administration and other
+permission routes deny. See [architecture](docs/ARCHITECTURE.md) for the API and
+limits, and [security](SECURITY.md) for deployment requirements.
 
-`authz-core` embeds Cedar 4.14.1, a schema, resource hierarchy and grant evaluator.
-`authz-serve` is its HTTPS API with per-run service credentials and an in-memory
-store. It trusts authenticated adapter assertions, not client-supplied JWT claims.
-Lakekeeper verifies OIDC tokens and passes verified `groups` through its token-role
-metadata. Never expose the decision/mutation API to catalog clients.
-
-See [the S1 report](docs/spikes/S1-lakekeeper-adapter.md) for coverage and limitations.
+Human membership is looked up live against Rauthy over verified HTTPS with a
+250 ms cache. JWT groups are ignored. After expiry of that cache, unavailable or
+malformed IdP responses fail closed. The fixture uses 900-second access tokens
+as a backstop and a separate 30-second expiry control. Epoch synchronization is
+deferred. PostgreSQL always uses `verify-full`; decisions and their durable,
+append-only audits commit before responses. Database/audit failures return 503.
 
 ## Development
 
-Install the pinned Rust toolchain and native prerequisites (`protobuf-compiler`,
-`pkg-config`, `libssl-dev`). Run `git config core.hooksPath .githooks`,
-`cargo test --workspace --locked`, `cargo fmt --all -- --check`, and
-`python3 scripts/check-lf.py`. Use `CARGO_BUILD_JOBS=2` on small machines.
+Use Rust 1.94.1, `protobuf-compiler`, `pkg-config`, `libssl-dev`, PostgreSQL
+(for the local component integration check), Python 3 and OpenSSL. Run:
 
-`authz-serve serve` requires `AUTHZ_TLS_CERT`, `AUTHZ_TLS_KEY`, `AUTHZ_KEY_FILE`.
-The adapter requires `AUTHZ_ENDPOINT=https://…`, `AUTHZ_CA_FILE`, `AUTHZ_KEY_FILE`.
-The bootstrap principal defaults to `oidc~operator` and can be set with
-`AUTHZ_BOOTSTRAP_PRINCIPAL`. No default service secret exists.
-TLS to Lakekeeper uses the evaluation's approved loopback nginx proxy.
+```
+git config core.hooksPath .githooks
+cargo test --workspace --locked
+cargo build --workspace --locked
+cargo fmt --all -- --check
+python3 scripts/tls-smoke.py
+python3 scripts/check-lf.py
+```
+
+Use `CARGO_BUILD_JOBS=2` on small machines. CI builds/runs identical catalog
+assertions on native amd64/arm64 and retains sanitized evidence. Required jobs
+are exactly `lint` and `test`. Local component checks do not substitute for C1–C8.
+No external source repository is modified.
+
+For `serve`, configure `AUTHZ_TLS_CERT`, `AUTHZ_TLS_KEY`, `AUTHZ_KEY_FILE`,
+`AUTHZ_DATABASE_URL_FILE`, `AUTHZ_DATABASE_CA_FILE`, `AUTHZ_RAUTHY_USERS_URL`,
+`AUTHZ_RAUTHY_CA_FILE`, `AUTHZ_RAUTHY_KEY_FILE`. `migrate` needs the database
+variables only. All secret files must be protected. `AUTHZ_LISTEN` defaults to
+`0.0.0.0:8443`. The database URL is read from a file; do not put credentials on
+command lines. Verification cannot be downgraded by URL options.
+
+The adapter needs `AUTHZ_ENDPOINT=https://…`, `AUTHZ_CA_FILE`, `AUTHZ_KEY_FILE`.
+`AUTHZ_BOOTSTRAP_PRINCIPAL` defaults to `oidc~operator`. Explicit machine subjects
+must be provisioned in `AUTHZ_MACHINE_PRINCIPALS` (comma-separated); they never
+receive group membership from a missing-user response. There are no default
+service credentials. Keep serve isolated from catalog clients.

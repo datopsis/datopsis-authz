@@ -1,0 +1,78 @@
+# Catalog MVP architecture (slice 1)
+
+Owner go: 2026-11-17. One platform program with roles, Cedar library, Apache-2.0,
+and a thin adapter compiled into Lakekeeper. This slice implements `serve`,
+repeatable database migration and schema validation only. Epochs, Trino's OPA
+endpoint, Sail gateway, token broker and hardened images are deferred.
+
+![As built](diagrams/authz-architecture.svg)
+
+Lakekeeper at `9bd377162345b64a716f0a4fcffe4e7e7f3c7534` verifies tokens before
+calling the adapter. Decisions use its authenticated principal; JWT group claims
+are discarded. Serve reads Rauthy's authoritative User API using Users/read only,
+verified TLS, redirects disabled, a 2-second timeout and a 250 ms bounded cache.
+No per-principal opt-in or epoch/claim fallback exists. The fixture's Rauthy image
+is pinned at `1e114b84b01988bf15306b110b040378878488d3`. Normal tokens live 900s.
+Explicitly configured machine subjects can receive direct grants when the User
+API returns 404, but never group grants; all other missing users fail closed.
+An IdP outage denies after the cache TTL, including machine lookup failures.
+
+The relationship database uses extension-free `datopsis/postgresql-ubi` at
+`d5b45103f8b3d5eb3827736b3ff367118da3b80d`. Lakekeeper's catalog database retains
+its separate extension-enabled image. Both connections use verified TLS.
+`migrations/0001_catalog.sql` runs transactionally under an advisory lock.
+The MVP stores its serialized graph in a single PostgreSQL row; mutation and
+check/audit transactions acquire its row lock, so multiple service processes
+cannot lose writes or evaluate stale local snapshots. This deliberately simple
+implementation serializes evaluation and is not throughput/HA qualified.
+No database state is held across process restarts. Grant IDs are SHA-256 hashes
+of canonical grant serialization, stable when unrelated grants are inserted.
+Every evaluated check has principal, operation, resource, boolean decision,
+policy IDs and a fixed reason string persisted in the same transaction before
+responding. IdP/evaluation failures produce audited denial and a 503.
+
+## Permission management
+
+The adapter adds these authenticated catalog routes:
+
+- `GET /management/v1/permissions/{kind}/{id}/grants`
+- `POST /management/v1/permissions/{kind}/{id}/grants`
+
+Kinds: server, project, warehouse, namespace, table, view, generic-table.
+POST JSON is `{"subject":{"kind":"User","id":"oidc~…"},"access":"select","remove":false}`.
+Subject kind can be User or Group; access is owner or select. `remove:true`
+revokes the exact grant. Both routes return the resource's direct grant list.
+Inherited owner authorization is evaluated in the same transaction as changes.
+The C-suite's tuple adaptation invokes these routes with the real operator token,
+then verifies GET readback. Readers' mutation attempts must deny.
+These are Cedar-native routes, not OpenFGA assignment-wire compatibility.
+
+All nine action batch methods forward catalog checks; project discovery requests
+item filtering rather than claiming global visibility. Lifecycle hooks persist
+server/project/warehouse/namespace/tabular ancestry and resource owners.
+Select grants cover metadata/read/discovery, never write or ListEverything.
+Role actions/assumption/administration, other-user inspection and delegated
+execution deny. Unsupported permission paths return 403; OpenAPI composition is
+not implemented. Health reporting is not yet qualified. The complete trait
+inventory remains in the S1 spike report. Rename still uses Lakekeeper's
+before/after hooks rather than a distributed transaction with the catalog DB;
+a failed attach denies access until repair, and cross-database reconciliation is
+not implemented.
+
+## Validation and dependency boundary
+
+C1–C8 preserve the original assertion IDs and strict typed denial oracle, including
+C3's retained old token and C8's complete state comparison and two repetitions
+of both migrations. No resets occur inside restart assertions. C5 continues
+checking all three clients' catalog permissions; it does not qualify engine
+end-user propagation. An additional IdP outage check waits past the membership
+cache TTL and requires a structured error without metadata or credentials.
+
+`dependency-audit.py` retains full-lock findings, the actual selected normal
+runtime tree (excluding procedural macros) and separate blocking/non-blocking classification. quick-xml 0.40.1
+is an unconditional Azure dependency at the Lakekeeper pin, not an optional
+feature that Cargo can disable. libsqlite3-sys is locked but not in the selected
+runtime tree. No feature has been removed yet and no ignore list exists.
+No new crate or version is required for the implementation: sqlx 0.9.0,
+reqwest 0.12.28, sha2 0.10.9 and serde were already locked. Resolving the Azure
+source/dependency issue remains approval-dependent.
