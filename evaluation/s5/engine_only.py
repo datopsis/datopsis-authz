@@ -6,6 +6,8 @@ import concurrent.futures
 import json
 import os
 import statistics
+import socket
+import subprocess
 import time
 from pathlib import Path
 
@@ -52,13 +54,37 @@ try:
                     return dict(status='FAIL',error=str(exc),total_seconds=time.monotonic()-started)
             with concurrent.futures.ThreadPoolExecutor(max_workers=20) as pool:
                 values=list(pool.map(start,range(n)))
-            memory=s5.memory()
+            ready_memory=s5.memory()
+            tunnels=[]
+            try:
+                jobs=[]
+                for index,instance in enumerate(values):
+                    if instance['status']!='READY': continue
+                    port=50100+index
+                    proc=subprocess.Popen(['sudo','-E','socat',
+                        f'TCP4-LISTEN:{port},bind=127.0.0.1,reuseaddr,fork',
+                        'EXEC:'+str(s5.HELPER)+' relay '+instance['name']],
+                        stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                    tunnels.append(proc)
+                    def ready(port=port):
+                        with socket.create_connection(('127.0.0.1',port),timeout=1): return True
+                    s5.wait(ready,10)
+                    jobs.append(dict(token='',sql='SELECT sum(id) AS total, count(DISTINCT id) AS distinct_ids FROM range(1000000)',
+                        endpoint=f'127.0.0.1:{port}',tls=False,expected=[{'total':499999500000,'distinct_ids':1000000}]))
+                queries=json.loads(s5.run(s5.PYTHON,s5.ROOT/'evaluation/s5/client.py',input=json.dumps(dict(jobs=jobs))))
+                memory=s5.memory()
+            finally:
+                for proc in tunnels:
+                    s5.run('sudo','kill','-TERM',str(proc.pid))
+                    proc.wait(timeout=10)
             times=sorted(v['total_seconds'] for v in values)
-            value=dict(n=n,instances=values,memory=memory,cold_to_ready_seconds=times,
+            value=dict(n=n,instances=values,ready_memory=ready_memory,memory=memory,queries=queries,
+                query_failures=sum(q['status']!='OK' for q in queries),
+                aggregate_cgroup_peak_bytes=sum(v['cgroup_peak_bytes'] for v in memory['instances']),cold_to_ready_seconds=times,
                 min_seconds=min(times),median_seconds=statistics.median(times),max_seconds=max(times),
                 failures=sum(v['status']!='READY' for v in values))
             s5.save(f'engine-scale-{n}.json',value)
-            assert value['failures']==0 and len(memory['instances'])==n,value
+            assert value['failures']==value['query_failures']==0 and len(memory['instances'])==len(queries)==n,value
             return value
         record(f'instances_{n}',scale)
         s5.stop_all()
