@@ -441,6 +441,10 @@ pub async fn run() -> Result<()> {
     );
     let listener =
         TcpListener::bind(std::env::var("AUTHZ_LISTEN").unwrap_or("0.0.0.0:50051".into())).await?;
+    println!(
+        "{}",
+        serde_json::json!({"event":"gateway_ready", "pid":std::process::id()})
+    );
     loop {
         let (tcp, _) = listener.accept().await?;
         let acceptor = acceptor.clone();

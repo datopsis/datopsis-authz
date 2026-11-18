@@ -29,7 +29,9 @@ PYTHON = SOURCE/'.sources/sail-venv/bin/python'
 RUNTIME = WORK/'instances'
 RESULTS = dict(architecture=ARCH, machine=platform.machine(), source=run('git', 'rev-parse', 'HEAD'),
     run=os.environ.get('RUN_URL'), sail='e96e068f926b8fecb3939e953389685ee4780032',
-    rauthy='1e114b84b01988bf15306b110b040378878488d3', cases={})
+    rauthy='1e114b84b01988bf15306b110b040378878488d3', cases={},
+    host=dict(logical_cpus=os.cpu_count(), kernel=platform.release(),
+        mem_total_bytes=int(next(line.split()[1] for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemTotal:')))*1024))
 
 
 def record(name, fn, required=False):
@@ -99,8 +101,13 @@ def memory():
         peak = int(run('sudo', 'cat', '/sys/fs/cgroup'+cgroup+'/memory.peak'))
         rows.append(dict(name=obj['Name'], pid=pid, rss_bytes=rss, cgroup_bytes=current, cgroup_peak_bytes=peak,
                          cmdline=run('sudo', 'cat', f'/proc/{pid}/comm')))
+    gateway_rss = None
+    if (WORK/'gateway.actual-pid').exists():
+        gateway_pid = int((WORK/'gateway.actual-pid').read_text())
+        status = run('sudo','cat',f'/proc/{gateway_pid}/status')
+        gateway_rss = next(int(line.split()[1])*1024 for line in status.splitlines() if line.startswith('VmRSS:'))
     return dict(instances=rows, total_rss_bytes=sum(r['rss_bytes'] for r in rows),
-                total_cgroup_bytes=sum(r['cgroup_bytes'] for r in rows))
+                total_cgroup_bytes=sum(r['cgroup_bytes'] for r in rows), gateway_rss_bytes=gateway_rss)
 
 
 def launch_gateway(catalog, key):
@@ -133,6 +140,8 @@ def launch_gateway(catalog, key):
         with socket.create_connection(('127.0.0.1', 50051), timeout=1):
             return True
     wait(ready)
+    event = next(json.loads(line) for line in (common.OUT/'gateway.log').read_text().splitlines() if 'gateway_ready' in line)
+    write(WORK/'gateway.actual-pid', str(event['pid']))
     return proc, log, config
 
 
@@ -173,6 +182,13 @@ def evaluate():
             resource=dict(kind='Server', id='sail'), access='owner'))).raise_for_status()
     proc, log, config = launch_gateway(catalog, key)
     try:
+        def admission():
+            missing = client('')
+            machine = client(provider.token('lakekeeper'))
+            assert missing['status']=='UNAUTHENTICATED' and machine['status']=='PERMISSION_DENIED',(missing,machine)
+            assert not names()
+            return dict(missing=missing,denied_machine=machine,no_instances=True)
+        record('admission_before_start',admission)
         def single():
             started = time.monotonic()
             instance = lifecycle(dict(op='ensure', token=users[0]))
@@ -205,8 +221,8 @@ def evaluate():
                 wait(ready,10)
                 first = direct('SELECT 42 AS answer')
                 later = [direct('SELECT 42 AS answer') for _ in range(5)]
-                result = direct('SELECT sum(id) AS total FROM range(1000000)')
-                assert result['rows']==[{'total':499999500000}],result
+                result = direct('SELECT sum(id) AS total, count(DISTINCT id) AS distinct_ids FROM range(1000000)')
+                assert result['rows']==[{'total':499999500000,'distinct_ids':1000000}],result
             finally:
                 done.set(); thread.join()
                 run('sudo','kill','-TERM',str(tunnel.pid))
@@ -261,6 +277,17 @@ def evaluate():
         record('idle_cleanup', idle)
         record('crash', lambda: crash_check(users))
         record('idle_after_crash', idle)
+        def coalesced():
+            before=len(run('sudo','cat',WORK/'lifecycle.jsonl').splitlines())
+            jobs=[dict(token=users[0],sql='SELECT 42 AS answer',expected=[{'answer':42}]) for _ in range(5)]
+            values=json.loads(run(PYTHON,ROOT/'evaluation/s5/client.py',input=json.dumps(dict(jobs=jobs)),
+                env=dict(os.environ,GRPC_DEFAULT_SSL_ROOTS_FILE_PATH=str(provider.ca))))
+            events=[json.loads(line) for line in run('sudo','cat',WORK/'lifecycle.jsonl').splitlines()[before:]]
+            starts=sum(e['event']=='ready' for e in events)
+            assert all(v['status']=='OK' for v in values) and len(names())==starts==1,(values,starts,names())
+            return dict(results=values,instances_created=starts)
+        record('same_user_concurrent_start',coalesced)
+        record('idle_after_coalesced',idle)
         for n in (1,5,20):
             def scale_run(n=n):
                 event_count = len(run('sudo','cat',WORK/'lifecycle.jsonl').splitlines())
@@ -381,6 +408,8 @@ def cleanup():
     if (WORK/'gateway.pid').exists():
         subprocess.run(['sudo','kill','-TERM',(WORK/'gateway.pid').read_text().strip()],capture_output=True)
         (WORK/'gateway.pid').unlink()
+    if (WORK/'lifecycle.jsonl').exists():
+        save('lifecycle-events.json',[json.loads(line) for line in run('sudo','cat',WORK/'lifecycle.jsonl').splitlines()])
     common.cleanup()
     for network in run('docker','network','ls','-q','--filter','name=^authz-backend$').split():
         run('docker','network','rm',network)
