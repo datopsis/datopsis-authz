@@ -33,11 +33,10 @@ elif sys.argv[1:] == ['build']:
     # in this repository’s allowlisted, subsequently sanitized evidence tree.
     common.OUT = ROOT/'reports/s1'
     # Build the additional extension-free relationship-store image at the reviewed pin.
-    os.environ['PYTHONPATH'] = str(ROOT/'evaluation/artifact_transport')
     module.build()
     import build as owner
     import json
-    revision = 'd5b45103f8b3d5eb3827736b3ff367118da3b80d'
+    revision = 'c31b5b8f53873c0e733d5271df45fba4643a4334'
     source = ROOT/'.sources/postgresql-ubi'
     common.run('git','clone','https://github.com/datopsis/postgresql-ubi',source)
     common.run('git','-C',source,'checkout','--detach',revision)

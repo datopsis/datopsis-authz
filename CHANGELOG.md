@@ -2,6 +2,8 @@
 
 ## Catalog MVP slice 1 (unreleased)
 
+- Repin the relationship-store PostgreSQL fixture to the merged 18.7 owner commit; remove the obsolete 18.6 RPM transport fallback.
+
 - PostgreSQL relationship/grant persistence, repeatable migrations and append-only decision audit.
 - Mandatory live Rauthy membership resolution, bounded 250 ms cache and fail-closed outage behavior.
 - Catalog owner grant-management API and native C1–C8 fixture coverage with 15-minute tokens.

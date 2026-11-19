@@ -18,7 +18,7 @@ API returns 404, but never group grants; all other missing users fail closed.
 An IdP outage denies after the cache TTL, including machine lookup failures.
 
 The relationship database uses extension-free `datopsis/postgresql-ubi` at
-`d5b45103f8b3d5eb3827736b3ff367118da3b80d`. Lakekeeper's catalog database retains
+`c31b5b8f53873c0e733d5271df45fba4643a4334` (PostgreSQL 18.7). Lakekeeper's catalog database retains
 its separate extension-enabled image. Both connections use verified TLS.
 `migrations/0001_catalog.sql` runs transactionally under an advisory lock.
 The MVP stores its serialized graph in a single PostgreSQL row; mutation and
