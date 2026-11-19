@@ -250,12 +250,26 @@ async fn permissions(
         .and_then(|g| g.clone())
         .unwrap_or_default();
     request.check.deny |= live.is_err();
-    let verdict = store.decide(&request.check).map_err(unavailable)?;
+    let (verdict, evaluation_failed) = match store.decide(&request.check) {
+        Ok(verdict) => (verdict, false),
+        Err(error) => {
+            eprintln!("Cedar evaluation failed: {error}");
+            (
+                Verdict {
+                    allowed: false,
+                    policies: vec![],
+                },
+                true,
+            )
+        }
+    };
     Database::audit(
         &mut tx,
         &request.check,
         &verdict,
-        if live.is_err() {
+        if evaluation_failed {
+            "evaluation_error"
+        } else if live.is_err() {
             "identity_provider_unavailable"
         } else if verdict.allowed {
             "grant_management_permit"
@@ -267,22 +281,26 @@ async fn permissions(
     .map_err(unavailable)?;
     if !verdict.allowed {
         tx.commit().await.map_err(unavailable)?;
-        return Err(if live.is_err() {
+        return Err(if live.is_err() || evaluation_failed {
             StatusCode::SERVICE_UNAVAILABLE
         } else {
             StatusCode::FORBIDDEN
         });
     }
     if let Some(grant) = request.grant {
-        if grant.resource != request.check.resource {
+        if grant.resource != request.check.resource
+            || store
+                .mutate(Mutation::Grant {
+                    grant,
+                    remove: request.remove,
+                })
+                .is_err()
+        {
+            // The authorization decision still happened. Preserve its audit
+            // even though the invalid mutation must not change the graph.
+            tx.commit().await.map_err(unavailable)?;
             return Err(StatusCode::BAD_REQUEST);
         }
-        store
-            .mutate(Mutation::Grant {
-                grant,
-                remove: request.remove,
-            })
-            .map_err(|_| StatusCode::BAD_REQUEST)?;
         Database::save(&mut tx, &store).await.map_err(unavailable)?;
     }
     let grants = store

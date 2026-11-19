@@ -30,6 +30,8 @@ of canonical grant serialization, stable when unrelated grants are inserted.
 Every evaluated check has principal, operation, resource, boolean decision,
 policy IDs and a fixed reason string persisted in the same transaction before
 responding. IdP/evaluation failures produce audited denial and a 503.
+Grant-management decisions retain their audit even when a subsequent malformed
+mutation returns 400; invalid requests never change the relationship graph.
 
 ## Permission management
 
@@ -86,5 +88,9 @@ is an unconditional Azure dependency at the Lakekeeper pin, not an optional
 feature that Cargo can disable. libsqlite3-sys is locked but not in the selected
 runtime tree. No feature has been removed yet and no ignore list exists.
 No new crate or version is required for the implementation: sqlx 0.9.0,
-reqwest 0.12.28, sha2 0.10.9 and serde were already locked. Resolving the Azure
-source/dependency issue remains approval-dependent.
+reqwest 0.12.28, sha2 0.10.9 and serde were already locked.
+
+Owner decision 2026-11-18: "upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress". Lint remains RED. No ignore entry and no S3-only
+Lakekeeper patch are permitted. Complete the other slice-1 work; obtain green
+C1–C8 on both architectures once the coordinator provides the repaired Rauthy pin.
+Merge waits for the upstream fix.

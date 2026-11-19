@@ -137,6 +137,27 @@ def main():
                 except (urllib.error.HTTPError,urllib.error.URLError): pass
                 time.sleep(.1)
             else: raise AssertionError('Database recovery failed')
+            # Invalid management mutations must retain their authorization audit.
+            owner = {'subject':{'kind':'User','id':'oidc~alice'},'resource':check['resource'],'access':'owner'}
+            post('mutate',{'op':'grant','grant':owner,'remove':False})
+            snapshot = post('snapshot',{})
+            for invalid_grant in ({**grant,'access':'unsupported'}, {**grant,'resource':{'kind':'Table','id':'other'}}):
+                count = int(sql('SELECT count(*) FROM authz_audit'))
+                denied_status(lambda:post('permissions',{'check':check,'grant':invalid_grant}),400)
+                assert int(sql('SELECT count(*) FROM authz_audit')) == count + 1
+                assert sql("SELECT reason FROM authz_audit ORDER BY id DESC LIMIT 1") == 'grant_management_permit'
+                assert post('snapshot',{}) == snapshot
+            # A corrupt persisted graph must audit the evaluation failure and deny.
+            corrupt = {'parents':{'invalid':[{'kind':'Invalid!','id':'bad'},None]},'grants':snapshot['grants']}
+            sql("UPDATE authz_state SET graph='"+json.dumps(corrupt)+"'::jsonb WHERE singleton")
+            try:
+                count = int(sql('SELECT count(*) FROM authz_audit'))
+                denied_status(lambda:post('permissions',{'check':check,'grant':None}),503)
+                assert int(sql('SELECT count(*) FROM authz_audit')) == count + 1
+                assert sql("SELECT reason FROM authz_audit ORDER BY id DESC LIMIT 1") == 'evaluation_error'
+                assert sql("SELECT decision::text FROM authz_audit ORDER BY id DESC LIMIT 1") == 'false'
+            finally:
+                sql("UPDATE authz_state SET graph='"+json.dumps(snapshot)+"'::jsonb WHERE singleton")
             for operation in ('UPDATE authz_audit SET reason=reason','DELETE FROM authz_audit','TRUNCATE authz_audit'):
                 try: sql(operation)
                 except subprocess.CalledProcessError: pass

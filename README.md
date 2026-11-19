@@ -8,7 +8,10 @@ unverified work is not an acceptance pass.
 Acceptance is currently blocked: the Rauthy pin locks FIDO blob 301, while its
 mutable download URL serves blob 302 with a different checksum. The original
 checksum guard remains strict. The runtime dependency gate also blocks on
-Lakekeeper's unconditional Azure/quick-xml path. No C1–C8 pass is claimed.
+Lakekeeper's unconditional Azure/quick-xml path. Owner decision 2026-11-18:
+"upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress".
+Lint stays red with no ignore or S3-only patch; merge waits for upstream's fix.
+Other slice-1 work continues. No C1–C8 pass is claimed.
 
 One Rust workspace produces the platform program (`authz-serve`, installed as
 `datopsis-authz`) and a thin Lakekeeper binary containing `lakekeeper-authz`.
@@ -35,22 +38,25 @@ append-only audits commit before responses. Database/audit failures return 503.
 
 ## Development
 
-Use Rust 1.94.1, `protobuf-compiler`, `pkg-config`, `libssl-dev`, PostgreSQL
-(for the local component integration check), Python 3 and OpenSSL. Run:
+Use Rust 1.94.1, `protobuf-compiler`, `pkg-config`, `libssl-dev` and Python 3.
+Under the owner's CI-first policy, local checks are limited to lightweight work:
+
 
 ```
 git config core.hooksPath .githooks
 cargo test --workspace --locked
-cargo build --workspace --locked
 cargo fmt --all -- --check
-python3 scripts/tls-smoke.py
 python3 scripts/check-lf.py
 ```
 
 Use `CARGO_BUILD_JOBS=2` on small machines. CI builds/runs identical catalog
 assertions on native amd64/arm64 and retains sanitized evidence. Required jobs
 are exactly `lint` and `test`. Local component checks do not substitute for C1–C8.
-No external source repository is modified.
+Image builds, artifact acquisition/unpacking, vulnerability scans and all
+container/runtime and multi-architecture checks (including `scripts/tls-smoke.py`)
+run only in the existing PR Actions jobs. Do not rerun unchanged expensive checks;
+read their logs/artifacts. Use one checks watcher at a time and stop background
+work at each step's end. No external source repository is modified.
 
 For `serve`, configure `AUTHZ_TLS_CERT`, `AUTHZ_TLS_KEY`, `AUTHZ_KEY_FILE`,
 `AUTHZ_DATABASE_URL_FILE`, `AUTHZ_DATABASE_CA_FILE`, `AUTHZ_RAUTHY_USERS_URL`,

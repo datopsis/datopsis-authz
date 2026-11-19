@@ -26,6 +26,8 @@ for finding in report['vulnerabilities']['list']:
 result = {'blocking_runtime':blocking,'nonblocking_build_or_unselected':nonblocking,'warnings':report.get('warnings',{})}
 (out/'classification.json').write_text(json.dumps(result,indent=2)+'\n')
 summary = f'Blocking shipped dependency findings: {len(blocking)}\nNon-blocking build-only/unselected findings: {len(nonblocking)}\n\n'+json.dumps(result,indent=2)
+if any(item['crate'] == 'quick-xml' for item in blocking):
+    summary += '\n\nOwner status: upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress. Lint remains RED; no ignore or S3-only patch. Merge waits for upstream.'
 print(summary)
 if os.environ.get('GITHUB_STEP_SUMMARY'):
     with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as handle:

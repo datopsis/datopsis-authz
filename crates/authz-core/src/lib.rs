@@ -236,6 +236,20 @@ pub fn validate_schema() -> Result<()> {
 mod tests {
     use super::*;
     #[test]
+    fn malformed_graph_is_an_evaluation_error() {
+        let mut store = Store::default();
+        let invalid = Resource::new("Invalid!", "bad");
+        store.parents.insert(invalid.key(), (invalid, None));
+        let check = Check {
+            deny: false,
+            principal: "alice".into(),
+            groups: vec![],
+            action: "read_data".into(),
+            resource: Resource::new("Table", "one"),
+        };
+        assert!(store.decide(&check).is_err());
+    }
+    #[test]
     fn identity_read_is_self_only() -> Result<()> {
         let store = Store::default();
         let mut check = Check {

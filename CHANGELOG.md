@@ -2,6 +2,10 @@
 
 ## Catalog MVP slice 1 (unreleased)
 
+- Preserve grant-management decision audits for invalid mutations and Cedar evaluation failures.
+- Record the owner's quick-xml decision: upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress. Keep lint red without ignores or an S3-only patch; merge waits for upstream.
+- Record CI-first validation: only lightweight checks locally; builds, scans, artifact acquisition and runtime/multi-architecture validation stay in existing PR jobs.
+
 - Repin the relationship-store PostgreSQL fixture to the merged 18.7 owner commit; remove the obsolete 18.6 RPM transport fallback.
 
 - PostgreSQL relationship/grant persistence, repeatable migrations and append-only decision audit.

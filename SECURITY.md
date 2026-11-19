@@ -41,5 +41,5 @@ The blocking dependency gate covers normal dependencies selected for both shippe
 binaries in their actual workspace feature set. Build-only/unselected findings
 are reported separately. No advisory ignores are permitted. The pinned Lakekeeper
 currently requires vulnerable quick-xml 0.40.1 through unconditional Azure SDK
-dependencies. There is no upstream Azure-disable feature; the gate must stay red
-until that dependency is removed or safely updated under the owner's approval rule.
+dependencies. Owner decision 2026-11-18: "upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress". Keep lint RED with no ignore entry and no S3-only
+Lakekeeper patch. Continue the other slice-1 work; merge waits for upstream's fix.
