@@ -10,9 +10,11 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / '.sources/lakehouse-integration'
 assert subprocess.check_output(['git','-C',str(SOURCE),'rev-parse','HEAD'],text=True).strip() == PIN
 # Local S1 modules precede pinned fixture helpers.
-sys.path.extend([str(SOURCE/'evaluation/authz'),str(SOURCE/'evaluation/idp')])
+sys.path.extend([str(ROOT/'evaluation'), str(SOURCE/'evaluation/authz'),str(SOURCE/'evaluation/idp')])
 import common
 common.OUT = ROOT/'reports/s1'
+from owner_pins import configure_rauthy
+configure_rauthy()
 import acceptance
 arch = {'x86_64':'amd64','aarch64':'arm64'}[platform.machine()]
 assert arch == os.environ['INTEGRATION_ARCH']

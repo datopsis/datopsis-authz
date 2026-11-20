@@ -14,12 +14,14 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT/'.sources/lakehouse-integration'
 PIN = 'e8379a528bf413c05aad49e56bc8cd507b5e077a'
 assert subprocess.check_output(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD'], text=True).strip() == PIN
-sys.path.extend([str(ROOT/'evaluation/s1'), str(SOURCE/'evaluation/authz'), str(SOURCE/'evaluation/idp')])
+sys.path.extend([str(ROOT/'evaluation'), str(ROOT/'evaluation/s1'), str(SOURCE/'evaluation/authz'), str(SOURCE/'evaluation/idp')])
 import common
 common.WORK = ROOT/'.runtime/s5'
 common.OUT = ROOT/'reports/s5'
 from common import WORK, run, save, secret, write, wait, decode
 from s1_fixture import setup, grant
+from owner_pins import RAUTHY_PIN, configure_rauthy
+configure_rauthy()
 from rauthy import Rauthy
 
 ARCH = {'aarch64':'arm64', 'x86_64':'amd64'}[platform.machine()]
@@ -29,7 +31,7 @@ PYTHON = SOURCE/'.sources/sail-venv/bin/python'
 RUNTIME = WORK/'instances'
 RESULTS = dict(architecture=ARCH, machine=platform.machine(), source=run('git', 'rev-parse', 'HEAD'),
     run=os.environ.get('RUN_URL'), sail='e96e068f926b8fecb3939e953389685ee4780032',
-    rauthy='1e114b84b01988bf15306b110b040378878488d3', cases={},
+    rauthy=RAUTHY_PIN, cases={},
     host=dict(logical_cpus=os.cpu_count(), kernel=platform.release(),
         mem_total_bytes=int(next(line.split()[1] for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemTotal:')))*1024))
 

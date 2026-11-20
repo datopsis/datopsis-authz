@@ -8,6 +8,20 @@ Do not interpret the engine measurements as a passing S5 or an MVP go decision.
 `room/datopsis-authz-spike-s3-sail-gateway`. No merge. The owner's per-team MVP
 choice remains unchanged.
 
+## Coordinator-approved Rauthy testing input (2026-11-20)
+
+The current acceptance run pins `datopsis/rauthy-ubi` to
+`01375efb2a14692a7977f2f8aa60121f3fcc2f01`, as explicitly authorized by the
+coordinator. [Owner PR #3](https://github.com/datopsis/rauthy-ubi/pull/3) is unmerged
+and red on a SvelteKit gate finding pending the owner's decision. This is an
+evaluation input, like the integration fixture's draft Trino pin, **not a security
+approval, waiver or production qualification**. The owner pin verifies FIDO feed
+serial 302 and updates its PostgreSQL fixture to 18.7. Owner source and locks
+remain untouched; all image provenance/acquisition assertions remain enabled.
+`evaluation/owner_pins.py` supplies the revision to the unchanged pinned harness
+for S1, S3 and S5 builds and runtime evidence. Native acceptance results at this
+new pin are pending; the prior results and blocker below remain historical.
+
 ## Verdict and blocking prerequisite
 
 Sail process economics support further evaluation of a hybrid: per-team by
