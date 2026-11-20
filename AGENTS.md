@@ -7,7 +7,7 @@ binary. Trino enforcement, Sail gateway and hardened images are later slices.
 Pin external repositories by full commit; do not modify them. Lakekeeper source:
 9bd377162345b64a716f0a4fcffe4e7e7f3c7534. Acceptance harness:
 e8379a528bf413c05aad49e56bc8cd507b5e077a. Rauthy:
-1e114b84b01988bf15306b110b040378878488d3.
+01375efb2a14692a7977f2f8aa60121f3fcc2f01 (coordinator-approved unmerged PR #3 test pin).
 
 Fail closed. Do not weaken C1-C8. Explicitly document C3's direct-claim adaptation.
 Blocked prerequisites never pass. No secrets or raw credential artifacts. No
@@ -21,8 +21,9 @@ with architecture changes. Do not report compilation or unit tests as C1-C8 pass
 Owner decision 2026-11-18: keep quick-xml's RustSec findings honestly RED in lint:
 "upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress".
 No ignore entry and no S3-only Lakekeeper patch. Finish the other slice-1 work;
-merge waits for the upstream fix. Await the coordinator's repaired Rauthy SHA;
-do not work around its FIDO metadata checksum failure.
+merge waits for the upstream fix. Rauthy PR #3 is approved for test builds only;
+its SvelteKit gate stays RED pending a separate owner decision. Do not bypass
+its FIDO verification or checksum guards.
 
 CI-first: locally run only lightweight lint, unit tests, YAML/LF, cargo check/clippy.
 Image builds, artifact acquisition/unpacking, scans, container/runtime tests and

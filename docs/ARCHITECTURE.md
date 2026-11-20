@@ -12,14 +12,20 @@ calling the adapter. Decisions use its authenticated principal; JWT group claims
 are discarded. Serve reads Rauthy's authoritative User API using Users/read only,
 verified TLS, redirects disabled, a 2-second timeout and a 250 ms bounded cache.
 No per-principal opt-in or epoch/claim fallback exists. The fixture's Rauthy image
-is pinned at `1e114b84b01988bf15306b110b040378878488d3`. Normal tokens live 900s.
+is pinned at `01375efb2a14692a7977f2f8aa60121f3fcc2f01`. This coordinator-approved
+[unmerged Rauthy PR #3](https://github.com/datopsis/rauthy-ubi/pull/3) test pin
+verifies FIDO serial 302. Its SvelteKit gate remains RED pending an owner decision;
+building it for acceptance does not waive that gate. Normal tokens live 900s.
 Explicitly configured machine subjects can receive direct grants when the User
 API returns 404, but never group grants; all other missing users fail closed.
 An IdP outage denies after the cache TTL, including machine lookup failures.
 
 The relationship database uses extension-free `datopsis/postgresql-ubi` at
 `c31b5b8f53873c0e733d5271df45fba4643a4334` (PostgreSQL 18.7). Lakekeeper's catalog database retains
-its separate extension-enabled image. Both connections use verified TLS.
+its separate extension-enabled image, pinned to the merged 18.7 owner commit
+`1054729c5fa934e2a801a36d81a8b2b264aa8829`. The wrapper selects these immutable
+inputs in memory; the external acceptance checkout is not edited. Both database
+connections use verified TLS.
 `migrations/0001_catalog.sql` runs transactionally under an advisory lock.
 The MVP stores its serialized graph in a single PostgreSQL row; mutation and
 check/audit transactions acquire its row lock, so multiple service processes
@@ -67,13 +73,12 @@ not implemented.
 
 ## Validation and dependency boundary
 
-The immutable Rauthy image build is currently blocked by its FIDO metadata
-checksum: locked blob 301 is no longer at the mutable download URL (blob 302).
-The fixture preflight rejects mismatches before expensive compilation. Both the
-owner's original acquisition check and image provenance gates remain unchanged.
-A newer reviewed owner pin or the exact locked blob is needed; another blob cannot
-be substituted. Native catalog assertions have not run. Fresh human tokens with
-empty group claims also retain the upstream RoleSourceIdError compatibility gap.
+Fixture revisions and the unmerged Rauthy pin's security status are recorded in
+`evaluation/s1/inputs.json` and retained in each native result artifact. Both the
+preflight and the upstream owner build enforce the new locked FIDO bytes; the
+owner's authenticated-feed verifier remains mandatory. Native catalog assertions
+must pass independently on both architectures. Fresh human tokens with empty
+group claims retain the upstream RoleSourceIdError compatibility gap.
 
 C1–C8 preserve the original assertion IDs and strict typed denial oracle, including
 C3's retained old token and C8's complete state comparison and two repetitions
@@ -92,5 +97,5 @@ reqwest 0.12.28, sha2 0.10.9 and serde were already locked.
 
 Owner decision 2026-11-18: "upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress". Lint remains RED. No ignore entry and no S3-only
 Lakekeeper patch are permitted. Complete the other slice-1 work; obtain green
-C1–C8 on both architectures once the coordinator provides the repaired Rauthy pin.
+C1–C8 on both architectures using the coordinator-approved repaired Rauthy pin.
 Merge waits for the upstream fix.

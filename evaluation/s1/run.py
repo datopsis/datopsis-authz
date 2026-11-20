@@ -1,5 +1,6 @@
 """Pin-checked entry point; no edits to other repositories."""
 import os
+import json
 import platform
 import subprocess
 import sys
@@ -13,11 +14,16 @@ assert subprocess.check_output(['git','-C',str(SOURCE),'rev-parse','HEAD'],text=
 sys.path.extend([str(SOURCE/'evaluation/authz'),str(SOURCE/'evaluation/idp')])
 import common
 common.OUT = ROOT/'reports/s1'
+# Override only immutable fixture inputs, not the pinned external checkout.
+INPUTS = json.loads((ROOT/'evaluation/s1/inputs.json').read_text())
+import rauthy
+rauthy.REVISION = INPUTS['rauthy-ubi']['revision']
 import acceptance
 arch = {'x86_64':'amd64','aarch64':'arm64'}[platform.machine()]
 assert arch == os.environ['INTEGRATION_ARCH']
 if sys.argv[1:] == ['initialize']:
     acceptance.initialize(arch)
+    common.save('fixture-inputs.json', INPUTS)
 elif sys.argv[1:] == ['cleanup']:
     common.cleanup()
     networks = common.run('docker','network','ls','-q','--filter','name=^authz-backend$').split()
@@ -32,11 +38,12 @@ elif sys.argv[1:] == ['build']:
     # The imported entry point sets its own output directory. Keep its data
     # in this repository’s allowlisted, subsequently sanitized evidence tree.
     common.OUT = ROOT/'reports/s1'
-    # Build the additional extension-free relationship-store image at the reviewed pin.
-    module.build()
+    sys.path.insert(0, str(SOURCE/'integration'))
     import build as owner
-    import json
-    revision = 'c31b5b8f53873c0e733d5271df45fba4643a4334'
+    owner.PINS['postgresql-lakekeeper-ubi'] = INPUTS['postgresql-lakekeeper-ubi']['revision']
+    module.build()
+    # Additional extension-free relationship-store image, with strict provenance.
+    revision = INPUTS['postgresql-ubi']['revision']
     source = ROOT/'.sources/postgresql-ubi'
     common.run('git','clone','https://github.com/datopsis/postgresql-ubi',source)
     common.run('git','-C',source,'checkout','--detach',revision)

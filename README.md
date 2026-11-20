@@ -5,13 +5,14 @@ Apache-2.0 catalog authorization service, slice 1 of the owner-approved MVP
 open as evidence. Native C1–C8 and dependency-gate results are recorded in the PR;
 unverified work is not an acceptance pass.
 
-Acceptance is currently blocked: the Rauthy pin locks FIDO blob 301, while its
-mutable download URL serves blob 302 with a different checksum. The original
-checksum guard remains strict. The runtime dependency gate also blocks on
-Lakekeeper's unconditional Azure/quick-xml path. Owner decision 2026-11-18:
-"upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress".
+The fixture pins coordinator-approved Rauthy PR #3 at
+`01375efb2a14692a7977f2f8aa60121f3fcc2f01` (verified FIDO serial 302).
+That PR is unmerged and its SvelteKit vulnerability gate remains RED pending
+an owner decision. This test pin does not claim image security qualification.
+The runtime dependency gate also blocks on Lakekeeper's Azure/quick-xml path.
+Owner decision 2026-11-18: "upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress".
 Lint stays red with no ignore or S3-only patch; merge waits for upstream's fix.
-Other slice-1 work continues. No C1–C8 pass is claimed.
+C1–C8 results will be recorded after native Actions validation.
 
 One Rust workspace produces the platform program (`authz-serve`, installed as
 `datopsis-authz`) and a thin Lakekeeper binary containing `lakekeeper-authz`.

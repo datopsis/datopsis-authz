@@ -3,10 +3,12 @@
 import hashlib
 import json
 import os
+from pathlib import Path
 import urllib.error
 import urllib.request
 
-RAUTHY = '1e114b84b01988bf15306b110b040378878488d3'
+inputs = json.loads((Path(__file__).resolve().parents[1]/'evaluation/s1/inputs.json').read_text())
+RAUTHY = inputs['rauthy-ubi']['revision']
 arch = os.environ['INTEGRATION_ARCH']
 assert arch in ('amd64', 'arm64')
 url = f'https://raw.githubusercontent.com/datopsis/rauthy-ubi/{RAUTHY}/artifacts/locks/{arch}.json'
