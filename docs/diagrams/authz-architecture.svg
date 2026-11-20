@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1050" height="590" viewBox="0 0 1050 590" role="img" aria-labelledby="title desc">
+<title id="title">Catalog authorization MVP, slice 1</title>
+<desc id="desc">Clients reach Lakekeeper over TLS. Lakekeeper verifies OIDC and uses the Cedar adapter. Serve resolves live Rauthy membership and commits decisions and audits in PostgreSQL. Future roles are deferred.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#64748b"/></marker></defs>
+<rect width="1050" height="590" fill="#0f172a"/>
+<g font-family="sans-serif" fill="#e2e8f0"><text x="35" y="42" font-size="25">Datopsis catalog authorization · slice 1</text>
+<text x="35" y="70" font-size="14">As built · one Rust workspace · Cedar library · Apache-2.0</text>
+<g fill="#1e293b" stroke="#475569" stroke-width="2"><rect x="35" y="125" width="225" height="115" rx="10"/><rect x="330" y="125" width="310" height="115" rx="10"/><rect x="330" y="305" width="310" height="110" rx="10"/><rect x="730" y="125" width="280" height="115" rx="10"/><rect x="730" y="305" width="280" height="110" rx="10"/></g>
+<g font-size="17"><text x="55" y="157">Catalog clients</text><text x="350" y="157">Lakekeeper + thin adapter</text><text x="350" y="338">Platform program: serve</text><text x="750" y="157">Rauthy</text><text x="750" y="338">PostgreSQL</text></g>
+<g font-size="14" fill="#cbd5e1"><text x="55" y="185">PyIceberg / Trino / Sail</text><text x="55" y="211">C5 catalog enforcement</text><text x="350" y="185">OIDC verification · item filtering</text><text x="350" y="211">Owner grant-management routes</text><text x="350" y="365">Cedar · durable graph transactions</text><text x="350" y="391">Commit audit before responding</text><text x="750" y="185">Live Users/read · 250 ms cache</text><text x="750" y="211">Fail closed · 900s token backstop</text><text x="750" y="365">verify-full · repeatable migrations</text><text x="750" y="391">Relationships + append-only audit</text></g>
+<g stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" fill="none"><path d="M260 182 H330"/><path d="M485 240 V305"/><path d="M640 345 H730"/><path d="M640 325 L730 220"/></g>
+<g font-size="12" fill="#93c5fd"><text x="273" y="172">TLS</text><text x="495" y="278">Private verified TLS + service key</text><text x="659" y="364">TLS</text><text x="650" y="259">TLS</text></g>
+<rect x="35" y="460" width="975" height="92" rx="10" fill="#1e293b" stroke="#475569" stroke-dasharray="7 5"/>
+<text x="55" y="490" font-size="16">Deferred: sail-gateway · token-broker · Trino OPA · hardened release image · epochs</text>
+<text x="55" y="521" font-size="14" fill="#fbbf24">Catalog grants do not revoke fetched data or existing storage credentials. Native acceptance is required.</text>
+</g></svg>

@@ -1,0 +1,9 @@
+/target/
+/.sources/
+/reports/
+/.venv/
+.env
+.env.*
+__pycache__/
+/.cargo-cache/
+/.runtime/
