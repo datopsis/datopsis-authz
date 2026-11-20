@@ -93,7 +93,7 @@ def evaluate(arch):
     from s1_fixture import grant as backend_grant
 
     def tuples(user, relation, obj, delete=False):
-        backend_grant(catalog, key, user, relation, obj, delete)
+        return backend_grant(catalog, key, user, relation, obj, delete)
 
     human_id = "user:oidc~" + claims["sub"]
     reader = None
@@ -226,8 +226,7 @@ def evaluate(arch):
 
     def revoke():
         catalog.read(catalog.pyiceberg(human))
-        tuples(human_id, "select", namespace, True)
-        acknowledged = time.monotonic()
+        acknowledged = tuples(human_id, "select", namespace, True)
         samples = []
         while time.monotonic() - acknowledged < 30:
             response = http.request(

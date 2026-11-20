@@ -2,6 +2,8 @@
 
 ## Catalog MVP slice 1 (unreleased)
 
+- Correct the catalog grant fixture's single-table API route and measure C4 from the mutation response acknowledgement, before readback.
+
 - Bound FIDO publisher HTTP 429 retries and reuse each CI job's exact verified feed bytes; retain the owner's hash, signature/path/serial/date and fresh-CRL verification.
 
 - Repin Rauthy to coordinator-approved unmerged PR #3 commit 01375efb2a14692a7977f2f8aa60121f3fcc2f01 (verified FIDO serial 302); retain its red SvelteKit gate disclosure.

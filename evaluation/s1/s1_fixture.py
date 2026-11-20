@@ -60,21 +60,7 @@ def restore(catalog, key, state):
     assert snapshot(catalog,key) == state
 
 
-def grant(catalog, key, user, relation, obj, delete=False):
-    assert relation == 'select'
-    subject_kind, subject_id = user.split(':', 1)
-    kinds = {'namespace': 'Namespace', 'lakekeeper_table': 'Table'}
-    kind, identifier = obj.split(':', 1)
-    resource = {'kind': kinds[kind], 'id': identifier.split('/')[-1]}
-    response = catalog.http.request('POST', catalog.base + '/management/v1/permissions/' + kind + '/' + resource['id'] + '/grants',
-        headers={'Authorization':'Bearer '+catalog.provider.token('operator')},
-        json={'subject':{'kind':{'user':'User','group':'Group'}[subject_kind], 'id':subject_id},'access':relation,'remove':delete})
-    response.raise_for_status()
-    listed = catalog.http.json('GET', catalog.base + '/management/v1/permissions/' + kind + '/' + resource['id'] + '/grants',
-        headers={'Authorization':'Bearer '+catalog.provider.token('operator')})
-    expected = {'subject':{'kind':{'user':'User','group':'Group'}[subject_kind], 'id':subject_id}, 'resource':resource, 'access':relation}
-    assert (expected in listed) is not delete, listed
-
+from catalog_grants import grant
 
 
 def migrate(catalog):

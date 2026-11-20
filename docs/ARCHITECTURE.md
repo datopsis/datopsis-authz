@@ -52,7 +52,9 @@ Subject kind can be User or Group; access is owner or select. `remove:true`
 revokes the exact grant. Both routes return the resource's direct grant list.
 Inherited owner authorization is evaluated in the same transaction as changes.
 The C-suite's tuple adaptation invokes these routes with the real operator token,
-then verifies GET readback. Readers' mutation attempts must deny.
+then verifies GET readback. The fixture translates OpenFGA's lakekeeper_table
+identifier into the catalog's table route; C4 starts at the POST acknowledgement
+before readback. Readers' mutation attempts must deny.
 These are Cedar-native routes, not OpenFGA assignment-wire compatibility.
 
 All nine action batch methods forward catalog checks; project discovery requests
