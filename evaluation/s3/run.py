@@ -13,12 +13,14 @@ INTEGRATION = ROOT / '.sources/lakehouse-integration'
 PIN = 'e8379a528bf413c05aad49e56bc8cd507b5e077a'
 SAIL_PIN = 'e96e068f926b8fecb3939e953389685ee4780032'
 assert subprocess.check_output(['git', '-C', str(INTEGRATION), 'rev-parse', 'HEAD'], text=True).strip() == PIN
-sys.path.extend([str(INTEGRATION/'evaluation/authz'), str(INTEGRATION/'evaluation/idp'), str(INTEGRATION/'integration')])
+sys.path.extend([str(ROOT/'evaluation'), str(INTEGRATION/'evaluation/authz'), str(INTEGRATION/'evaluation/idp'), str(INTEGRATION/'integration')])
 import common
 common.OUT = ROOT/'reports/s3'
 common.WORK = ROOT/'.runtime/s3'
 from common import run, save, secret, wait, write, decode, WORK, NETWORK
 from fixture import container, database, leaf, BACKEND_NETWORK, transport
+from owner_pins import RAUTHY_PIN, configure_rauthy
+configure_rauthy()
 from rauthy import Rauthy
 
 ARCH = {'x86_64': 'amd64', 'aarch64': 'arm64'}[platform.machine()]

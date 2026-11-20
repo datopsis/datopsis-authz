@@ -1,0 +1,27 @@
+{
+  "status": "BLOCKED",
+  "reason": "Pinned Rauthy acquisition rejects changed mutable FIDO MDS feed; verification was not bypassed",
+  "run": "https://github.com/datopsis/datopsis-authz/actions/runs/44240967339",
+  "native_jobs": {
+    "amd64": "https://github.com/datopsis/datopsis-authz/actions/runs/44240967339/job/134588506517",
+    "arm64": "https://github.com/datopsis/datopsis-authz/actions/runs/44240967339/job/134588506704"
+  },
+  "owner_commit": "1e114b84b01988bf15306b110b040378878488d3",
+  "latest_checked": "4d196b87639e410a01ca5dab353826ae13ee445c",
+  "latest_has_identical_fido_pin": true,
+  "expected": {
+    "url": "https://mds.fidoalliance.org/",
+    "sha256": "bcdf74e5c25d529de6007f1e49b53bed01d38ce57452e2585f71c7fd95ff0b09",
+    "filename": "fido-mds.jwt",
+    "blob_number": 301,
+    "next_update": "2026-12-01"
+  },
+  "independent_cloud_probe": {
+    "url": "https://mds.fidoalliance.org/",
+    "checked_utc": "2026-11-18T05:06:54.283937+00:00",
+    "bytes": 11158343,
+    "sha256": "d2ad4e42a8afbd74a34b3e997ae46d43df9e046f8a5bf1feda97206d8c84e0bb",
+    "decoded_unverified_blob_number": 302
+  },
+  "needed": "Preserved blob 301 acquisition bundle matching original SHA-256, or a newer owner commit explicitly refreshing/preserving the artifact"
+}

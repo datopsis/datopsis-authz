@@ -30,10 +30,13 @@ struct Gateway {
     issuer: String,
     audiences: Vec<String>,
     key: String,
+    lifecycle: Option<crate::lifecycle::Manager>,
 }
 #[derive(Clone, Deserialize)]
 struct Claims {
     sub: String,
+    #[serde(skip)]
+    bearer: String,
     #[serde(default)]
     groups: Vec<String>,
 }
@@ -111,12 +114,13 @@ impl Gateway {
         validation.set_required_spec_claims(&["sub", "iss", "aud", "exp"]);
         validation.leeway = 0;
         validation.validate_nbf = true;
-        let claims = decode::<Claims>(token, &key, &validation)
+        let mut claims = decode::<Claims>(token, &key, &validation)
             .map_err(|_| 16u8)?
             .claims;
         if claims.sub.is_empty() {
             return Err(16);
         }
+        claims.bearer = token.to_owned();
         Ok(claims)
     }
 
@@ -303,14 +307,32 @@ async fn forward(
         },
         _ => return refuse(respond, 8),
     };
-    let tcp = match TcpStream::connect("127.0.0.1:50052").await {
-        Ok(tcp) => tcp,
-        Err(_) => return refuse(respond, 14),
+    // Lease lasts through the entire stream, including downstream backpressure.
+    // A caller-supplied session ID never selects another subject's instance.
+    let _lease;
+    let mut _child;
+    trait Backend: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send {}
+    impl<T: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send> Backend for T {}
+    let io: Box<dyn Backend> = if let Some(manager) = &app.lifecycle {
+        _lease = match manager.acquire(&claims.sub, &claims.bearer).await {
+            Ok(lease) => lease,
+            Err(_) => return refuse(respond, 14),
+        };
+        _child = manager.connect(&_lease)?;
+        Box::new(tokio::io::join(
+            _child.stdout.take().context("relay stdout")?,
+            _child.stdin.take().context("relay stdin")?,
+        ))
+    } else {
+        match TcpStream::connect("127.0.0.1:50052").await {
+            Ok(tcp) => Box::new(tcp),
+            Err(_) => return refuse(respond, 14),
+        }
     };
     let (mut client, connection) = h2::client::Builder::new()
         .initial_window_size(WINDOW)
         .initial_connection_window_size(WINDOW)
-        .handshake(tcp)
+        .handshake(io)
         .await?;
     // Driving the connection is independent of send capacity on the TLS peer.
     // h2 can read and ACK control frames when this stream's DATA window is zero.
@@ -411,6 +433,7 @@ pub async fn run() -> Result<()> {
             .map(str::to_owned)
             .collect(),
         key,
+        lifecycle: crate::lifecycle::Manager::configured()?,
     };
     ensure!(
         !app.issuer.is_empty() && app.audiences.iter().all(|a| !a.is_empty()),
@@ -418,6 +441,10 @@ pub async fn run() -> Result<()> {
     );
     let listener =
         TcpListener::bind(std::env::var("AUTHZ_LISTEN").unwrap_or("0.0.0.0:50051".into())).await?;
+    println!(
+        "{}",
+        serde_json::json!({"event":"gateway_ready", "pid":std::process::id()})
+    );
     loop {
         let (tcp, _) = listener.accept().await?;
         let acceptor = acceptor.clone();

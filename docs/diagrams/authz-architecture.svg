@@ -4,8 +4,8 @@
 <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3z" fill="#546880"/></marker></defs>
 <rect width="1100" height="650" fill="#f5f7fb"/>
 <g font-family="sans-serif" fill="#14243b">
-<text x="35" y="42" font-size="25" font-weight="bold">Datopsis authorization — S1 + S3 spikes</text>
-<text x="35" y="70" font-size="16">Working name · one monorepo · S3 gateway added; dashed boxes are future work</text>
+<text x="35" y="42" font-size="25" font-weight="bold">Datopsis authorization — S1 + S3 + S5 spikes</text>
+<text x="35" y="70" font-size="16">Working name · one monorepo · S5 per-user Sail lifecycle; dashed boxes are future work</text>
 <rect x="40" y="105" width="230" height="80" rx="10" fill="#e3eefe" stroke="#476d9f"/>
 <text x="60" y="136" font-size="19">Rauthy</text><text x="60" y="162" font-size="15">OIDC / JWKS / groups</text>
 <rect x="40" y="240" width="270" height="145" rx="10" fill="#e3eefe" stroke="#476d9f"/>
@@ -18,7 +18,7 @@
 <text x="430" y="224" font-size="15">S1: HTTPS, memory, grants, parent hierarchy, stdout audit</text>
 <text x="430" y="250" font-size="15">Planned: PostgreSQL, OPA endpoint for Trino, durable audit</text>
 <g stroke="#779a89" stroke-dasharray="7 4" fill="#fff"><rect x="415" y="300" width="280" height="65" rx="6" stroke-dasharray="none" stroke="#2a7958"/><rect x="720" y="300" width="295" height="65" rx="6"/></g>
-<text x="430" y="328" font-size="18">sail-gateway (S3)</text><text x="430" y="350" font-size="14">TLS + JWT + per-user Cedar admission</text>
+<text x="430" y="328" font-size="18">sail-gateway (S3/S5)</text><text x="430" y="350" font-size="14">JWT + Cedar + optional per-user Sail</text>
 <text x="735" y="328" font-size="18">token-broker (later)</text><text x="735" y="350" font-size="14">outbound token lifecycle</text>
 <rect x="415" y="390" width="600" height="55" rx="6" fill="#fff" stroke="#2a7958"/><text x="430" y="423" font-size="17">policy — S1 schema check; validate/test/analyze planned</text>
 <rect x="420" y="535" width="260" height="65" rx="8" fill="#fff" stroke="#779a89" stroke-dasharray="7 4"/><text x="440" y="562" font-size="18">PostgreSQL (MVP)</text><text x="440" y="585" font-size="14">ownership, hierarchy, grants</text>
