@@ -1,62 +1,3707 @@
 {
-  "status": "PARTIAL_AUTHENTICATED_SUITE_BLOCKED",
-  "blocker": "S5-rauthy-acquisition.json",
-  "native_job": "https://github.com/datopsis/datopsis-authz/actions/runs/44243517929/job/134596809448",
-  "tested_pr_source": "ba6fb502e795d482754540a946ce5efc70d758b1",
-  "tested_merge": "9eb47439ff578b166b8bdd212c143c631c20e968",
-  "native_log_sha256": "04aaaac6df2734289c1c0a33731edf5b55b71aea5c7c505c3102368743a13ee7",
+  "status": "S5_PASS_FULL_PLATFORM_FAIL",
+  "native_job": "https://github.com/datopsis/datopsis-authz/actions/runs/44815134976/job/136561382630",
+  "tested_pr_source": "01c0bfa6502077c2b88cb15c9e5859bf89477912",
+  "tested_merge": "3522fd9223827a1ee4cf3111c6b70da6e320db1f",
+  "native_log_sha256": "78c83b95e9730e9eaad9c3fc94d5e61ff4a0252e4f35a3ab2cb3701ce32bfd0e",
   "authenticated_suite": {
     "architecture": "arm64",
     "machine": "aarch64",
-    "source": "9eb47439ff578b166b8bdd212c143c631c20e968",
-    "run": "https://github.com/datopsis/datopsis-authz/actions/runs/44243517929",
+    "source": "3522fd9223827a1ee4cf3111c6b70da6e320db1f",
+    "run": "https://github.com/datopsis/datopsis-authz/actions/runs/44815134976",
     "sail": "e96e068f926b8fecb3939e953389685ee4780032",
-    "rauthy": "1e114b84b01988bf15306b110b040378878488d3",
+    "rauthy": "01375efb2a14692a7977f2f8aa60121f3fcc2f01",
     "cases": {
+      "rauthy": {
+        "status": "PASS",
+        "evidence": {
+          "image": "localhost/rauthy-ubi:authz",
+          "revision": "01375efb2a14692a7977f2f8aa60121f3fcc2f01",
+          "discovery": {
+            "issuer": "https://rauthy.idp.test:8443/auth/v1/",
+            "authorization_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/authorize",
+            "backchannel_logout_supported": true,
+            "backchannel_logout_session_supported": true,
+            "device_authorization_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/device",
+            "token_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/token",
+            "introspection_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/introspect",
+            "revocation_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/token/revoke",
+            "userinfo_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/userinfo",
+            "end_session_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/logout",
+            "jwks_uri": "https://rauthy.idp.test:8443/auth/v1/oidc/certs",
+            "grant_types_supported": [
+              "authorization_code",
+              "client_credentials",
+              "password",
+              "refresh_token",
+              "urn:ietf:params:oauth:grant-type:device_code",
+              "urn:ietf:params:oauth:grant-type:token-exchange"
+            ],
+            "response_types_supported": [
+              "code"
+            ],
+            "subject_types_supported": [
+              "public"
+            ],
+            "id_token_signing_alg_values_supported": [
+              "RS256",
+              "RS384",
+              "RS512",
+              "EdDSA",
+              "Ed25519"
+            ],
+            "token_endpoint_auth_methods_supported": [
+              "client_secret_post",
+              "client_secret_basic"
+            ],
+            "token_endpoint_auth_signing_alg_values_supported": [
+              "RS256",
+              "RS384",
+              "RS512",
+              "EdDSA",
+              "Ed25519"
+            ],
+            "claims_supported": [
+              "iss",
+              "azp",
+              "amr",
+              "sub",
+              "preferred_username",
+              "email",
+              "email_verified",
+              "given_name",
+              "family_name",
+              "roles",
+              "groups",
+              "custom"
+            ],
+            "claim_types_supported": [
+              "normal",
+              "aggregated",
+              "distributed"
+            ],
+            "scopes_supported": [
+              "email",
+              "openid",
+              "profile",
+              "groups",
+              "address",
+              "phone"
+            ],
+            "code_challenge_methods_supported": [
+              "plain",
+              "S256"
+            ],
+            "dpop_signing_alg_values_supported": [
+              "RS256",
+              "RS384",
+              "RS512",
+              "EdDSA",
+              "Ed25519"
+            ],
+            "service_documentation": "https://sebadob.github.io/rauthy/",
+            "ui_locales_supported": [
+              "en",
+              "en-US",
+              "de",
+              "de-DE",
+              "es",
+              "es-ES",
+              "fr",
+              "fr-FR",
+              "ja",
+              "ja-JP",
+              "ko",
+              "ko-KR",
+              "nb",
+              "nb-NO",
+              "nl",
+              "nl-NL",
+              "pt",
+              "pt-PT",
+              "ru",
+              "ru-RU",
+              "uk",
+              "uk-UA",
+              "zh",
+              "zh-Hans"
+            ],
+            "claims_parameter_supported": true,
+            "authorization_response_iss_parameter_supported": true,
+            "client_id_metadata_document_supported": true
+          }
+        }
+      },
+      "cedar_tls": {
+        "status": "PASS",
+        "evidence": {
+          "version": "TLSv1.3",
+          "unknown_ca_rejected": true,
+          "wrong_name_rejected": true,
+          "plaintext_rejected": true
+        }
+      },
+      "storage_tls": {
+        "status": "PASS",
+        "evidence": {
+          "master": {
+            "version": "TLSv1.3",
+            "unknown_ca_rejected": true,
+            "wrong_name_rejected": true,
+            "plaintext_rejected": true
+          },
+          "volume": {
+            "version": "TLSv1.3",
+            "unknown_ca_rejected": true,
+            "wrong_name_rejected": true,
+            "plaintext_rejected": true
+          },
+          "filer": {
+            "version": "TLSv1.3",
+            "unknown_ca_rejected": true,
+            "wrong_name_rejected": true,
+            "plaintext_rejected": true
+          },
+          "s3": {
+            "version": "TLSv1.3",
+            "unknown_ca_rejected": true,
+            "wrong_name_rejected": true,
+            "plaintext_rejected": true
+          }
+        }
+      },
+      "lakekeeper_tls": {
+        "status": "PASS",
+        "evidence": {
+          "proxy_revision": "9ef9e822c6b5e508cebef2adff3bb647a206773c",
+          "url": "https://catalog-rauthy.idp.test:8181",
+          "shared_namespace": true,
+          "listeners": "LISTEN 0      128     127.0.0.1:8182  0.0.0.0:*\nLISTEN 0      511       0.0.0.0:8181  0.0.0.0:*\nLISTEN 0      4096   127.0.0.11:41559 0.0.0.0:*\nLISTEN 0      128     127.0.0.1:9000  0.0.0.0:*\nLISTEN 0      511          [::]:8181     [::]:*",
+          "negative_errors": {
+            "untrusted_ca": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)",
+            "wrong_hostname": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'wrong.idp.test'. (_ssl.c:1000)"
+          },
+          "anonymous_https_status": 401,
+          "plaintext_frontend_status": 400,
+          "approved_exception": "HTTP only on 127.0.0.1:8182 inside shared network namespace"
+        }
+      },
+      "seed": {
+        "status": "PASS",
+        "evidence": {
+          "tables": [
+            [
+              "bakeoff",
+              "sample"
+            ]
+          ],
+          "rows": [
+            {
+              "id": 1,
+              "label": "alpha"
+            },
+            {
+              "id": 2,
+              "label": "beta"
+            }
+          ]
+        }
+      },
+      "admission_before_start": {
+        "status": "PASS",
+        "evidence": {
+          "missing": {
+            "status": "UNAUTHENTICATED",
+            "seconds": 0.011432388999764953,
+            "detail": ""
+          },
+          "denied_machine": {
+            "status": "PERMISSION_DENIED",
+            "seconds": 0.138734267000018,
+            "detail": ""
+          },
+          "no_instances": true
+        }
+      },
       "single": {
-        "status": "BLOCKED",
-        "reason": "Runtime prerequisites not completed"
+        "status": "PASS",
+        "evidence": {
+          "ready": {
+            "name": "s5-59d7f42ab28149b6af0dc79eb603d3b1",
+            "reused": false,
+            "ready_seconds": 0.1851671939998596
+          },
+          "cold_to_ready_seconds": 0.22621683100032897,
+          "idle": {
+            "instances": [
+              {
+                "name": "/s5-59d7f42ab28149b6af0dc79eb603d3b1",
+                "pid": 52112,
+                "rss_bytes": 65073152,
+                "cgroup_bytes": 31629312,
+                "cgroup_peak_bytes": 36446208,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 65073152,
+            "total_cgroup_bytes": 31629312,
+            "gateway_rss_bytes": 16965632
+          },
+          "after_query": {
+            "instances": [
+              {
+                "name": "/s5-59d7f42ab28149b6af0dc79eb603d3b1",
+                "pid": 52112,
+                "rss_bytes": 226619392,
+                "cgroup_bytes": 156303360,
+                "cgroup_peak_bytes": 161312768,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 226619392,
+            "total_cgroup_bytes": 156303360,
+            "gateway_rss_bytes": 16965632
+          },
+          "peak_sampled_rss_bytes": 226619392,
+          "query": {
+            "status": "OK",
+            "seconds": 0.1660901099999137,
+            "rows": [
+              {
+                "total": 499999500000,
+                "distinct_ids": 1000000
+              }
+            ]
+          },
+          "direct_first": {
+            "status": "OK",
+            "seconds": 0.2077626120003515,
+            "rows": [
+              {
+                "answer": 42
+              }
+            ]
+          },
+          "direct_later": [
+            {
+              "status": "OK",
+              "seconds": 0.16310441499990702,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.16474323400007052,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.12768660499978068,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.16259997400038628,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.08488181400025496,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            }
+          ],
+          "stop_seconds": 0.14935264900032053
+        }
       },
       "per_user_C1_C2": {
-        "status": "BLOCKED",
-        "reason": "Runtime prerequisites not completed"
+        "status": "PASS",
+        "evidence": {
+          "alice": {
+            "first": {
+              "status": "OK",
+              "seconds": 0.489799807000054,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            "read": {
+              "status": "OK",
+              "seconds": 0.5665417999998681,
+              "rows": [
+                {
+                  "id": 11
+                }
+              ]
+            },
+            "later": [
+              {
+                "status": "OK",
+                "seconds": 0.29801467799961756,
+                "rows": [
+                  {
+                    "answer": 42
+                  }
+                ]
+              },
+              {
+                "status": "OK",
+                "seconds": 0.2340693790001751,
+                "rows": [
+                  {
+                    "answer": 42
+                  }
+                ]
+              },
+              {
+                "status": "OK",
+                "seconds": 0.30100418900019577,
+                "rows": [
+                  {
+                    "answer": 42
+                  }
+                ]
+              },
+              {
+                "status": "OK",
+                "seconds": 0.2746994919998542,
+                "rows": [
+                  {
+                    "answer": 42
+                  }
+                ]
+              },
+              {
+                "status": "OK",
+                "seconds": 0.23361947900002633,
+                "rows": [
+                  {
+                    "answer": 42
+                  }
+                ]
+              }
+            ],
+            "foreign": {
+              "status": "INTERNAL",
+              "seconds": 0.2982208100002026,
+              "detail": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: bob.sample"
+            },
+            "writes": [
+              {
+                "status": "INTERNAL",
+                "seconds": 0.6125795709999693,
+                "detail": "forbidden: Iceberg REST catalog commit forbidden for alice.sample: response error: status code 403 Forbidden"
+              },
+              {
+                "status": "INTERNAL",
+                "seconds": 0.7772902800002157,
+                "detail": "forbidden: Iceberg REST catalog commit forbidden for alice.sample: response error: status code 403 Forbidden"
+              },
+              {
+                "status": "INTERNAL",
+                "seconds": 0.7323647700000038,
+                "detail": "forbidden: Iceberg REST catalog commit forbidden for alice.sample: response error: status code 403 Forbidden"
+              },
+              {
+                "status": "INTERNAL",
+                "seconds": 0.2760303939999176,
+                "detail": "external error: Failed to drop table: response error: status code 403 Forbidden"
+              },
+              {
+                "status": "INTERNAL",
+                "seconds": 0.3306686109999646,
+                "detail": "external error: Failed to create table: response error: status code 403 Forbidden"
+              }
+            ],
+            "namespace_inheritance": {
+              "status": "OK",
+              "seconds": 0.49510932800012597,
+              "rows": [
+                {
+                  "id": 33
+                }
+              ]
+            },
+            "single_table": {
+              "status": "OK",
+              "seconds": 0.5161675600002127,
+              "rows": [
+                {
+                  "id": 11
+                }
+              ]
+            },
+            "sibling": {
+              "status": "INTERNAL",
+              "seconds": 0.34285752899995714,
+              "detail": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: alice.sibling"
+            }
+          },
+          "bob": {
+            "first": {
+              "status": "OK",
+              "seconds": 0.5170886789996985,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            "read": {
+              "status": "OK",
+              "seconds": 0.581047271999978,
+              "rows": [
+                {
+                  "id": 22
+                }
+              ]
+            },
+            "later": [
+              {
+                "status": "OK",
+                "seconds": 0.23697672299977057,
+                "rows": [
+                  {
+                    "answer": 42
+                  }
+                ]
+              },
+              {
+                "status": "OK",
+                "seconds": 0.27694358799999463,
+                "rows": [
+                  {
+                    "answer": 42
+                  }
+                ]
+              },
+              {
+                "status": "OK",
+                "seconds": 0.23544866600013847,
+                "rows": [
+                  {
+                    "answer": 42
+                  }
+                ]
+              },
+              {
+                "status": "OK",
+                "seconds": 0.23534897599984106,
+                "rows": [
+                  {
+                    "answer": 42
+                  }
+                ]
+              },
+              {
+                "status": "OK",
+                "seconds": 0.23980366100022366,
+                "rows": [
+                  {
+                    "answer": 42
+                  }
+                ]
+              }
+            ],
+            "foreign": {
+              "status": "INTERNAL",
+              "seconds": 0.2978898989999834,
+              "detail": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: alice.sample"
+            },
+            "writes": [
+              {
+                "status": "INTERNAL",
+                "seconds": 0.604121786000178,
+                "detail": "forbidden: Iceberg REST catalog commit forbidden for bob.sample: response error: status code 403 Forbidden"
+              },
+              {
+                "status": "INTERNAL",
+                "seconds": 0.7334909189999053,
+                "detail": "forbidden: Iceberg REST catalog commit forbidden for bob.sample: response error: status code 403 Forbidden"
+              },
+              {
+                "status": "INTERNAL",
+                "seconds": 0.7799048950000724,
+                "detail": "forbidden: Iceberg REST catalog commit forbidden for bob.sample: response error: status code 403 Forbidden"
+              },
+              {
+                "status": "INTERNAL",
+                "seconds": 0.31258201400032704,
+                "detail": "external error: Failed to drop table: response error: status code 403 Forbidden"
+              },
+              {
+                "status": "INTERNAL",
+                "seconds": 0.37548297200009983,
+                "detail": "external error: Failed to create table: response error: status code 403 Forbidden"
+              }
+            ],
+            "namespace_inheritance": {
+              "status": "OK",
+              "seconds": 0.4729921800003467,
+              "rows": [
+                {
+                  "id": 33
+                }
+              ]
+            },
+            "single_table": {
+              "status": "OK",
+              "seconds": 0.5536488069997176,
+              "rows": [
+                {
+                  "id": 22
+                }
+              ]
+            },
+            "sibling": {
+              "status": "INTERNAL",
+              "seconds": 0.3782935110002654,
+              "detail": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: bob.sibling"
+            }
+          },
+          "same_session_id": true
+        }
       },
       "security": {
-        "status": "BLOCKED",
-        "reason": "Runtime prerequisites not completed"
+        "status": "PASS",
+        "evidence": [
+          {
+            "instance": "s5-75a19eb395454c0e9cfbbe068a79eedd",
+            "checks": {
+              "mode": "0o400",
+              "uid": 10001,
+              "peer_connect_errno": 111
+            },
+            "memory_cap": 536870912,
+            "cpu_cap": 1.0,
+            "readonly_mounts": true,
+            "private_tmp": true
+          },
+          {
+            "instance": "s5-2d1f284afbac4bf5ad2586865ebd7e1c",
+            "checks": {
+              "mode": "0o400",
+              "uid": 10001,
+              "peer_connect_errno": 111
+            },
+            "memory_cap": 536870912,
+            "cpu_cap": 1.0,
+            "readonly_mounts": true,
+            "private_tmp": true
+          }
+        ]
       },
       "idle_cleanup": {
-        "status": "BLOCKED",
-        "reason": "Runtime prerequisites not completed"
+        "status": "PASS",
+        "evidence": {
+          "timeout_seconds": 15,
+          "no_containers": true,
+          "no_token_files": true
+        }
       },
       "crash": {
-        "status": "BLOCKED",
-        "reason": "Runtime prerequisites not completed"
+        "status": "PASS",
+        "evidence": {
+          "recovered": {
+            "status": "OK",
+            "seconds": 0.5548438569999234,
+            "rows": [
+              {
+                "answer": 42
+              }
+            ]
+          },
+          "different_instance": true,
+          "old_token_directory_absent": true,
+          "foreign_temp_view": {
+            "status": "INTERNAL",
+            "seconds": 0.5496641770000679,
+            "detail": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: default.private_marker"
+          }
+        }
+      },
+      "idle_after_crash": {
+        "status": "PASS",
+        "evidence": {
+          "timeout_seconds": 15,
+          "no_containers": true,
+          "no_token_files": true
+        }
+      },
+      "same_user_concurrent_start": {
+        "status": "PASS",
+        "evidence": {
+          "results": [
+            {
+              "status": "OK",
+              "seconds": 0.5060951749997002,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.6753320010002426,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.4856056590001572,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.5198528999999326,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.6227111920002244,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            }
+          ],
+          "instances_created": 1
+        }
+      },
+      "idle_after_coalesced": {
+        "status": "PASS",
+        "evidence": {
+          "timeout_seconds": 15,
+          "no_containers": true,
+          "no_token_files": true
+        }
+      },
+      "active_stream_lease": {
+        "status": "PASS",
+        "evidence": {
+          "same_instance_after_seconds": 25,
+          "idle_timeout_seconds": 15,
+          "result": {
+            "event": "workload_complete",
+            "seconds": 88.5216283689997,
+            "unix_time": 1795210087.4389846,
+            "rows": 1000000,
+            "batches": 123,
+            "total": 499999500000,
+            "unique_ids": 1000000,
+            "payload_hashes_verified": 1000000,
+            "elapsed": 88.51638363099983
+          },
+          "execute_plan_calls": 1
+        }
+      },
+      "idle_after_active_stream": {
+        "status": "PASS",
+        "evidence": {
+          "timeout_seconds": 15,
+          "no_containers": true,
+          "no_token_files": true
+        }
       },
       "scale_1": {
-        "status": "BLOCKED",
-        "reason": "Runtime prerequisites not completed"
+        "status": "PASS",
+        "evidence": {
+          "n": 1,
+          "results": [
+            {
+              "status": "OK",
+              "seconds": 0.4706131859998095,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            }
+          ],
+          "memory": {
+            "instances": [
+              {
+                "name": "/s5-9bd2b9e9e56343048344d9a9f4076777",
+                "pid": 63782,
+                "rss_bytes": 109961216,
+                "cgroup_bytes": 46764032,
+                "cgroup_peak_bytes": 52039680,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 109961216,
+            "total_cgroup_bytes": 46764032,
+            "gateway_rss_bytes": 18022400
+          },
+          "first_query_seconds": [
+            0.4706131859998095
+          ],
+          "ready_seconds": [
+            0.17073224200021286
+          ],
+          "min_seconds": 0.4706131859998095,
+          "median_seconds": 0.4706131859998095,
+          "max_seconds": 0.4706131859998095,
+          "failures": 0
+        }
+      },
+      "idle_after_1": {
+        "status": "PASS",
+        "evidence": {
+          "timeout_seconds": 15,
+          "no_containers": true,
+          "no_token_files": true
+        }
       },
       "scale_5": {
-        "status": "BLOCKED",
-        "reason": "Runtime prerequisites not completed"
+        "status": "PASS",
+        "evidence": {
+          "n": 5,
+          "results": [
+            {
+              "status": "OK",
+              "seconds": 0.7152240149998761,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.7955781639998349,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.668570556999839,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.7451100939997559,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.7885013710001658,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            }
+          ],
+          "memory": {
+            "instances": [
+              {
+                "name": "/s5-a954c74456d7428ab4b875b3024c9d10",
+                "pid": 64418,
+                "rss_bytes": 108220416,
+                "cgroup_bytes": 46555136,
+                "cgroup_peak_bytes": 52297728,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-127e7af273cf4978a42e33914d196928",
+                "pid": 64409,
+                "rss_bytes": 105213952,
+                "cgroup_bytes": 44281856,
+                "cgroup_peak_bytes": 49983488,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-8004f4eb8a73432e83e968d33bc0f9f9",
+                "pid": 64394,
+                "rss_bytes": 106627072,
+                "cgroup_bytes": 44347392,
+                "cgroup_peak_bytes": 49635328,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-a5844eb916fe4e16a575902b25cf500a",
+                "pid": 64339,
+                "rss_bytes": 108666880,
+                "cgroup_bytes": 46383104,
+                "cgroup_peak_bytes": 51515392,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-0f96d17e798d4dbebb6c3bf3ac90723a",
+                "pid": 64273,
+                "rss_bytes": 101920768,
+                "cgroup_bytes": 38346752,
+                "cgroup_peak_bytes": 43950080,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 530649088,
+            "total_cgroup_bytes": 219914240,
+            "gateway_rss_bytes": 18026496
+          },
+          "first_query_seconds": [
+            0.668570556999839,
+            0.7152240149998761,
+            0.7451100939997559,
+            0.7885013710001658,
+            0.7955781639998349
+          ],
+          "ready_seconds": [
+            0.31129179200024737,
+            0.3619527439996091,
+            0.37870900999996593,
+            0.4076861209996423,
+            0.43620426000006773
+          ],
+          "min_seconds": 0.668570556999839,
+          "median_seconds": 0.7451100939997559,
+          "max_seconds": 0.7955781639998349,
+          "failures": 0
+        }
+      },
+      "idle_after_5": {
+        "status": "PASS",
+        "evidence": {
+          "timeout_seconds": 15,
+          "no_containers": true,
+          "no_token_files": true
+        }
       },
       "scale_20": {
-        "status": "BLOCKED",
-        "reason": "Runtime prerequisites not completed"
+        "status": "PASS",
+        "evidence": {
+          "n": 20,
+          "results": [
+            {
+              "status": "OK",
+              "seconds": 2.1237771190003514,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.174162927999987,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.9089531949998673,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.155371075000403,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 1.420174162999956,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.4283312540001134,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.9891885990000446,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.8177315850002742,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.5849000440002783,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 0.8738926410001113,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.3924512329999743,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.0895087020003302,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.625315593000323,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.4608722259999922,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.634480761999839,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.560030222000023,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.183421166000244,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.6040174700001444,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.510032130000127,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            },
+            {
+              "status": "OK",
+              "seconds": 2.3537217789998977,
+              "rows": [
+                {
+                  "answer": 42
+                }
+              ]
+            }
+          ],
+          "memory": {
+            "instances": [
+              {
+                "name": "/s5-48170c3dcaef44738e10c02b8d626d2f",
+                "pid": 67299,
+                "rss_bytes": 104644608,
+                "cgroup_bytes": 44179456,
+                "cgroup_peak_bytes": 49692672,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-579f134b093e445c8ea220dca8a233b1",
+                "pid": 67293,
+                "rss_bytes": 106213376,
+                "cgroup_bytes": 46497792,
+                "cgroup_peak_bytes": 51781632,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-8404a9d7be744741b5fca05611644372",
+                "pid": 67134,
+                "rss_bytes": 105132032,
+                "cgroup_bytes": 44363776,
+                "cgroup_peak_bytes": 49700864,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-622e260b75f44469903c033442f5b622",
+                "pid": 67273,
+                "rss_bytes": 104050688,
+                "cgroup_bytes": 44204032,
+                "cgroup_peak_bytes": 49647616,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-841011659cff4e86a829cb32399490a0",
+                "pid": 67152,
+                "rss_bytes": 104869888,
+                "cgroup_bytes": 44167168,
+                "cgroup_peak_bytes": 49471488,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-2da5daf8d7094e6e9eab6b00cc39d541",
+                "pid": 66925,
+                "rss_bytes": 104345600,
+                "cgroup_bytes": 44171264,
+                "cgroup_peak_bytes": 49561600,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-e2a711b550824b3592bca70ccd5517b3",
+                "pid": 66927,
+                "rss_bytes": 105922560,
+                "cgroup_bytes": 44175360,
+                "cgroup_peak_bytes": 50073600,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-13354bf8f13a47a6a3a856da0684985e",
+                "pid": 67206,
+                "rss_bytes": 106606592,
+                "cgroup_bytes": 46272512,
+                "cgroup_peak_bytes": 52023296,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-0c21d766e51045d78232202480661c26",
+                "pid": 67274,
+                "rss_bytes": 104136704,
+                "cgroup_bytes": 44339200,
+                "cgroup_peak_bytes": 50077696,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-33462e693ea14db882a7735a9eb2171f",
+                "pid": 66542,
+                "rss_bytes": 105345024,
+                "cgroup_bytes": 44179456,
+                "cgroup_peak_bytes": 49889280,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-f240133f21934c27936263d433ecd626",
+                "pid": 66633,
+                "rss_bytes": 105189376,
+                "cgroup_bytes": 44167168,
+                "cgroup_peak_bytes": 49647616,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-ed95dca1773d48c4a7d466e1ce1faa43",
+                "pid": 66490,
+                "rss_bytes": 105586688,
+                "cgroup_bytes": 44175360,
+                "cgroup_peak_bytes": 49467392,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-590579332ec646e0b342c0c5563036ca",
+                "pid": 66400,
+                "rss_bytes": 105508864,
+                "cgroup_bytes": 44171264,
+                "cgroup_peak_bytes": 49627136,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-e8c1d6b096ab4139a4ac4a5bdc0835be",
+                "pid": 66349,
+                "rss_bytes": 105721856,
+                "cgroup_bytes": 44171264,
+                "cgroup_peak_bytes": 49639424,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-1718cb0999e5477982b1a8862060d01f",
+                "pid": 65841,
+                "rss_bytes": 105259008,
+                "cgroup_bytes": 44130304,
+                "cgroup_peak_bytes": 49590272,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-bc9ed9902b7f46c5aef49f51235c0ab2",
+                "pid": 65786,
+                "rss_bytes": 105791488,
+                "cgroup_bytes": 44187648,
+                "cgroup_peak_bytes": 49864704,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-1a0f010251bf4db3be565148068a329a",
+                "pid": 65739,
+                "rss_bytes": 105861120,
+                "cgroup_bytes": 44179456,
+                "cgroup_peak_bytes": 49901568,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-236a2641939048feac03f43874b71106",
+                "pid": 65750,
+                "rss_bytes": 108257280,
+                "cgroup_bytes": 44175360,
+                "cgroup_peak_bytes": 49733632,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-8778329d16ab4c438b281f31ac6d9c03",
+                "pid": 65684,
+                "rss_bytes": 100585472,
+                "cgroup_bytes": 37785600,
+                "cgroup_peak_bytes": 43294720,
+                "cmdline": "python3.12"
+              },
+              {
+                "name": "/s5-7ec659393cd24e4bb4af73cc5243d706",
+                "pid": 65671,
+                "rss_bytes": 106381312,
+                "cgroup_bytes": 44175360,
+                "cgroup_peak_bytes": 50016256,
+                "cmdline": "python3.12"
+              }
+            ],
+            "total_rss_bytes": 2105409536,
+            "total_cgroup_bytes": 881868800,
+            "gateway_rss_bytes": 19095552
+          },
+          "first_query_seconds": [
+            0.8177315850002742,
+            0.8738926410001113,
+            0.9891885990000446,
+            1.155371075000403,
+            1.174162927999987,
+            1.420174162999956,
+            1.9089531949998673,
+            2.0895087020003302,
+            2.1237771190003514,
+            2.183421166000244,
+            2.3537217789998977,
+            2.3924512329999743,
+            2.4283312540001134,
+            2.4608722259999922,
+            2.510032130000127,
+            2.560030222000023,
+            2.5849000440002783,
+            2.6040174700001444,
+            2.625315593000323,
+            2.634480761999839
+          ],
+          "ready_seconds": [
+            0.3894992979999188,
+            0.3948337439996976,
+            0.44567811200022334,
+            0.4736611980001726,
+            0.4826318830000673,
+            0.49523380799973893,
+            0.538814721000108,
+            0.5667387299999973,
+            0.6452944249999746,
+            0.7038053109999964,
+            0.7663362280000001,
+            0.8665958760002468,
+            0.870016792000115,
+            0.8912405760002002,
+            1.009689906999938,
+            1.030245948999891,
+            1.0534041400001115,
+            1.1280421569999817,
+            1.1319199409999783,
+            1.211035264000202
+          ],
+          "min_seconds": 0.8177315850002742,
+          "median_seconds": 2.2685714725000707,
+          "max_seconds": 2.634480761999839,
+          "failures": 0
+        }
+      },
+      "idle_after_20": {
+        "status": "PASS",
+        "evidence": {
+          "timeout_seconds": 15,
+          "no_containers": true,
+          "no_token_files": true
+        }
       },
       "resource_limits": {
-        "status": "BLOCKED",
-        "reason": "Runtime prerequisites not completed"
+        "status": "PASS",
+        "evidence": {
+          "memory_cap_bytes": 536870912,
+          "cpu_cap": 1.0,
+          "allocation_bytes": 805306368,
+          "allocation_exit": 137,
+          "cpu_before": {
+            "usage_usec": 84895,
+            "user_usec": 54575,
+            "system_usec": 30319,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 1,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          },
+          "cpu_after": {
+            "usage_usec": 3146208,
+            "user_usec": 3091458,
+            "system_usec": 54750,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 32,
+            "nr_throttled": 30,
+            "throttled_usec": 8926084,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          },
+          "memory_events_before": {
+            "low": 0,
+            "high": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_kill": 0,
+            "oom_group_kill": 0,
+            "sock_throttled": 0
+          },
+          "memory_events_after": {
+            "low": 0,
+            "high": 0,
+            "max": 37,
+            "oom": 1,
+            "oom_kill": 1,
+            "oom_group_kill": 0,
+            "sock_throttled": 0
+          },
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": true,
+            "Dead": false,
+            "Pid": 69997,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-11-20T21:29:19.309979524Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Health": {
+              "Status": "starting",
+              "FailingStreak": 0,
+              "Log": []
+            }
+          }
+        }
       }
     },
     "host": {
       "logical_cpus": 4,
       "kernel": "7.0.0-1017-azure",
-      "mem_total_bytes": 16715927552
+      "mem_total_bytes": 16715923456
+    },
+    "provenance": {
+      "localhost/sail-ubi:integration": {
+        "image_id": "sha256:d016d91add7cee1b00cadea219d955afbee840ff17f37a989cd330f0a3ad5e8d",
+        "architecture": "arm64",
+        "labels": {
+          "architecture": "aarch64",
+          "build-date": "2026-11-09T00:39:45Z",
+          "com.redhat.component": "ubi9-micro-container",
+          "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+          "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+          "description": "Very small image which doesn't install the package manager.",
+          "distribution-scope": "public",
+          "io.buildah.version": "1.45.0",
+          "io.datopsis.artifact-lock.sha256": "7b66571efcca5f6e856b5922090ddc9c728489d300f20a12ca93b577ab4b4c38",
+          "io.k8s.description": "Very small image which doesn't install the package manager.",
+          "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+          "io.openshift.expose-services": "",
+          "maintainer": "Red Hat, Inc.",
+          "name": "ubi9/ubi-micro",
+          "org.opencontainers.image.base.name": "registry.access.redhat.com/ubi9/ubi-micro:9.8@sha256:d3499a0896e2d6a1642f922615831bc5c2fd513bbb34f3446cabba530d9d54a2",
+          "org.opencontainers.image.created": "2026-11-13T06:35:25-06:00",
+          "org.opencontainers.image.description": "Rootless local Spark Connect server",
+          "org.opencontainers.image.licenses": "Apache-2.0",
+          "org.opencontainers.image.revision": "e96e068f926b8fecb3939e953389685ee4780032",
+          "org.opencontainers.image.source": "https://github.com/datopsis/sail-ubi",
+          "org.opencontainers.image.title": "Sail on Red Hat UBI 9",
+          "org.opencontainers.image.version": "0.7.3",
+          "release": "1794184668",
+          "summary": "ubi9 micro image",
+          "url": "https://catalog.redhat.com/en/search?searchType=containers",
+          "vcs-ref": "180abe1db345daeb7a00ed9fda71e3ad05c261b7",
+          "vcs-type": "git",
+          "vendor": "Red Hat, Inc.",
+          "version": "9.8"
+        }
+      },
+      "localhost/rauthy-ubi:authz": {
+        "image_id": "sha256:fc4cc712959a79dca53f285cdea0042beda99578476f116a3c43c4f959a9bb94",
+        "architecture": "arm64",
+        "labels": {
+          "architecture": "aarch64",
+          "build-date": "2026-11-12T10:16:56Z",
+          "com.redhat.component": "ubi9-micro-container",
+          "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+          "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+          "description": "Very small image which doesn't install the package manager.",
+          "distribution-scope": "public",
+          "io.buildah.version": "1.45.0",
+          "io.datopsis.artifact-lock.sha256": "2e93246a43f5dc68053324a0e2ab2261bba90a7d06de981d65a2aa8dff086204",
+          "io.datopsis.rauthy.upstream-revision": "fe6bcb95192e8a83c29e2b525bf4960933bea3bd",
+          "io.k8s.description": "Very small image which doesn't install the package manager.",
+          "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+          "io.openshift.expose-services": "",
+          "maintainer": "Red Hat, Inc.",
+          "name": "ubi9/ubi-micro",
+          "org.opencontainers.image.created": "2026-11-12T10:16:56Z",
+          "org.opencontainers.image.licenses": "Apache-2.0",
+          "org.opencontainers.image.revision": "01375efb2a14692a7977f2f8aa60121f3fcc2f01",
+          "org.opencontainers.image.source": "https://github.com/datopsis/rauthy-ubi",
+          "org.opencontainers.image.title": "Rauthy on Red Hat UBI 9",
+          "org.opencontainers.image.version": "0.37.2",
+          "release": "1794478307",
+          "summary": "ubi9 micro image",
+          "url": "https://catalog.redhat.com/en/search?searchType=containers",
+          "vcs-ref": "fe65ab2ee8a23d96179165605ba81b37ed988b79",
+          "vcs-type": "git",
+          "vendor": "Red Hat, Inc.",
+          "version": "9.9"
+        }
+      }
     }
   },
-  "engine_only": {
+  "cleanup": {
+    "runtime_removed": true,
+    "instances_remaining": 0
+  },
+  "s3": {
+    "architecture": "arm64",
+    "machine": "aarch64",
+    "run": "https://github.com/datopsis/datopsis-authz/actions/runs/44815134976",
+    "integration": "e8379a528bf413c05aad49e56bc8cd507b5e077a",
+    "sail": "e96e068f926b8fecb3939e953389685ee4780032",
+    "source": "3522fd9223827a1ee4cf3111c6b70da6e320db1f",
+    "cases": {
+      "valid": {
+        "status": "PASS",
+        "evidence": {
+          "code": "OK",
+          "rows": [
+            {
+              "answer": 42
+            }
+          ],
+          "result_batches": 1
+        }
+      },
+      "valid_machine": {
+        "status": "PASS",
+        "evidence": {
+          "code": "OK",
+          "rows": [
+            {
+              "answer": 42
+            }
+          ],
+          "result_batches": 1
+        }
+      },
+      "missing": {
+        "status": "PASS",
+        "evidence": {
+          "code": "UNAUTHENTICATED"
+        }
+      },
+      "wrong_audience": {
+        "status": "PASS",
+        "evidence": {
+          "code": "UNAUTHENTICATED"
+        }
+      },
+      "denied_user": {
+        "status": "PASS",
+        "evidence": {
+          "code": "PERMISSION_DENIED"
+        }
+      },
+      "denied_machine": {
+        "status": "PASS",
+        "evidence": {
+          "code": "PERMISSION_DENIED"
+        }
+      },
+      "wrong_key": {
+        "status": "PASS",
+        "evidence": {
+          "code": "UNAUTHENTICATED"
+        }
+      },
+      "expiry_before": {
+        "status": "PASS",
+        "evidence": {
+          "code": "OK",
+          "rows": [
+            {
+              "answer": 42
+            }
+          ],
+          "result_batches": 1
+        }
+      },
+      "expired": {
+        "status": "PASS",
+        "evidence": {
+          "code": "UNAUTHENTICATED"
+        }
+      },
+      "expiry_fresh": {
+        "status": "PASS",
+        "evidence": {
+          "code": "OK",
+          "rows": [
+            {
+              "answer": 42
+            }
+          ],
+          "result_batches": 1
+        }
+      },
+      "tls_plaintext": {
+        "status": "PASS",
+        "evidence": {
+          "version": "TLSv1.3",
+          "unknown_ca_rejected": true,
+          "wrong_name_rejected": true,
+          "plaintext_rejected": true
+        }
+      },
+      "backend_isolation": {
+        "status": "PASS",
+        "evidence": {
+          "50051": 0,
+          "50052": 111
+        }
+      },
+      "paced_stream": {
+        "status": "PASS",
+        "evidence": {
+          "outcome": "COMPLETE",
+          "result": {
+            "event": "workload_complete",
+            "seconds": 86.23984327500011,
+            "unix_time": 1795210309.205703,
+            "rows": 1000000,
+            "batches": 123,
+            "total": 499999500000,
+            "unique_ids": 1000000,
+            "payload_hashes_verified": 1000000,
+            "elapsed": 86.23542003800003
+          },
+          "pings": [
+            {
+              "ping_seconds": 61.69437550099974,
+              "connection_age_seconds": 60.00502464200008,
+              "ack_ms": 0.10697200013964903,
+              "during_downstream_wait": true
+            }
+          ],
+          "result_flow": {
+            "ports": [
+              50052,
+              59072
+            ],
+            "frames": {
+              "SETTINGS": 2,
+              "PING": 2,
+              "HEADERS": 2,
+              "DATA": 4619
+            },
+            "data_bytes": 73339882,
+            "pending_segments": 0,
+            "pending_bytes": 0
+          },
+          "capture_drops": 0
+        }
+      },
+      "revoked_user": {
+        "status": "PASS",
+        "evidence": {
+          "code": "PERMISSION_DENIED"
+        }
+      }
+    }
+  },
+  "catalog_acceptance": {
+    "run": {
+      "architecture": "arm64",
+      "uname": "aarch64",
+      "url": "https://github.com/datopsis/datopsis-authz/actions/runs/44815134976"
+    },
+    "C1": {
+      "status": "pass",
+      "value": {
+        "namespaces": [
+          [
+            "bakeoff"
+          ]
+        ],
+        "allowed": {
+          "tables": [
+            [
+              "bakeoff",
+              "sample"
+            ]
+          ],
+          "rows": [
+            {
+              "id": 1,
+              "label": "alpha"
+            },
+            {
+              "id": 2,
+              "label": "beta"
+            }
+          ]
+        },
+        "other_list": {
+          "type": "NoSuchNamespaceError",
+          "message": "NoSuchNamespaceException: Namespace with name 'denied' does not exist in warehouse 'e0de332e-e529-11f1-9d6d-1fc559ddf5b8'"
+        },
+        "other_read": {
+          "type": "NoSuchTableError",
+          "message": "NoSuchTableException: Error getting tabular from catalog"
+        },
+        "writes": {
+          "create_namespace": {
+            "type": "ForbiddenError",
+            "message": "WarehouseActionForbidden: Warehouse action `create_namespace(name=forbidden)` forbidden on warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "create_table": {
+            "type": "ForbiddenError",
+            "message": "NamespaceActionForbidden: Namespace action `create_table(name=no, table_id=01a1fae0-02f7-768d-8928-99e7c8d6bff6)` forbidden on namespace with name 'bakeoff' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "append": {
+            "type": "ForbiddenError",
+            "message": "TableActionForbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "overwrite": {
+            "type": "ForbiddenError",
+            "message": "TableActionForbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "delete": {
+            "type": "ForbiddenError",
+            "message": "TableActionForbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "commit": {
+            "type": "ForbiddenError",
+            "message": "TableActionForbidden: Table action `commit(updated-properties={test: denied})` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "drop": {
+            "type": "ForbiddenError",
+            "message": "TableActionForbidden: Table action `drop` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "rename": {
+            "type": "ForbiddenError",
+            "message": "NamespaceActionForbidden: Namespace action `create_table(name=renamed, table_id=01a1fadf-fd54-738b-8584-c1f291893e21, properties={write.delete.mode: copy-on-write, write.update.mode: copy-on-write})` forbidden on namespace with name 'bakeoff' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          }
+        }
+      },
+      "seconds": 0.7758
+    },
+    "C2": {
+      "status": "pass",
+      "value": {
+        "namespace_covers_new_table": true,
+        "single_table_rows": [
+          {
+            "id": 8
+          }
+        ],
+        "single_table_list": "NoSuchNamespaceError",
+        "sibling": {
+          "type": "NoSuchTableError",
+          "message": "NoSuchTableException: Error getting tabular from catalog"
+        }
+      },
+      "seconds": 0.7438
+    },
+    "C3": {
+      "status": "fail",
+      "error_type": "AssertionError",
+      "error": "Denied operation succeeded",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/runner/work/datopsis-authz/datopsis-authz/evaluation/s1/acceptance.py\", line 30, in record\n    result = {\"status\": \"pass\", \"value\": fn()}\n                                         ^^^^\n  File \"/home/runner/work/datopsis-authz/datopsis-authz/evaluation/s1/acceptance.py\", line 179, in groups\n    old_token_denied = denial(lambda: catalog.read(reader))\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/datopsis-authz/datopsis-authz/evaluation/s1/acceptance.py\", line 54, in denial\n    raise AssertionError(\"Denied operation succeeded\")\nAssertionError: Denied operation succeeded\n",
+      "seconds": 0.3109
+    },
+    "C4": {
+      "status": "pass",
+      "value": {
+        "first_denial_seconds": 0.033187169000029826,
+        "samples": [
+          {
+            "seconds_since_ack": 0.033187169000029826,
+            "status": 404
+          }
+        ],
+        "scope": "Delete acknowledgment to first fresh REST denial; issued storage credentials excluded"
+      },
+      "seconds": 0.1767
+    },
+    "C5": {
+      "status": "pass",
+      "value": {
+        "pyiceberg": {
+          "status": "pass",
+          "value": {
+            "allowed": {
+              "tables": [
+                [
+                  "bakeoff",
+                  "sample"
+                ]
+              ],
+              "rows": [
+                {
+                  "id": 1,
+                  "label": "alpha"
+                },
+                {
+                  "id": 2,
+                  "label": "beta"
+                }
+              ]
+            },
+            "other_read": {
+              "type": "NoSuchTableError",
+              "message": "NoSuchTableException: Error getting tabular from catalog"
+            },
+            "writes": {
+              "create_namespace": {
+                "type": "ForbiddenError",
+                "message": "WarehouseActionForbidden: Warehouse action `create_namespace(name=forbidden)` forbidden on warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+              },
+              "create_table": {
+                "type": "ForbiddenError",
+                "message": "NamespaceActionForbidden: Namespace action `create_table(name=no, table_id=01a1fae0-0a6c-70ef-bf85-e06cd4d4f6f8)` forbidden on namespace with name 'bakeoff' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+              },
+              "append": {
+                "type": "ForbiddenError",
+                "message": "TableActionForbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+              },
+              "overwrite": {
+                "type": "ForbiddenError",
+                "message": "TableActionForbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+              },
+              "delete": {
+                "type": "ForbiddenError",
+                "message": "TableActionForbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+              },
+              "commit": {
+                "type": "ForbiddenError",
+                "message": "TableActionForbidden: Table action `commit(updated-properties={test: denied})` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+              },
+              "drop": {
+                "type": "ForbiddenError",
+                "message": "TableActionForbidden: Table action `drop` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+              },
+              "rename": {
+                "type": "ForbiddenError",
+                "message": "NamespaceActionForbidden: Namespace action `create_table(name=renamed, table_id=01a1fadf-fd54-738b-8584-c1f291893e21, properties={write.delete.mode: copy-on-write, write.update.mode: copy-on-write})` forbidden on namespace with name 'bakeoff' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+              }
+            }
+          },
+          "seconds": 0.6555
+        },
+        "trino": {
+          "status": "pass",
+          "value": {
+            "tls": {
+              "version": "TLSv1.3",
+              "unknown_ca_rejected": true,
+              "wrong_name_rejected": true,
+              "plaintext_rejected": true
+            },
+            "rows": [
+              {
+                "id": 1,
+                "label": "alpha"
+              },
+              {
+                "id": 2,
+                "label": "beta"
+              }
+            ],
+            "denials": {
+              "SELECT * FROM iceberg.denied.sample": {
+                "message": "line 1:15: Schema 'denied' does not exist",
+                "errorCode": 45,
+                "errorName": "SCHEMA_NOT_FOUND",
+                "errorType": "USER_ERROR",
+                "errorLocation": {
+                  "lineNumber": 1,
+                  "columnNumber": 15
+                },
+                "failureInfo": {
+                  "type": "io.trino.spi.TrinoException",
+                  "message": "line 1:15: Schema 'denied' does not exist",
+                  "suppressed": [],
+                  "stack": [
+                    "io.trino.sql.analyzer.SemanticExceptions.semanticException(SemanticExceptions.java:65)",
+                    "io.trino.sql.analyzer.SemanticExceptions.semanticException(SemanticExceptions.java:59)",
+                    "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitTable(StatementAnalyzer.java:2457)",
+                    "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitTable(StatementAnalyzer.java:550)",
+                    "io.trino.sql.tree.Table.accept(Table.java:70)",
+                    "io.trino.sql.tree.AstVisitor.process(AstVisitor.java:27)",
+                    "io.trino.sql.analyzer.StatementAnalyzer$Visitor.process(StatementAnalyzer.java:569)",
+                    "io.trino.sql.analyzer.StatementAnalyzer$Visitor.analyzeFrom(StatementAnalyzer.java:5665)",
+                    "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitQuerySpecification(StatementAnalyzer.java:3553)",
+                    "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitQuerySpecification(StatementAnalyzer.java:550)",
+                    "io.trino.sql.tree.QuerySpecification.accept(QuerySpecification.java:155)",
+                    "io.trino.sql.tree.AstVisitor.process(AstVisitor.java:27)",
+                    "io.trino.sql.analyzer.StatementAnalyzer$Visitor.process(StatementAnalyzer.java:569)",
+                    "io.trino.sql.analyzer.StatementAnalyzer$Visitor.process(StatementAnalyzer.java:577)",
+                    "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitQuery(StatementAnalyzer.java:1653)",
+                    "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitQuery(StatementAnalyzer.java:550)",
+                    "io.trino.sql.tree.Query.accept(Query.java:130)",
+                    "io.trino.sql.tree.AstVisitor.process(AstVisitor.java:27)",
+                    "io.trino.sql.analyzer.StatementAnalyzer$Visitor.process(StatementAnalyzer.java:569)",
+                    "io.trino.sql.analyzer.StatementAnalyzer.analyze(StatementAnalyzer.java:529)",
+                    "io.trino.sql.analyzer.StatementAnalyzer.analyze(StatementAnalyzer.java:518)",
+                    "io.trino.sql.analyzer.Analyzer.analyze(Analyzer.java:98)",
+                    "io.trino.sql.analyzer.Analyzer.analyze(Analyzer.java:87)",
+                    "io.trino.execution.SqlQueryExecution.analyze(SqlQueryExecution.java:288)",
+                    "io.trino.execution.SqlQueryExecution.<init>(SqlQueryExecution.java:222)",
+                    "io.trino.execution.SqlQueryExecution$SqlQueryExecutionFactory.createQueryExecution(SqlQueryExecution.java:893)",
+                    "io.trino.dispatcher.LocalDispatchQueryFactory.lambda$createDispatchQuery$0(LocalDispatchQueryFactory.java:163)",
+                    "io.trino.$gen.Trino_484___Callable.call(Unknown Source)",
+                    "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                    "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                    "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                    "java.base/java.lang.Thread.run(Unknown Source)"
+                  ],
+                  "errorInfo": {
+                    "code": 45,
+                    "name": "SCHEMA_NOT_FOUND",
+                    "type": "USER_ERROR"
+                  },
+                  "errorLocation": {
+                    "lineNumber": 1,
+                    "columnNumber": 15
+                  }
+                }
+              },
+              "INSERT INTO iceberg.bakeoff.sample VALUES (3, 'forbidden')": {
+                "message": "Failed to commit the transaction during insert: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                "errorCode": 84148236,
+                "errorName": "ICEBERG_COMMIT_ERROR",
+                "errorType": "EXTERNAL",
+                "failureInfo": {
+                  "type": "io.trino.spi.TrinoException",
+                  "message": "Failed to commit the transaction during insert: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                  "cause": {
+                    "type": "org.apache.iceberg.exceptions.ForbiddenException",
+                    "message": "Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                    "suppressed": [],
+                    "stack": [
+                      "org.apache.iceberg.rest.ErrorHandlers$DefaultErrorHandler.accept(ErrorHandlers.java:345)",
+                      "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:137)",
+                      "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:119)",
+                      "org.apache.iceberg.rest.HTTPClient.throwFailure(HTTPClient.java:242)",
+                      "org.apache.iceberg.rest.HTTPClient.handleResponse(HTTPClient.java:367)",
+                      "org.apache.iceberg.rest.HTTPClient.lambda$execute$1(HTTPClient.java:325)",
+                      "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:247)",
+                      "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:188)",
+                      "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:321)",
+                      "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:299)",
+                      "org.apache.iceberg.rest.BaseHTTPClient.post(BaseHTTPClient.java:112)",
+                      "org.apache.iceberg.rest.RESTClient.post(RESTClient.java:150)",
+                      "org.apache.iceberg.rest.RESTTableOperations.commit(RESTTableOperations.java:227)",
+                      "org.apache.iceberg.BaseTransaction.lambda$commitSimpleTransaction$1(BaseTransaction.java:371)",
+                      "org.apache.iceberg.util.Tasks$Builder.runTaskWithRetry(Tasks.java:416)",
+                      "org.apache.iceberg.util.Tasks$Builder.runSingleThreaded(Tasks.java:222)",
+                      "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:206)",
+                      "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:199)",
+                      "org.apache.iceberg.BaseTransaction.commitSimpleTransaction(BaseTransaction.java:367)",
+                      "org.apache.iceberg.BaseTransaction.commitTransaction(BaseTransaction.java:268)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2362)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.finishInsert(IcebergMetadata.java:1769)",
+                      "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishInsert(ClassLoaderSafeConnectorMetadata.java:654)",
+                      "io.trino.tracing.TracingConnectorMetadata.finishInsert(TracingConnectorMetadata.java:737)",
+                      "io.trino.metadata.MetadataManager.finishInsert(MetadataManager.java:1303)",
+                      "io.trino.tracing.TracingMetadata.finishInsert(TracingMetadata.java:766)",
+                      "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4194)",
+                      "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                      "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                      "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                      "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                      "io.trino.operator.Driver.process(Driver.java:298)",
+                      "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                      "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                      "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                      "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                      "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                      "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                      "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                      "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                      "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                      "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                      "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                      "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                      "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                      "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                      "java.base/java.lang.Thread.run(Unknown Source)"
+                    ],
+                    "errorInfo": {
+                      "code": 65536,
+                      "name": "GENERIC_INTERNAL_ERROR",
+                      "type": "INTERNAL_ERROR"
+                    }
+                  },
+                  "suppressed": [],
+                  "stack": [
+                    "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2368)",
+                    "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                    "io.trino.plugin.iceberg.IcebergMetadata.finishInsert(IcebergMetadata.java:1769)",
+                    "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishInsert(ClassLoaderSafeConnectorMetadata.java:654)",
+                    "io.trino.tracing.TracingConnectorMetadata.finishInsert(TracingConnectorMetadata.java:737)",
+                    "io.trino.metadata.MetadataManager.finishInsert(MetadataManager.java:1303)",
+                    "io.trino.tracing.TracingMetadata.finishInsert(TracingMetadata.java:766)",
+                    "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4194)",
+                    "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                    "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                    "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                    "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                    "io.trino.operator.Driver.process(Driver.java:298)",
+                    "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                    "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                    "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                    "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                    "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                    "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                    "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                    "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                    "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                    "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                    "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                    "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                    "java.base/java.lang.Thread.run(Unknown Source)"
+                  ],
+                  "errorInfo": {
+                    "code": 84148236,
+                    "name": "ICEBERG_COMMIT_ERROR",
+                    "type": "EXTERNAL"
+                  }
+                }
+              },
+              "UPDATE iceberg.bakeoff.sample SET label='forbidden' WHERE id=1": {
+                "message": "Failed to commit the transaction during write: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                "errorCode": 84148236,
+                "errorName": "ICEBERG_COMMIT_ERROR",
+                "errorType": "EXTERNAL",
+                "failureInfo": {
+                  "type": "io.trino.spi.TrinoException",
+                  "message": "Failed to commit the transaction during write: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                  "cause": {
+                    "type": "org.apache.iceberg.exceptions.ForbiddenException",
+                    "message": "Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                    "suppressed": [],
+                    "stack": [
+                      "org.apache.iceberg.rest.ErrorHandlers$DefaultErrorHandler.accept(ErrorHandlers.java:345)",
+                      "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:137)",
+                      "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:119)",
+                      "org.apache.iceberg.rest.HTTPClient.throwFailure(HTTPClient.java:242)",
+                      "org.apache.iceberg.rest.HTTPClient.handleResponse(HTTPClient.java:367)",
+                      "org.apache.iceberg.rest.HTTPClient.lambda$execute$1(HTTPClient.java:325)",
+                      "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:247)",
+                      "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:188)",
+                      "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:321)",
+                      "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:299)",
+                      "org.apache.iceberg.rest.BaseHTTPClient.post(BaseHTTPClient.java:112)",
+                      "org.apache.iceberg.rest.RESTClient.post(RESTClient.java:150)",
+                      "org.apache.iceberg.rest.RESTTableOperations.commit(RESTTableOperations.java:227)",
+                      "org.apache.iceberg.BaseTransaction.lambda$commitSimpleTransaction$1(BaseTransaction.java:371)",
+                      "org.apache.iceberg.util.Tasks$Builder.runTaskWithRetry(Tasks.java:416)",
+                      "org.apache.iceberg.util.Tasks$Builder.runSingleThreaded(Tasks.java:222)",
+                      "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:206)",
+                      "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:199)",
+                      "org.apache.iceberg.BaseTransaction.commitSimpleTransaction(BaseTransaction.java:367)",
+                      "org.apache.iceberg.BaseTransaction.commitTransaction(BaseTransaction.java:268)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2362)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.finishWrite(IcebergMetadata.java:3578)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.finishMerge(IcebergMetadata.java:3414)",
+                      "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishMerge(ClassLoaderSafeConnectorMetadata.java:1334)",
+                      "io.trino.tracing.TracingConnectorMetadata.finishMerge(TracingConnectorMetadata.java:818)",
+                      "io.trino.metadata.MetadataManager.finishMerge(MetadataManager.java:1476)",
+                      "io.trino.tracing.TracingMetadata.finishMerge(TracingMetadata.java:902)",
+                      "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4215)",
+                      "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                      "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                      "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                      "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                      "io.trino.operator.Driver.process(Driver.java:298)",
+                      "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                      "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                      "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                      "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                      "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                      "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                      "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                      "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                      "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                      "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                      "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                      "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                      "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                      "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                      "java.base/java.lang.Thread.run(Unknown Source)"
+                    ],
+                    "errorInfo": {
+                      "code": 65536,
+                      "name": "GENERIC_INTERNAL_ERROR",
+                      "type": "INTERNAL_ERROR"
+                    }
+                  },
+                  "suppressed": [],
+                  "stack": [
+                    "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2368)",
+                    "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                    "io.trino.plugin.iceberg.IcebergMetadata.finishWrite(IcebergMetadata.java:3578)",
+                    "io.trino.plugin.iceberg.IcebergMetadata.finishMerge(IcebergMetadata.java:3414)",
+                    "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishMerge(ClassLoaderSafeConnectorMetadata.java:1334)",
+                    "io.trino.tracing.TracingConnectorMetadata.finishMerge(TracingConnectorMetadata.java:818)",
+                    "io.trino.metadata.MetadataManager.finishMerge(MetadataManager.java:1476)",
+                    "io.trino.tracing.TracingMetadata.finishMerge(TracingMetadata.java:902)",
+                    "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4215)",
+                    "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                    "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                    "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                    "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                    "io.trino.operator.Driver.process(Driver.java:298)",
+                    "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                    "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                    "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                    "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                    "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                    "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                    "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                    "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                    "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                    "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                    "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                    "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                    "java.base/java.lang.Thread.run(Unknown Source)"
+                  ],
+                  "errorInfo": {
+                    "code": 84148236,
+                    "name": "ICEBERG_COMMIT_ERROR",
+                    "type": "EXTERNAL"
+                  }
+                }
+              },
+              "DELETE FROM iceberg.bakeoff.sample WHERE id=1": {
+                "message": "Failed to commit the transaction during write: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                "errorCode": 84148236,
+                "errorName": "ICEBERG_COMMIT_ERROR",
+                "errorType": "EXTERNAL",
+                "failureInfo": {
+                  "type": "io.trino.spi.TrinoException",
+                  "message": "Failed to commit the transaction during write: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                  "cause": {
+                    "type": "org.apache.iceberg.exceptions.ForbiddenException",
+                    "message": "Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                    "suppressed": [],
+                    "stack": [
+                      "org.apache.iceberg.rest.ErrorHandlers$DefaultErrorHandler.accept(ErrorHandlers.java:345)",
+                      "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:137)",
+                      "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:119)",
+                      "org.apache.iceberg.rest.HTTPClient.throwFailure(HTTPClient.java:242)",
+                      "org.apache.iceberg.rest.HTTPClient.handleResponse(HTTPClient.java:367)",
+                      "org.apache.iceberg.rest.HTTPClient.lambda$execute$1(HTTPClient.java:325)",
+                      "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:247)",
+                      "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:188)",
+                      "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:321)",
+                      "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:299)",
+                      "org.apache.iceberg.rest.BaseHTTPClient.post(BaseHTTPClient.java:112)",
+                      "org.apache.iceberg.rest.RESTClient.post(RESTClient.java:150)",
+                      "org.apache.iceberg.rest.RESTTableOperations.commit(RESTTableOperations.java:227)",
+                      "org.apache.iceberg.BaseTransaction.lambda$commitSimpleTransaction$1(BaseTransaction.java:371)",
+                      "org.apache.iceberg.util.Tasks$Builder.runTaskWithRetry(Tasks.java:416)",
+                      "org.apache.iceberg.util.Tasks$Builder.runSingleThreaded(Tasks.java:222)",
+                      "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:206)",
+                      "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:199)",
+                      "org.apache.iceberg.BaseTransaction.commitSimpleTransaction(BaseTransaction.java:367)",
+                      "org.apache.iceberg.BaseTransaction.commitTransaction(BaseTransaction.java:268)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2362)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.finishWrite(IcebergMetadata.java:3578)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.finishMerge(IcebergMetadata.java:3414)",
+                      "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishMerge(ClassLoaderSafeConnectorMetadata.java:1334)",
+                      "io.trino.tracing.TracingConnectorMetadata.finishMerge(TracingConnectorMetadata.java:818)",
+                      "io.trino.metadata.MetadataManager.finishMerge(MetadataManager.java:1476)",
+                      "io.trino.tracing.TracingMetadata.finishMerge(TracingMetadata.java:902)",
+                      "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4215)",
+                      "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                      "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                      "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                      "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                      "io.trino.operator.Driver.process(Driver.java:298)",
+                      "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                      "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                      "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                      "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                      "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                      "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                      "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                      "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                      "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                      "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                      "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                      "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                      "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                      "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                      "java.base/java.lang.Thread.run(Unknown Source)"
+                    ],
+                    "errorInfo": {
+                      "code": 65536,
+                      "name": "GENERIC_INTERNAL_ERROR",
+                      "type": "INTERNAL_ERROR"
+                    }
+                  },
+                  "suppressed": [],
+                  "stack": [
+                    "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2368)",
+                    "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                    "io.trino.plugin.iceberg.IcebergMetadata.finishWrite(IcebergMetadata.java:3578)",
+                    "io.trino.plugin.iceberg.IcebergMetadata.finishMerge(IcebergMetadata.java:3414)",
+                    "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishMerge(ClassLoaderSafeConnectorMetadata.java:1334)",
+                    "io.trino.tracing.TracingConnectorMetadata.finishMerge(TracingConnectorMetadata.java:818)",
+                    "io.trino.metadata.MetadataManager.finishMerge(MetadataManager.java:1476)",
+                    "io.trino.tracing.TracingMetadata.finishMerge(TracingMetadata.java:902)",
+                    "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4215)",
+                    "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                    "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                    "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                    "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                    "io.trino.operator.Driver.process(Driver.java:298)",
+                    "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                    "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                    "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                    "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                    "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                    "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                    "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                    "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                    "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                    "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                    "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                    "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                    "java.base/java.lang.Thread.run(Unknown Source)"
+                  ],
+                  "errorInfo": {
+                    "code": 84148236,
+                    "name": "ICEBERG_COMMIT_ERROR",
+                    "type": "EXTERNAL"
+                  }
+                }
+              },
+              "CREATE TABLE iceberg.bakeoff.forbidden (id BIGINT)": {
+                "message": "Failed to create transaction",
+                "errorCode": 84148237,
+                "errorName": "ICEBERG_CATALOG_ERROR",
+                "errorType": "EXTERNAL",
+                "failureInfo": {
+                  "type": "io.trino.spi.TrinoException",
+                  "message": "Failed to create transaction",
+                  "cause": {
+                    "type": "org.apache.iceberg.exceptions.ForbiddenException",
+                    "message": "Forbidden: Namespace action `create_table(name=forbidden, table_id=01a1fae0-5455-779d-a652-35e2ba5c5b52, properties={format-version: 2, write.format.default: PARQUET, write.parquet.compression-codec: })` forbidden on namespace with name 'bakeoff' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                    "suppressed": [],
+                    "stack": [
+                      "org.apache.iceberg.rest.ErrorHandlers$DefaultErrorHandler.accept(ErrorHandlers.java:345)",
+                      "org.apache.iceberg.rest.ErrorHandlers$TableErrorHandler.accept(ErrorHandlers.java:160)",
+                      "org.apache.iceberg.rest.ErrorHandlers$TableErrorHandler.accept(ErrorHandlers.java:142)",
+                      "org.apache.iceberg.rest.HTTPClient.throwFailure(HTTPClient.java:242)",
+                      "org.apache.iceberg.rest.HTTPClient.handleResponse(HTTPClient.java:367)",
+                      "org.apache.iceberg.rest.HTTPClient.lambda$execute$1(HTTPClient.java:325)",
+                      "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:247)",
+                      "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:188)",
+                      "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:321)",
+                      "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:299)",
+                      "org.apache.iceberg.rest.BaseHTTPClient.post(BaseHTTPClient.java:112)",
+                      "org.apache.iceberg.rest.RESTClient.post(RESTClient.java:150)",
+                      "org.apache.iceberg.rest.RESTSessionCatalog$Builder.create(RESTSessionCatalog.java:1046)",
+                      "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.newCreateTableTransaction(TrinoRestCatalog.java:460)",
+                      "io.trino.plugin.iceberg.IcebergUtil.newCreateTableTransaction(IcebergUtil.java:985)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.beginCreateTable(IcebergMetadata.java:1558)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.createTable(IcebergMetadata.java:1405)",
+                      "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.createTable(ClassLoaderSafeConnectorMetadata.java:486)",
+                      "io.trino.tracing.TracingConnectorMetadata.createTable(TracingConnectorMetadata.java:407)",
+                      "io.trino.metadata.MetadataManager.createTable(MetadataManager.java:946)",
+                      "io.trino.tracing.TracingMetadata.createTable(TracingMetadata.java:460)",
+                      "io.trino.execution.CreateTableTask.internalExecute(CreateTableTask.java:308)",
+                      "io.trino.execution.CreateTableTask.execute(CreateTableTask.java:129)",
+                      "io.trino.execution.CreateTableTask.execute(CreateTableTask.java:95)",
+                      "io.trino.execution.DataDefinitionExecution.start(DataDefinitionExecution.java:153)",
+                      "io.trino.execution.QueryManager.createQuery(QueryManager.java:333)",
+                      "io.trino.dispatcher.LocalDispatchQuery.startExecution(LocalDispatchQuery.java:151)",
+                      "io.trino.dispatcher.LocalDispatchQuery.lambda$waitForMinimumWorkers$1(LocalDispatchQuery.java:135)",
+                      "io.airlift.concurrent.MoreFutures.lambda$addSuccessCallback$0(MoreFutures.java:570)",
+                      "io.airlift.concurrent.MoreFutures$3.onSuccess(MoreFutures.java:545)",
+                      "com.google.common.util.concurrent.Futures$CallbackListener.run(Futures.java:1128)",
+                      "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                      "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                      "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                      "java.base/java.lang.Thread.run(Unknown Source)"
+                    ],
+                    "errorInfo": {
+                      "code": 65536,
+                      "name": "GENERIC_INTERNAL_ERROR",
+                      "type": "INTERNAL_ERROR"
+                    }
+                  },
+                  "suppressed": [],
+                  "stack": [
+                    "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.newCreateTableTransaction(TrinoRestCatalog.java:465)",
+                    "io.trino.plugin.iceberg.IcebergUtil.newCreateTableTransaction(IcebergUtil.java:985)",
+                    "io.trino.plugin.iceberg.IcebergMetadata.beginCreateTable(IcebergMetadata.java:1558)",
+                    "io.trino.plugin.iceberg.IcebergMetadata.createTable(IcebergMetadata.java:1405)",
+                    "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.createTable(ClassLoaderSafeConnectorMetadata.java:486)",
+                    "io.trino.tracing.TracingConnectorMetadata.createTable(TracingConnectorMetadata.java:407)",
+                    "io.trino.metadata.MetadataManager.createTable(MetadataManager.java:946)",
+                    "io.trino.tracing.TracingMetadata.createTable(TracingMetadata.java:460)",
+                    "io.trino.execution.CreateTableTask.internalExecute(CreateTableTask.java:308)",
+                    "io.trino.execution.CreateTableTask.execute(CreateTableTask.java:129)",
+                    "io.trino.execution.CreateTableTask.execute(CreateTableTask.java:95)",
+                    "io.trino.execution.DataDefinitionExecution.start(DataDefinitionExecution.java:153)",
+                    "io.trino.execution.QueryManager.createQuery(QueryManager.java:333)",
+                    "io.trino.dispatcher.LocalDispatchQuery.startExecution(LocalDispatchQuery.java:151)",
+                    "io.trino.dispatcher.LocalDispatchQuery.lambda$waitForMinimumWorkers$1(LocalDispatchQuery.java:135)",
+                    "io.airlift.concurrent.MoreFutures.lambda$addSuccessCallback$0(MoreFutures.java:570)",
+                    "io.airlift.concurrent.MoreFutures$3.onSuccess(MoreFutures.java:545)",
+                    "com.google.common.util.concurrent.Futures$CallbackListener.run(Futures.java:1128)",
+                    "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                    "java.base/java.lang.Thread.run(Unknown Source)"
+                  ],
+                  "errorInfo": {
+                    "code": 84148237,
+                    "name": "ICEBERG_CATALOG_ERROR",
+                    "type": "EXTERNAL"
+                  }
+                }
+              },
+              "DROP TABLE iceberg.bakeoff.sample": {
+                "message": "Failed to drop table 'sample'",
+                "errorCode": 84148237,
+                "errorName": "ICEBERG_CATALOG_ERROR",
+                "errorType": "EXTERNAL",
+                "failureInfo": {
+                  "type": "io.trino.spi.TrinoException",
+                  "message": "Failed to drop table 'sample'",
+                  "cause": {
+                    "type": "org.apache.iceberg.exceptions.ForbiddenException",
+                    "message": "Forbidden: Table action `drop(purge=true)` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                    "suppressed": [],
+                    "stack": [
+                      "org.apache.iceberg.rest.ErrorHandlers$DefaultErrorHandler.accept(ErrorHandlers.java:345)",
+                      "org.apache.iceberg.rest.ErrorHandlers$TableErrorHandler.accept(ErrorHandlers.java:160)",
+                      "org.apache.iceberg.rest.ErrorHandlers$TableErrorHandler.accept(ErrorHandlers.java:142)",
+                      "org.apache.iceberg.rest.HTTPClient.throwFailure(HTTPClient.java:242)",
+                      "org.apache.iceberg.rest.HTTPClient.handleResponse(HTTPClient.java:367)",
+                      "org.apache.iceberg.rest.HTTPClient.lambda$execute$1(HTTPClient.java:325)",
+                      "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:247)",
+                      "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:188)",
+                      "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:321)",
+                      "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:299)",
+                      "org.apache.iceberg.rest.BaseHTTPClient.delete(BaseHTTPClient.java:66)",
+                      "org.apache.iceberg.rest.RESTClient.delete(RESTClient.java:45)",
+                      "org.apache.iceberg.rest.RESTSessionCatalog.purgeTable(RESTSessionCatalog.java:377)",
+                      "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.purgeTable(TrinoRestCatalog.java:575)",
+                      "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.dropTable(TrinoRestCatalog.java:533)",
+                      "io.trino.plugin.iceberg.IcebergMetadata.dropTable(IcebergMetadata.java:2636)",
+                      "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.dropTable(ClassLoaderSafeConnectorMetadata.java:494)",
+                      "io.trino.tracing.TracingConnectorMetadata.dropTable(TracingConnectorMetadata.java:416)",
+                      "io.trino.metadata.MetadataManager.dropTable(MetadataManager.java:1137)",
+                      "io.trino.tracing.TracingMetadata.dropTable(TracingMetadata.java:622)",
+                      "io.trino.execution.DropTableTask.execute(DropTableTask.java:92)",
+                      "io.trino.execution.DropTableTask.execute(DropTableTask.java:36)",
+                      "io.trino.execution.DataDefinitionExecution.start(DataDefinitionExecution.java:153)",
+                      "io.trino.execution.QueryManager.createQuery(QueryManager.java:333)",
+                      "io.trino.dispatcher.LocalDispatchQuery.startExecution(LocalDispatchQuery.java:151)",
+                      "io.trino.dispatcher.LocalDispatchQuery.lambda$waitForMinimumWorkers$1(LocalDispatchQuery.java:135)",
+                      "io.airlift.concurrent.MoreFutures.lambda$addSuccessCallback$0(MoreFutures.java:570)",
+                      "io.airlift.concurrent.MoreFutures$3.onSuccess(MoreFutures.java:545)",
+                      "com.google.common.util.concurrent.Futures$CallbackListener.run(Futures.java:1128)",
+                      "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                      "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                      "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                      "java.base/java.lang.Thread.run(Unknown Source)"
+                    ],
+                    "errorInfo": {
+                      "code": 65536,
+                      "name": "GENERIC_INTERNAL_ERROR",
+                      "type": "INTERNAL_ERROR"
+                    }
+                  },
+                  "suppressed": [],
+                  "stack": [
+                    "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.purgeTable(TrinoRestCatalog.java:580)",
+                    "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.dropTable(TrinoRestCatalog.java:533)",
+                    "io.trino.plugin.iceberg.IcebergMetadata.dropTable(IcebergMetadata.java:2636)",
+                    "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.dropTable(ClassLoaderSafeConnectorMetadata.java:494)",
+                    "io.trino.tracing.TracingConnectorMetadata.dropTable(TracingConnectorMetadata.java:416)",
+                    "io.trino.metadata.MetadataManager.dropTable(MetadataManager.java:1137)",
+                    "io.trino.tracing.TracingMetadata.dropTable(TracingMetadata.java:622)",
+                    "io.trino.execution.DropTableTask.execute(DropTableTask.java:92)",
+                    "io.trino.execution.DropTableTask.execute(DropTableTask.java:36)",
+                    "io.trino.execution.DataDefinitionExecution.start(DataDefinitionExecution.java:153)",
+                    "io.trino.execution.QueryManager.createQuery(QueryManager.java:333)",
+                    "io.trino.dispatcher.LocalDispatchQuery.startExecution(LocalDispatchQuery.java:151)",
+                    "io.trino.dispatcher.LocalDispatchQuery.lambda$waitForMinimumWorkers$1(LocalDispatchQuery.java:135)",
+                    "io.airlift.concurrent.MoreFutures.lambda$addSuccessCallback$0(MoreFutures.java:570)",
+                    "io.airlift.concurrent.MoreFutures$3.onSuccess(MoreFutures.java:545)",
+                    "com.google.common.util.concurrent.Futures$CallbackListener.run(Futures.java:1128)",
+                    "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                    "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                    "java.base/java.lang.Thread.run(Unknown Source)"
+                  ],
+                  "errorInfo": {
+                    "code": 84148237,
+                    "name": "ICEBERG_CATALOG_ERROR",
+                    "type": "EXTERNAL"
+                  }
+                }
+              }
+            }
+          },
+          "seconds": 18.6324
+        },
+        "sail": {
+          "status": "pass",
+          "value": {
+            "tls": {
+              "version": "TLSv1.3",
+              "unknown_ca_rejected": true,
+              "wrong_name_rejected": true,
+              "plaintext_rejected": true
+            },
+            "token": "external file",
+            "tables": [
+              [
+                "bakeoff",
+                "sample",
+                false
+              ]
+            ],
+            "rows": [
+              [
+                1,
+                "alpha"
+              ],
+              [
+                2,
+                "beta"
+              ]
+            ],
+            "denials": {
+              "SELECT * FROM bakeoff.denied.sample": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: denied.sample",
+              "INSERT INTO bakeoff.bakeoff.sample VALUES (3, 'forbidden')": "forbidden: Iceberg REST catalog commit forbidden for bakeoff.sample: response error: status code 403 Forbidden",
+              "UPDATE bakeoff.bakeoff.sample SET label='forbidden' WHERE id=1": "forbidden: Iceberg REST catalog commit forbidden for bakeoff.sample: response error: status code 403 Forbidden",
+              "DELETE FROM bakeoff.bakeoff.sample WHERE id=1": "forbidden: Iceberg REST catalog commit forbidden for bakeoff.sample: response error: status code 403 Forbidden",
+              "CREATE TABLE bakeoff.bakeoff.forbidden (id BIGINT) USING iceberg": "external error: Failed to create table: response error: status code 403 Forbidden",
+              "DROP TABLE bakeoff.bakeoff.sample": "external error: Failed to drop table: response error: status code 403 Forbidden"
+            }
+          },
+          "seconds": 2.6094
+        }
+      },
+      "seconds": 21.9084
+    },
+    "C6": {
+      "status": "pass",
+      "value": {
+        "denied_status": 404,
+        "denied_credentials": false,
+        "read_only_config_keys": [
+          "client.region",
+          "py-io-impl",
+          "region",
+          "s3.endpoint",
+          "s3.path-style-access",
+          "s3.region",
+          "s3.remote-signing-enabled",
+          "s3.signer",
+          "s3.signer.endpoint",
+          "s3.signer.uri",
+          "signer.endpoint",
+          "signer.uri"
+        ],
+        "storage_credential_config_keys": [
+          [
+            "client.region",
+            "s3.endpoint",
+            "s3.path-style-access",
+            "s3.region"
+          ]
+        ],
+        "sts_enabled": false,
+        "scope": "Read grant, no STS keys with this profile; source scopes documented separately"
+      },
+      "seconds": 0.0747
+    },
+    "C7": {
+      "status": "fail",
+      "error_type": "RuntimeError",
+      "error": "Readiness timeout (120s): None",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/runner/work/datopsis-authz/datopsis-authz/evaluation/s1/acceptance.py\", line 30, in record\n    result = {\"status\": \"pass\", \"value\": fn()}\n                                         ^^^^\n  File \"/home/runner/work/datopsis-authz/datopsis-authz/evaluation/s1/acceptance.py\", line 280, in <lambda>\n    record(\"C7\", lambda: security(catalog, operator, human, namespace, tuples))\n                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/datopsis-authz/datopsis-authz/evaluation/s1/security.py\", line 158, in evaluate\n    wait(lambda: http.request(\"GET\", allowed, headers=auth).status_code == 200, 120)\n  File \"/home/runner/work/datopsis-authz/datopsis-authz/.sources/lakehouse-integration/evaluation/idp/common.py\", line 78, in wait\n    raise RuntimeError(f\"Readiness timeout ({seconds}s): {last}\")\nRuntimeError: Readiness timeout (120s): None\n",
+      "seconds": 222.8221
+    },
+    "C8": {
+      "status": "fail",
+      "error_type": "AssertionError",
+      "error": "Cedar restart lost relationship/grant state",
+      "traceback": "Traceback (most recent call last):\n  File \"/home/runner/work/datopsis-authz/datopsis-authz/evaluation/s1/acceptance.py\", line 30, in record\n    result = {\"status\": \"pass\", \"value\": fn()}\n                                         ^^^^\n  File \"/home/runner/work/datopsis-authz/datopsis-authz/evaluation/s1/acceptance.py\", line 294, in operations\n    assert before == after, \"Cedar restart lost relationship/grant state\"\n           ^^^^^^^^^^^^^^^\nAssertionError: Cedar restart lost relationship/grant state\n",
+      "seconds": 10.3144
+    },
+    "rauthy": {
+      "status": "pass",
+      "value": {
+        "image": "localhost/rauthy-ubi:authz",
+        "revision": "01375efb2a14692a7977f2f8aa60121f3fcc2f01",
+        "discovery": {
+          "issuer": "https://rauthy.idp.test:8443/auth/v1/",
+          "authorization_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/authorize",
+          "backchannel_logout_supported": true,
+          "backchannel_logout_session_supported": true,
+          "device_authorization_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/device",
+          "token_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/token",
+          "introspection_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/introspect",
+          "revocation_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/token/revoke",
+          "userinfo_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/userinfo",
+          "end_session_endpoint": "https://rauthy.idp.test:8443/auth/v1/oidc/logout",
+          "jwks_uri": "https://rauthy.idp.test:8443/auth/v1/oidc/certs",
+          "grant_types_supported": [
+            "authorization_code",
+            "client_credentials",
+            "password",
+            "refresh_token",
+            "urn:ietf:params:oauth:grant-type:device_code",
+            "urn:ietf:params:oauth:grant-type:token-exchange"
+          ],
+          "response_types_supported": [
+            "code"
+          ],
+          "subject_types_supported": [
+            "public"
+          ],
+          "id_token_signing_alg_values_supported": [
+            "RS256",
+            "RS384",
+            "RS512",
+            "EdDSA",
+            "Ed25519"
+          ],
+          "token_endpoint_auth_methods_supported": [
+            "client_secret_post",
+            "client_secret_basic"
+          ],
+          "token_endpoint_auth_signing_alg_values_supported": [
+            "RS256",
+            "RS384",
+            "RS512",
+            "EdDSA",
+            "Ed25519"
+          ],
+          "claims_supported": [
+            "iss",
+            "azp",
+            "amr",
+            "sub",
+            "preferred_username",
+            "email",
+            "email_verified",
+            "given_name",
+            "family_name",
+            "roles",
+            "groups",
+            "custom"
+          ],
+          "claim_types_supported": [
+            "normal",
+            "aggregated",
+            "distributed"
+          ],
+          "scopes_supported": [
+            "email",
+            "openid",
+            "profile",
+            "groups",
+            "address",
+            "phone"
+          ],
+          "code_challenge_methods_supported": [
+            "plain",
+            "S256"
+          ],
+          "dpop_signing_alg_values_supported": [
+            "RS256",
+            "RS384",
+            "RS512",
+            "EdDSA",
+            "Ed25519"
+          ],
+          "service_documentation": "https://sebadob.github.io/rauthy/",
+          "ui_locales_supported": [
+            "en",
+            "en-US",
+            "de",
+            "de-DE",
+            "es",
+            "es-ES",
+            "fr",
+            "fr-FR",
+            "ja",
+            "ja-JP",
+            "ko",
+            "ko-KR",
+            "nb",
+            "nb-NO",
+            "nl",
+            "nl-NL",
+            "pt",
+            "pt-PT",
+            "ru",
+            "ru-RU",
+            "uk",
+            "uk-UA",
+            "zh",
+            "zh-Hans"
+          ],
+          "claims_parameter_supported": true,
+          "authorization_response_iss_parameter_supported": true,
+          "client_id_metadata_document_supported": true
+        }
+      },
+      "seconds": 9.8453
+    },
+    "cedar_tls": {
+      "status": "pass",
+      "value": {
+        "version": "TLSv1.3",
+        "unknown_ca_rejected": true,
+        "wrong_name_rejected": true,
+        "plaintext_rejected": true
+      },
+      "seconds": 0.0138
+    },
+    "storage_tls": {
+      "status": "pass",
+      "value": {
+        "master": {
+          "version": "TLSv1.3",
+          "unknown_ca_rejected": true,
+          "wrong_name_rejected": true,
+          "plaintext_rejected": true
+        },
+        "volume": {
+          "version": "TLSv1.3",
+          "unknown_ca_rejected": true,
+          "wrong_name_rejected": true,
+          "plaintext_rejected": true
+        },
+        "filer": {
+          "version": "TLSv1.3",
+          "unknown_ca_rejected": true,
+          "wrong_name_rejected": true,
+          "plaintext_rejected": true
+        },
+        "s3": {
+          "version": "TLSv1.3",
+          "unknown_ca_rejected": true,
+          "wrong_name_rejected": true,
+          "plaintext_rejected": true
+        }
+      },
+      "seconds": 14.5598
+    },
+    "lakekeeper_tls": {
+      "status": "pass",
+      "value": {
+        "proxy_revision": "9ef9e822c6b5e508cebef2adff3bb647a206773c",
+        "url": "https://catalog-rauthy.idp.test:8181",
+        "shared_namespace": true,
+        "listeners": "LISTEN 0      4096   127.0.0.11:37405 0.0.0.0:*\nLISTEN 0      128     127.0.0.1:8182  0.0.0.0:*\nLISTEN 0      511       0.0.0.0:8181  0.0.0.0:*\nLISTEN 0      128     127.0.0.1:9000  0.0.0.0:*\nLISTEN 0      511          [::]:8181     [::]:*",
+        "negative_errors": {
+          "untrusted_ca": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1000)",
+          "wrong_hostname": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: Hostname mismatch, certificate is not valid for 'wrong.idp.test'. (_ssl.c:1000)"
+        },
+        "anonymous_https_status": 401,
+        "plaintext_frontend_status": 400,
+        "approved_exception": "HTTP only on 127.0.0.1:8182 inside shared network namespace"
+      },
+      "seconds": 2.0166
+    },
+    "seed": {
+      "status": "pass",
+      "value": {
+        "tables": [
+          [
+            "bakeoff",
+            "sample"
+          ]
+        ],
+        "rows": [
+          {
+            "id": 1,
+            "label": "alpha"
+          },
+          {
+            "id": 2,
+            "label": "beta"
+          }
+        ]
+      },
+      "seconds": 1.2019
+    },
+    "C5.pyiceberg": {
+      "status": "pass",
+      "value": {
+        "allowed": {
+          "tables": [
+            [
+              "bakeoff",
+              "sample"
+            ]
+          ],
+          "rows": [
+            {
+              "id": 1,
+              "label": "alpha"
+            },
+            {
+              "id": 2,
+              "label": "beta"
+            }
+          ]
+        },
+        "other_read": {
+          "type": "NoSuchTableError",
+          "message": "NoSuchTableException: Error getting tabular from catalog"
+        },
+        "writes": {
+          "create_namespace": {
+            "type": "ForbiddenError",
+            "message": "WarehouseActionForbidden: Warehouse action `create_namespace(name=forbidden)` forbidden on warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "create_table": {
+            "type": "ForbiddenError",
+            "message": "NamespaceActionForbidden: Namespace action `create_table(name=no, table_id=01a1fae0-0a6c-70ef-bf85-e06cd4d4f6f8)` forbidden on namespace with name 'bakeoff' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "append": {
+            "type": "ForbiddenError",
+            "message": "TableActionForbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "overwrite": {
+            "type": "ForbiddenError",
+            "message": "TableActionForbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "delete": {
+            "type": "ForbiddenError",
+            "message": "TableActionForbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "commit": {
+            "type": "ForbiddenError",
+            "message": "TableActionForbidden: Table action `commit(updated-properties={test: denied})` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "drop": {
+            "type": "ForbiddenError",
+            "message": "TableActionForbidden: Table action `drop` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          },
+          "rename": {
+            "type": "ForbiddenError",
+            "message": "NamespaceActionForbidden: Namespace action `create_table(name=renamed, table_id=01a1fadf-fd54-738b-8584-c1f291893e21, properties={write.delete.mode: copy-on-write, write.update.mode: copy-on-write})` forbidden on namespace with name 'bakeoff' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`"
+          }
+        }
+      },
+      "seconds": 0.6555
+    },
+    "C5.trino": {
+      "status": "pass",
+      "value": {
+        "tls": {
+          "version": "TLSv1.3",
+          "unknown_ca_rejected": true,
+          "wrong_name_rejected": true,
+          "plaintext_rejected": true
+        },
+        "rows": [
+          {
+            "id": 1,
+            "label": "alpha"
+          },
+          {
+            "id": 2,
+            "label": "beta"
+          }
+        ],
+        "denials": {
+          "SELECT * FROM iceberg.denied.sample": {
+            "message": "line 1:15: Schema 'denied' does not exist",
+            "errorCode": 45,
+            "errorName": "SCHEMA_NOT_FOUND",
+            "errorType": "USER_ERROR",
+            "errorLocation": {
+              "lineNumber": 1,
+              "columnNumber": 15
+            },
+            "failureInfo": {
+              "type": "io.trino.spi.TrinoException",
+              "message": "line 1:15: Schema 'denied' does not exist",
+              "suppressed": [],
+              "stack": [
+                "io.trino.sql.analyzer.SemanticExceptions.semanticException(SemanticExceptions.java:65)",
+                "io.trino.sql.analyzer.SemanticExceptions.semanticException(SemanticExceptions.java:59)",
+                "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitTable(StatementAnalyzer.java:2457)",
+                "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitTable(StatementAnalyzer.java:550)",
+                "io.trino.sql.tree.Table.accept(Table.java:70)",
+                "io.trino.sql.tree.AstVisitor.process(AstVisitor.java:27)",
+                "io.trino.sql.analyzer.StatementAnalyzer$Visitor.process(StatementAnalyzer.java:569)",
+                "io.trino.sql.analyzer.StatementAnalyzer$Visitor.analyzeFrom(StatementAnalyzer.java:5665)",
+                "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitQuerySpecification(StatementAnalyzer.java:3553)",
+                "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitQuerySpecification(StatementAnalyzer.java:550)",
+                "io.trino.sql.tree.QuerySpecification.accept(QuerySpecification.java:155)",
+                "io.trino.sql.tree.AstVisitor.process(AstVisitor.java:27)",
+                "io.trino.sql.analyzer.StatementAnalyzer$Visitor.process(StatementAnalyzer.java:569)",
+                "io.trino.sql.analyzer.StatementAnalyzer$Visitor.process(StatementAnalyzer.java:577)",
+                "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitQuery(StatementAnalyzer.java:1653)",
+                "io.trino.sql.analyzer.StatementAnalyzer$Visitor.visitQuery(StatementAnalyzer.java:550)",
+                "io.trino.sql.tree.Query.accept(Query.java:130)",
+                "io.trino.sql.tree.AstVisitor.process(AstVisitor.java:27)",
+                "io.trino.sql.analyzer.StatementAnalyzer$Visitor.process(StatementAnalyzer.java:569)",
+                "io.trino.sql.analyzer.StatementAnalyzer.analyze(StatementAnalyzer.java:529)",
+                "io.trino.sql.analyzer.StatementAnalyzer.analyze(StatementAnalyzer.java:518)",
+                "io.trino.sql.analyzer.Analyzer.analyze(Analyzer.java:98)",
+                "io.trino.sql.analyzer.Analyzer.analyze(Analyzer.java:87)",
+                "io.trino.execution.SqlQueryExecution.analyze(SqlQueryExecution.java:288)",
+                "io.trino.execution.SqlQueryExecution.<init>(SqlQueryExecution.java:222)",
+                "io.trino.execution.SqlQueryExecution$SqlQueryExecutionFactory.createQueryExecution(SqlQueryExecution.java:893)",
+                "io.trino.dispatcher.LocalDispatchQueryFactory.lambda$createDispatchQuery$0(LocalDispatchQueryFactory.java:163)",
+                "io.trino.$gen.Trino_484___Callable.call(Unknown Source)",
+                "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                "java.base/java.lang.Thread.run(Unknown Source)"
+              ],
+              "errorInfo": {
+                "code": 45,
+                "name": "SCHEMA_NOT_FOUND",
+                "type": "USER_ERROR"
+              },
+              "errorLocation": {
+                "lineNumber": 1,
+                "columnNumber": 15
+              }
+            }
+          },
+          "INSERT INTO iceberg.bakeoff.sample VALUES (3, 'forbidden')": {
+            "message": "Failed to commit the transaction during insert: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+            "errorCode": 84148236,
+            "errorName": "ICEBERG_COMMIT_ERROR",
+            "errorType": "EXTERNAL",
+            "failureInfo": {
+              "type": "io.trino.spi.TrinoException",
+              "message": "Failed to commit the transaction during insert: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+              "cause": {
+                "type": "org.apache.iceberg.exceptions.ForbiddenException",
+                "message": "Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                "suppressed": [],
+                "stack": [
+                  "org.apache.iceberg.rest.ErrorHandlers$DefaultErrorHandler.accept(ErrorHandlers.java:345)",
+                  "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:137)",
+                  "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:119)",
+                  "org.apache.iceberg.rest.HTTPClient.throwFailure(HTTPClient.java:242)",
+                  "org.apache.iceberg.rest.HTTPClient.handleResponse(HTTPClient.java:367)",
+                  "org.apache.iceberg.rest.HTTPClient.lambda$execute$1(HTTPClient.java:325)",
+                  "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:247)",
+                  "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:188)",
+                  "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:321)",
+                  "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:299)",
+                  "org.apache.iceberg.rest.BaseHTTPClient.post(BaseHTTPClient.java:112)",
+                  "org.apache.iceberg.rest.RESTClient.post(RESTClient.java:150)",
+                  "org.apache.iceberg.rest.RESTTableOperations.commit(RESTTableOperations.java:227)",
+                  "org.apache.iceberg.BaseTransaction.lambda$commitSimpleTransaction$1(BaseTransaction.java:371)",
+                  "org.apache.iceberg.util.Tasks$Builder.runTaskWithRetry(Tasks.java:416)",
+                  "org.apache.iceberg.util.Tasks$Builder.runSingleThreaded(Tasks.java:222)",
+                  "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:206)",
+                  "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:199)",
+                  "org.apache.iceberg.BaseTransaction.commitSimpleTransaction(BaseTransaction.java:367)",
+                  "org.apache.iceberg.BaseTransaction.commitTransaction(BaseTransaction.java:268)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2362)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.finishInsert(IcebergMetadata.java:1769)",
+                  "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishInsert(ClassLoaderSafeConnectorMetadata.java:654)",
+                  "io.trino.tracing.TracingConnectorMetadata.finishInsert(TracingConnectorMetadata.java:737)",
+                  "io.trino.metadata.MetadataManager.finishInsert(MetadataManager.java:1303)",
+                  "io.trino.tracing.TracingMetadata.finishInsert(TracingMetadata.java:766)",
+                  "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4194)",
+                  "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                  "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                  "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                  "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                  "io.trino.operator.Driver.process(Driver.java:298)",
+                  "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                  "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                  "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                  "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                  "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                  "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                  "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                  "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                  "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                  "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                  "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                  "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                  "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                  "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                  "java.base/java.lang.Thread.run(Unknown Source)"
+                ],
+                "errorInfo": {
+                  "code": 65536,
+                  "name": "GENERIC_INTERNAL_ERROR",
+                  "type": "INTERNAL_ERROR"
+                }
+              },
+              "suppressed": [],
+              "stack": [
+                "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2368)",
+                "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                "io.trino.plugin.iceberg.IcebergMetadata.finishInsert(IcebergMetadata.java:1769)",
+                "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishInsert(ClassLoaderSafeConnectorMetadata.java:654)",
+                "io.trino.tracing.TracingConnectorMetadata.finishInsert(TracingConnectorMetadata.java:737)",
+                "io.trino.metadata.MetadataManager.finishInsert(MetadataManager.java:1303)",
+                "io.trino.tracing.TracingMetadata.finishInsert(TracingMetadata.java:766)",
+                "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4194)",
+                "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                "io.trino.operator.Driver.process(Driver.java:298)",
+                "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                "java.base/java.lang.Thread.run(Unknown Source)"
+              ],
+              "errorInfo": {
+                "code": 84148236,
+                "name": "ICEBERG_COMMIT_ERROR",
+                "type": "EXTERNAL"
+              }
+            }
+          },
+          "UPDATE iceberg.bakeoff.sample SET label='forbidden' WHERE id=1": {
+            "message": "Failed to commit the transaction during write: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+            "errorCode": 84148236,
+            "errorName": "ICEBERG_COMMIT_ERROR",
+            "errorType": "EXTERNAL",
+            "failureInfo": {
+              "type": "io.trino.spi.TrinoException",
+              "message": "Failed to commit the transaction during write: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+              "cause": {
+                "type": "org.apache.iceberg.exceptions.ForbiddenException",
+                "message": "Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                "suppressed": [],
+                "stack": [
+                  "org.apache.iceberg.rest.ErrorHandlers$DefaultErrorHandler.accept(ErrorHandlers.java:345)",
+                  "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:137)",
+                  "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:119)",
+                  "org.apache.iceberg.rest.HTTPClient.throwFailure(HTTPClient.java:242)",
+                  "org.apache.iceberg.rest.HTTPClient.handleResponse(HTTPClient.java:367)",
+                  "org.apache.iceberg.rest.HTTPClient.lambda$execute$1(HTTPClient.java:325)",
+                  "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:247)",
+                  "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:188)",
+                  "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:321)",
+                  "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:299)",
+                  "org.apache.iceberg.rest.BaseHTTPClient.post(BaseHTTPClient.java:112)",
+                  "org.apache.iceberg.rest.RESTClient.post(RESTClient.java:150)",
+                  "org.apache.iceberg.rest.RESTTableOperations.commit(RESTTableOperations.java:227)",
+                  "org.apache.iceberg.BaseTransaction.lambda$commitSimpleTransaction$1(BaseTransaction.java:371)",
+                  "org.apache.iceberg.util.Tasks$Builder.runTaskWithRetry(Tasks.java:416)",
+                  "org.apache.iceberg.util.Tasks$Builder.runSingleThreaded(Tasks.java:222)",
+                  "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:206)",
+                  "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:199)",
+                  "org.apache.iceberg.BaseTransaction.commitSimpleTransaction(BaseTransaction.java:367)",
+                  "org.apache.iceberg.BaseTransaction.commitTransaction(BaseTransaction.java:268)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2362)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.finishWrite(IcebergMetadata.java:3578)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.finishMerge(IcebergMetadata.java:3414)",
+                  "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishMerge(ClassLoaderSafeConnectorMetadata.java:1334)",
+                  "io.trino.tracing.TracingConnectorMetadata.finishMerge(TracingConnectorMetadata.java:818)",
+                  "io.trino.metadata.MetadataManager.finishMerge(MetadataManager.java:1476)",
+                  "io.trino.tracing.TracingMetadata.finishMerge(TracingMetadata.java:902)",
+                  "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4215)",
+                  "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                  "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                  "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                  "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                  "io.trino.operator.Driver.process(Driver.java:298)",
+                  "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                  "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                  "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                  "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                  "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                  "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                  "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                  "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                  "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                  "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                  "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                  "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                  "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                  "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                  "java.base/java.lang.Thread.run(Unknown Source)"
+                ],
+                "errorInfo": {
+                  "code": 65536,
+                  "name": "GENERIC_INTERNAL_ERROR",
+                  "type": "INTERNAL_ERROR"
+                }
+              },
+              "suppressed": [],
+              "stack": [
+                "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2368)",
+                "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                "io.trino.plugin.iceberg.IcebergMetadata.finishWrite(IcebergMetadata.java:3578)",
+                "io.trino.plugin.iceberg.IcebergMetadata.finishMerge(IcebergMetadata.java:3414)",
+                "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishMerge(ClassLoaderSafeConnectorMetadata.java:1334)",
+                "io.trino.tracing.TracingConnectorMetadata.finishMerge(TracingConnectorMetadata.java:818)",
+                "io.trino.metadata.MetadataManager.finishMerge(MetadataManager.java:1476)",
+                "io.trino.tracing.TracingMetadata.finishMerge(TracingMetadata.java:902)",
+                "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4215)",
+                "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                "io.trino.operator.Driver.process(Driver.java:298)",
+                "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                "java.base/java.lang.Thread.run(Unknown Source)"
+              ],
+              "errorInfo": {
+                "code": 84148236,
+                "name": "ICEBERG_COMMIT_ERROR",
+                "type": "EXTERNAL"
+              }
+            }
+          },
+          "DELETE FROM iceberg.bakeoff.sample WHERE id=1": {
+            "message": "Failed to commit the transaction during write: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+            "errorCode": 84148236,
+            "errorName": "ICEBERG_COMMIT_ERROR",
+            "errorType": "EXTERNAL",
+            "failureInfo": {
+              "type": "io.trino.spi.TrinoException",
+              "message": "Failed to commit the transaction during write: Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+              "cause": {
+                "type": "org.apache.iceberg.exceptions.ForbiddenException",
+                "message": "Forbidden: Table action `commit` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                "suppressed": [],
+                "stack": [
+                  "org.apache.iceberg.rest.ErrorHandlers$DefaultErrorHandler.accept(ErrorHandlers.java:345)",
+                  "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:137)",
+                  "org.apache.iceberg.rest.ErrorHandlers$CommitErrorHandler.accept(ErrorHandlers.java:119)",
+                  "org.apache.iceberg.rest.HTTPClient.throwFailure(HTTPClient.java:242)",
+                  "org.apache.iceberg.rest.HTTPClient.handleResponse(HTTPClient.java:367)",
+                  "org.apache.iceberg.rest.HTTPClient.lambda$execute$1(HTTPClient.java:325)",
+                  "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:247)",
+                  "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:188)",
+                  "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:321)",
+                  "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:299)",
+                  "org.apache.iceberg.rest.BaseHTTPClient.post(BaseHTTPClient.java:112)",
+                  "org.apache.iceberg.rest.RESTClient.post(RESTClient.java:150)",
+                  "org.apache.iceberg.rest.RESTTableOperations.commit(RESTTableOperations.java:227)",
+                  "org.apache.iceberg.BaseTransaction.lambda$commitSimpleTransaction$1(BaseTransaction.java:371)",
+                  "org.apache.iceberg.util.Tasks$Builder.runTaskWithRetry(Tasks.java:416)",
+                  "org.apache.iceberg.util.Tasks$Builder.runSingleThreaded(Tasks.java:222)",
+                  "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:206)",
+                  "org.apache.iceberg.util.Tasks$Builder.run(Tasks.java:199)",
+                  "org.apache.iceberg.BaseTransaction.commitSimpleTransaction(BaseTransaction.java:367)",
+                  "org.apache.iceberg.BaseTransaction.commitTransaction(BaseTransaction.java:268)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2362)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.finishWrite(IcebergMetadata.java:3578)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.finishMerge(IcebergMetadata.java:3414)",
+                  "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishMerge(ClassLoaderSafeConnectorMetadata.java:1334)",
+                  "io.trino.tracing.TracingConnectorMetadata.finishMerge(TracingConnectorMetadata.java:818)",
+                  "io.trino.metadata.MetadataManager.finishMerge(MetadataManager.java:1476)",
+                  "io.trino.tracing.TracingMetadata.finishMerge(TracingMetadata.java:902)",
+                  "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4215)",
+                  "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                  "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                  "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                  "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                  "io.trino.operator.Driver.process(Driver.java:298)",
+                  "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                  "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                  "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                  "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                  "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                  "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                  "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                  "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                  "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                  "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                  "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                  "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                  "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                  "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                  "java.base/java.lang.Thread.run(Unknown Source)"
+                ],
+                "errorInfo": {
+                  "code": 65536,
+                  "name": "GENERIC_INTERNAL_ERROR",
+                  "type": "INTERNAL_ERROR"
+                }
+              },
+              "suppressed": [],
+              "stack": [
+                "io.trino.plugin.iceberg.IcebergMetadata.commitTransaction(IcebergMetadata.java:2368)",
+                "io.trino.plugin.iceberg.IcebergMetadata.commitWriteTransaction(IcebergMetadata.java:4623)",
+                "io.trino.plugin.iceberg.IcebergMetadata.finishWrite(IcebergMetadata.java:3578)",
+                "io.trino.plugin.iceberg.IcebergMetadata.finishMerge(IcebergMetadata.java:3414)",
+                "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.finishMerge(ClassLoaderSafeConnectorMetadata.java:1334)",
+                "io.trino.tracing.TracingConnectorMetadata.finishMerge(TracingConnectorMetadata.java:818)",
+                "io.trino.metadata.MetadataManager.finishMerge(MetadataManager.java:1476)",
+                "io.trino.tracing.TracingMetadata.finishMerge(TracingMetadata.java:902)",
+                "io.trino.sql.planner.LocalExecutionPlanner.lambda$createTableFinisher$0(LocalExecutionPlanner.java:4215)",
+                "io.trino.operator.TableFinishOperator.getOutput(TableFinishOperator.java:320)",
+                "io.trino.operator.Driver.processInternal(Driver.java:403)",
+                "io.trino.operator.Driver.lambda$process$0(Driver.java:306)",
+                "io.trino.operator.Driver.tryWithLock(Driver.java:709)",
+                "io.trino.operator.Driver.process(Driver.java:298)",
+                "io.trino.operator.Driver.processForDuration(Driver.java:269)",
+                "io.trino.execution.SqlTaskExecution$DriverSplitRunner.processFor(SqlTaskExecution.java:852)",
+                "io.trino.execution.executor.dedicated.SplitProcessor.run(SplitProcessor.java:77)",
+                "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.lambda$run$0(TaskEntry.java:342)",
+                "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                "io.trino.execution.executor.dedicated.TaskEntry$VersionEmbedderBridge.run(TaskEntry.java:343)",
+                "io.trino.execution.executor.scheduler.FairScheduler.runTask(FairScheduler.java:208)",
+                "io.trino.execution.executor.scheduler.FairScheduler.lambda$submit$0(FairScheduler.java:195)",
+                "java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)",
+                "com.google.common.util.concurrent.TrustedListenableFutureTask$TrustedFutureInterruptibleTask.runInterruptibly(TrustedListenableFutureTask.java:128)",
+                "com.google.common.util.concurrent.InterruptibleTask.run(InterruptibleTask.java:72)",
+                "com.google.common.util.concurrent.TrustedListenableFutureTask.run(TrustedListenableFutureTask.java:80)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                "java.base/java.lang.Thread.run(Unknown Source)"
+              ],
+              "errorInfo": {
+                "code": 84148236,
+                "name": "ICEBERG_COMMIT_ERROR",
+                "type": "EXTERNAL"
+              }
+            }
+          },
+          "CREATE TABLE iceberg.bakeoff.forbidden (id BIGINT)": {
+            "message": "Failed to create transaction",
+            "errorCode": 84148237,
+            "errorName": "ICEBERG_CATALOG_ERROR",
+            "errorType": "EXTERNAL",
+            "failureInfo": {
+              "type": "io.trino.spi.TrinoException",
+              "message": "Failed to create transaction",
+              "cause": {
+                "type": "org.apache.iceberg.exceptions.ForbiddenException",
+                "message": "Forbidden: Namespace action `create_table(name=forbidden, table_id=01a1fae0-5455-779d-a652-35e2ba5c5b52, properties={format-version: 2, write.format.default: PARQUET, write.parquet.compression-codec: })` forbidden on namespace with name 'bakeoff' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                "suppressed": [],
+                "stack": [
+                  "org.apache.iceberg.rest.ErrorHandlers$DefaultErrorHandler.accept(ErrorHandlers.java:345)",
+                  "org.apache.iceberg.rest.ErrorHandlers$TableErrorHandler.accept(ErrorHandlers.java:160)",
+                  "org.apache.iceberg.rest.ErrorHandlers$TableErrorHandler.accept(ErrorHandlers.java:142)",
+                  "org.apache.iceberg.rest.HTTPClient.throwFailure(HTTPClient.java:242)",
+                  "org.apache.iceberg.rest.HTTPClient.handleResponse(HTTPClient.java:367)",
+                  "org.apache.iceberg.rest.HTTPClient.lambda$execute$1(HTTPClient.java:325)",
+                  "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:247)",
+                  "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:188)",
+                  "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:321)",
+                  "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:299)",
+                  "org.apache.iceberg.rest.BaseHTTPClient.post(BaseHTTPClient.java:112)",
+                  "org.apache.iceberg.rest.RESTClient.post(RESTClient.java:150)",
+                  "org.apache.iceberg.rest.RESTSessionCatalog$Builder.create(RESTSessionCatalog.java:1046)",
+                  "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.newCreateTableTransaction(TrinoRestCatalog.java:460)",
+                  "io.trino.plugin.iceberg.IcebergUtil.newCreateTableTransaction(IcebergUtil.java:985)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.beginCreateTable(IcebergMetadata.java:1558)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.createTable(IcebergMetadata.java:1405)",
+                  "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.createTable(ClassLoaderSafeConnectorMetadata.java:486)",
+                  "io.trino.tracing.TracingConnectorMetadata.createTable(TracingConnectorMetadata.java:407)",
+                  "io.trino.metadata.MetadataManager.createTable(MetadataManager.java:946)",
+                  "io.trino.tracing.TracingMetadata.createTable(TracingMetadata.java:460)",
+                  "io.trino.execution.CreateTableTask.internalExecute(CreateTableTask.java:308)",
+                  "io.trino.execution.CreateTableTask.execute(CreateTableTask.java:129)",
+                  "io.trino.execution.CreateTableTask.execute(CreateTableTask.java:95)",
+                  "io.trino.execution.DataDefinitionExecution.start(DataDefinitionExecution.java:153)",
+                  "io.trino.execution.QueryManager.createQuery(QueryManager.java:333)",
+                  "io.trino.dispatcher.LocalDispatchQuery.startExecution(LocalDispatchQuery.java:151)",
+                  "io.trino.dispatcher.LocalDispatchQuery.lambda$waitForMinimumWorkers$1(LocalDispatchQuery.java:135)",
+                  "io.airlift.concurrent.MoreFutures.lambda$addSuccessCallback$0(MoreFutures.java:570)",
+                  "io.airlift.concurrent.MoreFutures$3.onSuccess(MoreFutures.java:545)",
+                  "com.google.common.util.concurrent.Futures$CallbackListener.run(Futures.java:1128)",
+                  "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                  "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                  "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                  "java.base/java.lang.Thread.run(Unknown Source)"
+                ],
+                "errorInfo": {
+                  "code": 65536,
+                  "name": "GENERIC_INTERNAL_ERROR",
+                  "type": "INTERNAL_ERROR"
+                }
+              },
+              "suppressed": [],
+              "stack": [
+                "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.newCreateTableTransaction(TrinoRestCatalog.java:465)",
+                "io.trino.plugin.iceberg.IcebergUtil.newCreateTableTransaction(IcebergUtil.java:985)",
+                "io.trino.plugin.iceberg.IcebergMetadata.beginCreateTable(IcebergMetadata.java:1558)",
+                "io.trino.plugin.iceberg.IcebergMetadata.createTable(IcebergMetadata.java:1405)",
+                "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.createTable(ClassLoaderSafeConnectorMetadata.java:486)",
+                "io.trino.tracing.TracingConnectorMetadata.createTable(TracingConnectorMetadata.java:407)",
+                "io.trino.metadata.MetadataManager.createTable(MetadataManager.java:946)",
+                "io.trino.tracing.TracingMetadata.createTable(TracingMetadata.java:460)",
+                "io.trino.execution.CreateTableTask.internalExecute(CreateTableTask.java:308)",
+                "io.trino.execution.CreateTableTask.execute(CreateTableTask.java:129)",
+                "io.trino.execution.CreateTableTask.execute(CreateTableTask.java:95)",
+                "io.trino.execution.DataDefinitionExecution.start(DataDefinitionExecution.java:153)",
+                "io.trino.execution.QueryManager.createQuery(QueryManager.java:333)",
+                "io.trino.dispatcher.LocalDispatchQuery.startExecution(LocalDispatchQuery.java:151)",
+                "io.trino.dispatcher.LocalDispatchQuery.lambda$waitForMinimumWorkers$1(LocalDispatchQuery.java:135)",
+                "io.airlift.concurrent.MoreFutures.lambda$addSuccessCallback$0(MoreFutures.java:570)",
+                "io.airlift.concurrent.MoreFutures$3.onSuccess(MoreFutures.java:545)",
+                "com.google.common.util.concurrent.Futures$CallbackListener.run(Futures.java:1128)",
+                "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                "java.base/java.lang.Thread.run(Unknown Source)"
+              ],
+              "errorInfo": {
+                "code": 84148237,
+                "name": "ICEBERG_CATALOG_ERROR",
+                "type": "EXTERNAL"
+              }
+            }
+          },
+          "DROP TABLE iceberg.bakeoff.sample": {
+            "message": "Failed to drop table 'sample'",
+            "errorCode": 84148237,
+            "errorName": "ICEBERG_CATALOG_ERROR",
+            "errorType": "EXTERNAL",
+            "failureInfo": {
+              "type": "io.trino.spi.TrinoException",
+              "message": "Failed to drop table 'sample'",
+              "cause": {
+                "type": "org.apache.iceberg.exceptions.ForbiddenException",
+                "message": "Forbidden: Table action `drop(purge=true)` forbidden on table 'bakeoff.sample' in warehouse `e0de332e-e529-11f1-9d6d-1fc559ddf5b8`",
+                "suppressed": [],
+                "stack": [
+                  "org.apache.iceberg.rest.ErrorHandlers$DefaultErrorHandler.accept(ErrorHandlers.java:345)",
+                  "org.apache.iceberg.rest.ErrorHandlers$TableErrorHandler.accept(ErrorHandlers.java:160)",
+                  "org.apache.iceberg.rest.ErrorHandlers$TableErrorHandler.accept(ErrorHandlers.java:142)",
+                  "org.apache.iceberg.rest.HTTPClient.throwFailure(HTTPClient.java:242)",
+                  "org.apache.iceberg.rest.HTTPClient.handleResponse(HTTPClient.java:367)",
+                  "org.apache.iceberg.rest.HTTPClient.lambda$execute$1(HTTPClient.java:325)",
+                  "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:247)",
+                  "org.apache.hc.client5.http.impl.classic.CloseableHttpClient.execute(CloseableHttpClient.java:188)",
+                  "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:321)",
+                  "org.apache.iceberg.rest.HTTPClient.execute(HTTPClient.java:299)",
+                  "org.apache.iceberg.rest.BaseHTTPClient.delete(BaseHTTPClient.java:66)",
+                  "org.apache.iceberg.rest.RESTClient.delete(RESTClient.java:45)",
+                  "org.apache.iceberg.rest.RESTSessionCatalog.purgeTable(RESTSessionCatalog.java:377)",
+                  "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.purgeTable(TrinoRestCatalog.java:575)",
+                  "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.dropTable(TrinoRestCatalog.java:533)",
+                  "io.trino.plugin.iceberg.IcebergMetadata.dropTable(IcebergMetadata.java:2636)",
+                  "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.dropTable(ClassLoaderSafeConnectorMetadata.java:494)",
+                  "io.trino.tracing.TracingConnectorMetadata.dropTable(TracingConnectorMetadata.java:416)",
+                  "io.trino.metadata.MetadataManager.dropTable(MetadataManager.java:1137)",
+                  "io.trino.tracing.TracingMetadata.dropTable(TracingMetadata.java:622)",
+                  "io.trino.execution.DropTableTask.execute(DropTableTask.java:92)",
+                  "io.trino.execution.DropTableTask.execute(DropTableTask.java:36)",
+                  "io.trino.execution.DataDefinitionExecution.start(DataDefinitionExecution.java:153)",
+                  "io.trino.execution.QueryManager.createQuery(QueryManager.java:333)",
+                  "io.trino.dispatcher.LocalDispatchQuery.startExecution(LocalDispatchQuery.java:151)",
+                  "io.trino.dispatcher.LocalDispatchQuery.lambda$waitForMinimumWorkers$1(LocalDispatchQuery.java:135)",
+                  "io.airlift.concurrent.MoreFutures.lambda$addSuccessCallback$0(MoreFutures.java:570)",
+                  "io.airlift.concurrent.MoreFutures$3.onSuccess(MoreFutures.java:545)",
+                  "com.google.common.util.concurrent.Futures$CallbackListener.run(Futures.java:1128)",
+                  "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                  "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                  "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                  "java.base/java.lang.Thread.run(Unknown Source)"
+                ],
+                "errorInfo": {
+                  "code": 65536,
+                  "name": "GENERIC_INTERNAL_ERROR",
+                  "type": "INTERNAL_ERROR"
+                }
+              },
+              "suppressed": [],
+              "stack": [
+                "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.purgeTable(TrinoRestCatalog.java:580)",
+                "io.trino.plugin.iceberg.catalog.rest.TrinoRestCatalog.dropTable(TrinoRestCatalog.java:533)",
+                "io.trino.plugin.iceberg.IcebergMetadata.dropTable(IcebergMetadata.java:2636)",
+                "io.trino.plugin.base.classloader.ClassLoaderSafeConnectorMetadata.dropTable(ClassLoaderSafeConnectorMetadata.java:494)",
+                "io.trino.tracing.TracingConnectorMetadata.dropTable(TracingConnectorMetadata.java:416)",
+                "io.trino.metadata.MetadataManager.dropTable(MetadataManager.java:1137)",
+                "io.trino.tracing.TracingMetadata.dropTable(TracingMetadata.java:622)",
+                "io.trino.execution.DropTableTask.execute(DropTableTask.java:92)",
+                "io.trino.execution.DropTableTask.execute(DropTableTask.java:36)",
+                "io.trino.execution.DataDefinitionExecution.start(DataDefinitionExecution.java:153)",
+                "io.trino.execution.QueryManager.createQuery(QueryManager.java:333)",
+                "io.trino.dispatcher.LocalDispatchQuery.startExecution(LocalDispatchQuery.java:151)",
+                "io.trino.dispatcher.LocalDispatchQuery.lambda$waitForMinimumWorkers$1(LocalDispatchQuery.java:135)",
+                "io.airlift.concurrent.MoreFutures.lambda$addSuccessCallback$0(MoreFutures.java:570)",
+                "io.airlift.concurrent.MoreFutures$3.onSuccess(MoreFutures.java:545)",
+                "com.google.common.util.concurrent.Futures$CallbackListener.run(Futures.java:1128)",
+                "io.trino.$gen.Trino_484___Runnable.run(Unknown Source)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)",
+                "java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)",
+                "java.base/java.lang.Thread.run(Unknown Source)"
+              ],
+              "errorInfo": {
+                "code": 84148237,
+                "name": "ICEBERG_CATALOG_ERROR",
+                "type": "EXTERNAL"
+              }
+            }
+          }
+        }
+      },
+      "seconds": 18.6324
+    },
+    "C5.sail": {
+      "status": "pass",
+      "value": {
+        "tls": {
+          "version": "TLSv1.3",
+          "unknown_ca_rejected": true,
+          "wrong_name_rejected": true,
+          "plaintext_rejected": true
+        },
+        "token": "external file",
+        "tables": [
+          [
+            "bakeoff",
+            "sample",
+            false
+          ]
+        ],
+        "rows": [
+          [
+            1,
+            "alpha"
+          ],
+          [
+            2,
+            "beta"
+          ]
+        ],
+        "denials": {
+          "SELECT * FROM bakeoff.denied.sample": "Table not found: [TABLE_OR_VIEW_NOT_FOUND] Table or view not found: denied.sample",
+          "INSERT INTO bakeoff.bakeoff.sample VALUES (3, 'forbidden')": "forbidden: Iceberg REST catalog commit forbidden for bakeoff.sample: response error: status code 403 Forbidden",
+          "UPDATE bakeoff.bakeoff.sample SET label='forbidden' WHERE id=1": "forbidden: Iceberg REST catalog commit forbidden for bakeoff.sample: response error: status code 403 Forbidden",
+          "DELETE FROM bakeoff.bakeoff.sample WHERE id=1": "forbidden: Iceberg REST catalog commit forbidden for bakeoff.sample: response error: status code 403 Forbidden",
+          "CREATE TABLE bakeoff.bakeoff.forbidden (id BIGINT) USING iceberg": "external error: Failed to create table: response error: status code 403 Forbidden",
+          "DROP TABLE bakeoff.bakeoff.sample": "external error: Failed to drop table: response error: status code 403 Forbidden"
+        }
+      },
+      "seconds": 2.6094
+    },
+    "fixture_reset_before_C8": {
+      "status": "pass",
+      "value": null,
+      "seconds": 0.0653
+    },
+    "fixture_reset_after_C8": {
+      "status": "pass",
+      "value": null,
+      "seconds": 0.0196
+    },
+    "unchanged_rows": {
+      "status": "pass",
+      "value": {
+        "tables": [
+          [
+            "bakeoff",
+            "sample"
+          ]
+        ],
+        "rows": [
+          {
+            "id": 1,
+            "label": "alpha"
+          },
+          {
+            "id": 2,
+            "label": "beta"
+          }
+        ]
+      },
+      "seconds": 0.1142
+    }
+  },
+  "c3_direct_claims": {
+    "unmapped_claim_denied": {
+      "type": "NoSuchNamespaceError",
+      "message": "NoSuchNamespaceException: Namespace with name 'bakeoff' does not exist in warehouse 'e0de332e-e529-11f1-9d6d-1fc559ddf5b8'"
+    },
+    "mapped_group_exact_rows": {
+      "tables": [
+        [
+          "bakeoff",
+          "sample"
+        ]
+      ],
+      "rows": [
+        {
+          "id": 1,
+          "label": "alpha"
+        },
+        {
+          "id": 2,
+          "label": "beta"
+        }
+      ]
+    },
+    "removed_mapping_old_token_denied": {
+      "type": "NoSuchNamespaceError",
+      "message": "NoSuchNamespaceException: Namespace with name 'bakeoff' does not exist in warehouse 'e0de332e-e529-11f1-9d6d-1fc559ddf5b8'"
+    },
+    "adaptation": "Verified JWT groups used directly; no membership synchronization"
+  },
+  "owner_builds": {
+    "postgresql-lakekeeper-ubi": {
+      "revision": "0ff367fae85d9685eed9d4851dce9203cccae2b2",
+      "image_id": "sha256:541c46ca94e0423474ccf2cf8f4ba69821336b365d4b6a01da1582cf88f396e0",
+      "architecture": "arm64",
+      "runner_machine": "aarch64",
+      "expected_architecture": "arm64",
+      "lock_path": "artifacts/locks/arm64.json",
+      "lock_sha256": "58549132210b6e91fd4358ee747973a9a58fd20fe49a503ecf239e0b46eb4e51",
+      "labels": {
+        "io.datopsis.artifact-lock.sha256": "58549132210b6e91fd4358ee747973a9a58fd20fe49a503ecf239e0b46eb4e51",
+        "io.datopsis.postgresql.publisher": "PostgreSQL Global Development Group (PGDG)",
+        "io.datopsis.postgresql.rpm-version": "18.6-1PGDG.rhel9.8",
+        "io.datopsis.postgresql.signing-key-fingerprint": "B031F89FC983E98262906B6E177B343BB9738825",
+        "io.datopsis.postgresql.version": "18.6",
+        "io.datopsis.ubi.builder": "registry.access.redhat.com/ubi9/ubi-minimal:9.9@sha256:baafce2d34783a28b4a472779f304e97e00f9d35c99553bc53b068b14344d9a9",
+        "io.datopsis.ubi.runtime": "registry.access.redhat.com/ubi9/ubi-micro:9.9@sha256:dbd325b96bcd432dd42816d31412bdf1dc0fb973b79ed310344bc23c76c068db",
+        "org.opencontainers.image.created": "1970-01-01T00:00:00Z",
+        "org.opencontainers.image.description": "Rootless PostgreSQL for Lakekeeper metadata with five allowlisted extensions on UBI 9 Micro",
+        "org.opencontainers.image.documentation": "https://github.com/datopsis/postgresql-lakekeeper-ubi/blob/0ff367fae85d9685eed9d4851dce9203cccae2b2/README.md",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.revision": "0ff367fae85d9685eed9d4851dce9203cccae2b2",
+        "org.opencontainers.image.source": "https://github.com/datopsis/postgresql-lakekeeper-ubi",
+        "org.opencontainers.image.title": "PostgreSQL for Lakekeeper on Red Hat UBI 9",
+        "org.opencontainers.image.url": "https://github.com/datopsis/postgresql-lakekeeper-ubi",
+        "org.opencontainers.image.vendor": "Datopsis",
+        "org.opencontainers.image.version": "development"
+      },
+      "provenance_errors": [],
+      "status": "pass"
+    },
+    "lakekeeper-ubi": {
+      "revision": "baa196bea55765e8e3da625ad50cda7d5ec99082",
+      "image_id": "sha256:06fe66decbd289bbcca430a5099e18ae0c92f2f3759aaade20bab98a0640efbb",
+      "architecture": "arm64",
+      "runner_machine": "aarch64",
+      "expected_architecture": "arm64",
+      "lock_path": "artifacts/lakekeeper.lock.json",
+      "lock_sha256": "0565ef04a4c220eef7b8d0757f3d44071d256c68e02607e90cc7a16a105b172d",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-05T06:36:09Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.33.7",
+        "io.datopsis.artifact-lock.sha256": "0565ef04a4c220eef7b8d0757f3d44071d256c68e02607e90cc7a16a105b172d",
+        "io.datopsis.lakekeeper.upstream-version": "0.13.4",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.created": "2026-11-05T06:36:09Z",
+        "org.opencontainers.image.description": "A security-oriented, rootless Lakekeeper Apache Iceberg REST catalog built on Red Hat UBI 9 Micro",
+        "org.opencontainers.image.documentation": "https://github.com/datopsis/lakekeeper-ubi#readme",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.revision": "baa196bea55765e8e3da625ad50cda7d5ec99082",
+        "org.opencontainers.image.source": "https://github.com/datopsis/lakekeeper-ubi",
+        "org.opencontainers.image.title": "Lakekeeper on Red Hat UBI 9",
+        "org.opencontainers.image.vendor": "Datopsis",
+        "org.opencontainers.image.version": "0.13.4",
+        "release": "1793860449",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "9d7bd388a99de116058bd54b77737e2863cb3d45",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.8"
+      },
+      "provenance_errors": [],
+      "status": "pass",
+      "image_binary_sha256": "fea96fa11ecfff75a82892e70387f4abba02ab4a1ade5f3a40bc1afa63f20889"
+    },
+    "seaweedfs-ubi": {
+      "revision": "80bba407ba534f9d2e6ec6401c071d827dcf4a03",
+      "image_id": "sha256:1b537779a11c13097e27f862bf25035e23d4c3c040018950d1d8a11fd767ee3d",
+      "architecture": "arm64",
+      "runner_machine": "aarch64",
+      "expected_architecture": "arm64",
+      "lock_path": "artifacts/seaweedfs.lock.json",
+      "lock_sha256": "d0fc6c6303f58715068c419bfe9b083abc257416f4ca51e51763c501738b69c2",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-05T06:36:09Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.33.7",
+        "io.datopsis.artifact-lock.sha256": "d0fc6c6303f58715068c419bfe9b083abc257416f4ca51e51763c501738b69c2",
+        "io.datopsis.seaweedfs.commit": "4ab66fb76da83700739f5839e62fcaf15fb7d02a",
+        "io.datopsis.seaweedfs.variant": "large_disk",
+        "io.datopsis.seaweedfs.version": "4.53",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.base.name": "registry.access.redhat.com/ubi9/ubi-micro",
+        "org.opencontainers.image.created": "2026-11-20T20:57:38Z",
+        "org.opencontainers.image.description": "Security-oriented, rootless SeaweedFS on Red Hat UBI 9",
+        "org.opencontainers.image.documentation": "https://github.com/datopsis/seaweedfs-ubi/blob/main/README.md",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.revision": "80bba407ba534f9d2e6ec6401c071d827dcf4a03",
+        "org.opencontainers.image.source": "https://github.com/datopsis/seaweedfs-ubi",
+        "org.opencontainers.image.title": "seaweedfs-ubi",
+        "org.opencontainers.image.vendor": "Datopsis",
+        "org.opencontainers.image.version": "4.53",
+        "release": "1793860449",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "9d7bd388a99de116058bd54b77737e2863cb3d45",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.8"
+      },
+      "provenance_errors": [],
+      "status": "pass",
+      "image_binary_sha256": "91bf8c95d87c00c719698ec5978dfdf189399a9cc2b442c6802a2f5d81722f4e"
+    },
+    "trino-ubi": {
+      "revision": "685ff5bca0037d38e3c2e2ed47a60f2540dad7c2",
+      "image_id": "sha256:1411e6b1bd267e9be2a3f988a3405bf41b51aeeb373cfc07a5f5f93d34d984b9",
+      "architecture": "arm64",
+      "runner_machine": "aarch64",
+      "expected_architecture": "arm64",
+      "lock_path": "artifacts/trino.lock.json",
+      "lock_sha256": "09e8f80afeb59c48011feeac1e84eb2dd50a3d7196354a7fd990cf67464b3117",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-09T00:39:45Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.45.0",
+        "io.datopsis.artifact-lock.sha256": "09e8f80afeb59c48011feeac1e84eb2dd50a3d7196354a7fd990cf67464b3117",
+        "io.datopsis.ubi.runtime": "registry.access.redhat.com/ubi9/ubi-micro:9.8@sha256:d3499a0896e2d6a1642f922615831bc5c2fd513bbb34f3446cabba530d9d54a2",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.created": "2026-11-13T07:00:05-06:00",
+        "org.opencontainers.image.licenses": "Apache-2.0 AND GPL-2.0-with-classpath-exception",
+        "org.opencontainers.image.revision": "685ff5bca0037d38e3c2e2ed47a60f2540dad7c2",
+        "org.opencontainers.image.source": "https://github.com/datopsis/trino-ubi",
+        "org.opencontainers.image.title": "Trino on UBI 9",
+        "org.opencontainers.image.version": "484-development",
+        "release": "1794184668",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "180abe1db345daeb7a00ed9fda71e3ad05c261b7",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.8"
+      },
+      "provenance_errors": [],
+      "status": "pass"
+    },
+    "sail-ubi": {
+      "revision": "e96e068f926b8fecb3939e953389685ee4780032",
+      "image_id": "sha256:d016d91add7cee1b00cadea219d955afbee840ff17f37a989cd330f0a3ad5e8d",
+      "architecture": "arm64",
+      "runner_machine": "aarch64",
+      "expected_architecture": "arm64",
+      "lock_path": "artifacts/sail.lock.json",
+      "lock_sha256": "7b66571efcca5f6e856b5922090ddc9c728489d300f20a12ca93b577ab4b4c38",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-09T00:39:45Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.45.0",
+        "io.datopsis.artifact-lock.sha256": "7b66571efcca5f6e856b5922090ddc9c728489d300f20a12ca93b577ab4b4c38",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.base.name": "registry.access.redhat.com/ubi9/ubi-micro:9.8@sha256:d3499a0896e2d6a1642f922615831bc5c2fd513bbb34f3446cabba530d9d54a2",
+        "org.opencontainers.image.created": "2026-11-13T06:35:25-06:00",
+        "org.opencontainers.image.description": "Rootless local Spark Connect server",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.revision": "e96e068f926b8fecb3939e953389685ee4780032",
+        "org.opencontainers.image.source": "https://github.com/datopsis/sail-ubi",
+        "org.opencontainers.image.title": "Sail on Red Hat UBI 9",
+        "org.opencontainers.image.version": "0.7.3",
+        "release": "1794184668",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "180abe1db345daeb7a00ed9fda71e3ad05c261b7",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.8"
+      },
+      "lock_inputs": {
+        "artifacts/sail.lock.json": "8f25a1bcccfc475f87fc5239056fb56926e1d56672effa4e3e493e510c95bcc6",
+        "artifacts/rpms.lock.json": "1db2e198653d2997afc4ed205e0075a51903c111cbda51079722d858bbd0393b"
+      },
+      "provenance_errors": [],
+      "status": "pass"
+    },
+    "nginx-ubi": {
+      "status": "pass",
+      "revision": "9ef9e822c6b5e508cebef2adff3bb647a206773c",
+      "architecture": "arm64",
+      "lock_sha256": "733d912e914cd94eeefa48da08671f768ee49ea26bcd2762370bc8b5a107552a",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-05T06:36:09Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.33.7",
+        "io.datopsis.artifact-lock.sha256": "733d912e914cd94eeefa48da08671f768ee49ea26bcd2762370bc8b5a107552a",
+        "io.datopsis.nginx.rpm-version": "2:1.30.6-1.el9.ngx",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.created": "2026-11-05T06:36:09Z",
+        "org.opencontainers.image.description": "A security-oriented, rootless NGINX image built on Red Hat UBI 9 Micro",
+        "org.opencontainers.image.documentation": "https://github.com/datopsis/nginx-ubi#readme",
+        "org.opencontainers.image.licenses": "BSD-2-Clause AND Apache-2.0",
+        "org.opencontainers.image.revision": "9ef9e822c6b5e508cebef2adff3bb647a206773c",
+        "org.opencontainers.image.source": "https://github.com/datopsis/nginx-ubi",
+        "org.opencontainers.image.title": "NGINX on Red Hat UBI 9",
+        "org.opencontainers.image.vendor": "Datopsis",
+        "org.opencontainers.image.version": "1.30.6",
+        "release": "1793860449",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "9d7bd388a99de116058bd54b77737e2863cb3d45",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.8"
+      },
+      "image_id": "sha256:09206e23934f054845e20f5f4b22d0a911f5436e8166f1baf8f514fbc3fce215",
+      "profile_sha256": "ffb1f020a9fb81451bc7a0841130cd462003f16569daa7d735d2dbc484c37c63"
+    },
+    "rauthy-ubi": {
+      "status": "pass",
+      "revision": "01375efb2a14692a7977f2f8aa60121f3fcc2f01",
+      "lock_sha256": "2e93246a43f5dc68053324a0e2ab2261bba90a7d06de981d65a2aa8dff086204",
+      "architecture": "arm64",
+      "labels": {
+        "architecture": "aarch64",
+        "build-date": "2026-11-12T10:16:56Z",
+        "com.redhat.component": "ubi9-micro-container",
+        "com.redhat.license_terms": "https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI",
+        "cpe": "cpe:/a:redhat:enterprise_linux:9::appstream",
+        "description": "Very small image which doesn't install the package manager.",
+        "distribution-scope": "public",
+        "io.buildah.version": "1.45.0",
+        "io.datopsis.artifact-lock.sha256": "2e93246a43f5dc68053324a0e2ab2261bba90a7d06de981d65a2aa8dff086204",
+        "io.datopsis.rauthy.upstream-revision": "fe6bcb95192e8a83c29e2b525bf4960933bea3bd",
+        "io.k8s.description": "Very small image which doesn't install the package manager.",
+        "io.k8s.display-name": "Red Hat Universal Base Image 9 Micro",
+        "io.openshift.expose-services": "",
+        "maintainer": "Red Hat, Inc.",
+        "name": "ubi9/ubi-micro",
+        "org.opencontainers.image.created": "2026-11-12T10:16:56Z",
+        "org.opencontainers.image.licenses": "Apache-2.0",
+        "org.opencontainers.image.revision": "01375efb2a14692a7977f2f8aa60121f3fcc2f01",
+        "org.opencontainers.image.source": "https://github.com/datopsis/rauthy-ubi",
+        "org.opencontainers.image.title": "Rauthy on Red Hat UBI 9",
+        "org.opencontainers.image.version": "0.37.2",
+        "release": "1794478307",
+        "summary": "ubi9 micro image",
+        "url": "https://catalog.redhat.com/en/search?searchType=containers",
+        "vcs-ref": "fe65ab2ee8a23d96179165605ba81b37ed988b79",
+        "vcs-type": "git",
+        "vendor": "Red Hat, Inc.",
+        "version": "9.9"
+      }
+    }
+  },
+  "historical_engine_only": {
     "architecture": "arm64",
     "machine": "aarch64",
     "source": "9eb47439ff578b166b8bdd212c143c631c20e968",

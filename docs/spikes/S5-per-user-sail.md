@@ -1,277 +1,302 @@
 # S5: per-user Sail lifecycle and isolation
 
-Status: **PARTIAL. Native engine costs and resource caps measured; authenticated
-per-user lifecycle/isolation BLOCKED by a pinned Rauthy acquisition failure.**
-Do not interpret the engine measurements as a passing S5 or an MVP go decision.
+Status: **bounded S5 feasibility PASS on native amd64 and arm64. Full platform
+acceptance and audit remain FAIL. This is not an MVP go decision.**
 
 [Stacked PR #6](https://github.com/datopsis/datopsis-authz/pull/6) targets
 `room/datopsis-authz-spike-s3-sail-gateway`. No merge. The owner's per-team MVP
-choice remains unchanged.
+choice is preserved.
 
-## Coordinator-approved Rauthy testing input (2026-11-20)
+## Result and recommendation
 
-The current acceptance run pins `datopsis/rauthy-ubi` to
-`01375efb2a14692a7977f2f8aa60121f3fcc2f01`, as explicitly authorized by the
-coordinator. [Owner PR #3](https://github.com/datopsis/rauthy-ubi/pull/3) is unmerged
-and red on a SvelteKit gate finding pending the owner's decision. This is an
-evaluation input, like the integration fixture's draft Trino pin, **not a security
-approval, waiver or production qualification**. The owner pin verifies FIDO feed
-serial 302 and updates its PostgreSQL fixture to 18.7. Owner source and locks
-remain untouched; all image provenance/acquisition assertions remain enabled.
-`evaluation/owner_pins.py` supplies the revision to the unchanged pinned harness
-for S1, S3 and S5 builds and runtime evidence. Native acceptance results at this
-new pin are pending; the prior results and blocker below remain historical.
+One Sail process per authenticated user is practical for a bounded pool in this
+spike: roughly half a second for isolated first queries, roughly a quarter second for
+later queries, and zero failures at 1/5/20 concurrent users. All per-user catalog,
+namespace/session isolation, private token/tmpfs, lifecycle and limit assertions
+passed on both architectures. Memory depends strongly on query workload; the
+small SELECT 42 scale footprint must not be used to size analytical workloads.
 
-## Verdict and blocking prerequisite
+**Retain per-team for the MVP; pursue hybrid for sensitive groups after platform
+qualification.** S5 establishes the tested per-user process/catalog boundary.
+Production data enforcement still needs scoped storage credentials and the
+remaining platform work. The inherited shared static S3 credentials allow
+admitted direct-path plans to bypass catalog grants.
 
-Sail process economics support further evaluation of a hybrid: per-team by
-default, with per-user instances for sensitive groups after the blocked controls
-pass. Twenty warmed engines used 2.820 GiB/2.707 GiB of charged container memory
-on amd64/arm64 for the tested aggregate workload. This is promising bounded engine
-cost evidence, **not proof of authenticated per-user data enforcement**.
+## Inputs, security status and native evidence
 
-Both native jobs reject Rauthy's mutable FIDO MDS download at the owner's original
-SHA-256 assertion before starting Rauthy, Lakekeeper or the gateway. The lock
-expects blob 301, SHA-256
-`bcdf74e5c25d529de6007f1e49b53bed01d38ce57452e2585f71c7fd95ff0b09`.
-An independent cloud download returned blob 302 with SHA-256
-`d2ad4e42a8afbd74a34b3e997ae46d43df9e046f8a5bf1feda97206d8c84e0bb`.
-This separate probe is not a retained native download digest or a JWT-signature
-verification. [Acquisition evidence](S5-rauthy-acquisition.json) records the native
-errors, expected lock, probe and timestamps. The latest published Rauthy owner
-commit checked, `4d196b87639e410a01ca5dab353826ae13ee445c`, has the identical FIDO
-pin, so moving to it would not fix acquisition.
+The coordinator explicitly authorized testing with Rauthy
+`01375efb2a14692a7977f2f8aa60121f3fcc2f01` from
+[unmerged owner PR #3](https://github.com/datopsis/rauthy-ubi/pull/3). Its SvelteKit
+security-gate finding is pending an owner decision. As with the integration
+fixture's draft Trino pin, this is an evaluation input, **not a gate waiver,
+security approval or production qualification**. The owner pin verifies FIDO feed
+serial 302 and updates its own PostgreSQL test fixture to 18.7. The acceptance
+fixture's other owner pins are unchanged.
 
-The owner's [acquisition contract](https://github.com/datopsis/rauthy-ubi/blob/1e114b84b01988bf15306b110b040378878488d3/docs/ARTIFACT-ACQUISITION.md)
-requires retaining the verified bundle after the public feed rotates. Published
-owner artifacts did not contain that bundle. No checksum, signature check, lock,
-assertion or owner source was changed. Completing S5 requires the preserved blob
-301 bytes matching that hash, or a newer Rauthy owner commit refreshing/preserving
-the input. No other repository was modified.
+`evaluation/owner_pins.py` supplies only the approved Rauthy revision to the
+unchanged pinned harness for S1/S3/S5 build/provenance checks and runtime reports.
+No external repository, acquisition lock, signature/checksum assertion, required
+check, architecture or security gate was modified.
 
-## Authoritative native evidence
+Other immutable inputs: Sail owner
+`e96e068f926b8fecb3939e953389685ee4780032` (Sail 0.7.3 / upstream
+`ac4690078021cf2a5402dc5c7b38a886f1916c73`), acceptance harness
+`e8379a528bf413c05aad49e56bc8cd507b5e077a`, and Lakekeeper
+`9bd377162345b64a716f0a4fcffe4e7e7f3c7534`.
 
-[Run 44243517929](https://github.com/datopsis/datopsis-authz/actions/runs/44243517929)
-tested PR source `ba6fb502e795d482754540a946ce5efc70d758b1` through merge
-`9eb47439ff578b166b8bdd212c143c631c20e968`. Both native jobs' complete actual logs
-and sanitized artifacts were downloaded and inspected:
+Authoritative [run 44815134976](https://github.com/datopsis/datopsis-authz/actions/runs/44815134976)
+tested PR source `01c0bfa6502077c2b88cb15c9e5859bf89477912` through merge commit
+`3522fd9223827a1ee4cf3111c6b70da6e320db1f`.
+Both complete native logs and sanitized artifacts were downloaded and read:
 
-- [amd64 job](https://github.com/datopsis/datopsis-authz/actions/runs/44243517929/job/134596809437)
-  and [durable evidence](S5-results-amd64.json).
-- [arm64 job](https://github.com/datopsis/datopsis-authz/actions/runs/44243517929/job/134596809448)
-  and [durable evidence](S5-results-arm64.json).
+- [amd64 job](https://github.com/datopsis/datopsis-authz/actions/runs/44815134976/job/136561382321)
+  / [durable exact evidence](S5-results-amd64.json).
+- [arm64 job](https://github.com/datopsis/datopsis-authz/actions/runs/44815134976/job/136561382630)
+  / [durable exact evidence](S5-results-arm64.json).
 
-Both hosts had four logical CPUs and kernel `7.0.0-1017-azure`; physical memory
-reported to the runners was 16,760,344,576 B / 16,715,927,552 B respectively. Jobs
-assert native x86_64/aarch64, and image architectures and full owner revisions;
-there is no QEMU. Raw timer values, byte counts, all start/query samples, image
-IDs/labels, cleanup results and log digests are retained in the JSON. Displayed
-unit conversions/timers below are rounded.
+Each runner had four logical CPUs. amd64 reported kernel `7.0.0-1014-aws` and
+16,464,306,176 B RAM; arm64 reported `7.0.0-1017-azure` and 16,715,923,456 B RAM.
+The jobs assert native x86_64/aarch64 and verify image architecture/revision/lock
+provenance; no QEMU. These different hosts are not a controlled CPU comparison.
+Image builds, artifact acquisition, runtime tests and native validation ran
+**only in the existing PR Actions jobs** under the coordinator's CI-first policy.
 
-The independent `engine_only.py` step runs only when owner acquisition fails.
-It uses Sail's real hash-locked client and image, the same trusted supervisor,
-private containers, loopback sockets and caps, with **no configured catalog and
-synthetic token-file contents**. Its results never turn a blocked JWT, Cedar,
-gateway or Lakekeeper assertion into PASS. Required CI remains red.
+JSON retains raw timers/byte counts, every request/readiness sample, actual grant
+assertions, image provenance, lifecycle events' results, cleanup and log digests.
+Displayed conversions/timers below are rounded. The final evidence/docs follow-up
+changes no tested runtime code; unchanged expensive checks are not rerun manually.
 
-## Single instance: measured
+## Single instance
 
 | Metric | amd64 | arm64 |
 | --- | --- | --- |
-| Prebuilt process cold start to TCP ready | 0.673975 s | 0.999213 s |
-| Idle Sail PID RSS before any query | 70,979,584 B (67.691 MiB) | 67,149,824 B (64.039 MiB) |
-| Idle cgroup memory.current | 31,825,920 B (30.352 MiB) | 33,603,584 B (32.047 MiB) |
-| Peak sampled Sail RSS during workload sequence | 235,794,432 B (224.871 MiB) | 223,989,760 B (213.613 MiB) |
-| Kernel cgroup memory.peak after workload | 161,968,128 B (154.465 MiB) | 160,657,408 B (153.215 MiB) |
-| Million-row SUM + COUNT(DISTINCT) ExecutePlan | 0.243237 s | 0.174611 s |
-| Forced stop + container/token-directory removal | 0.137167 s | 0.157061 s |
-| Direct first SELECT 42 ExecutePlan | 244.046 ms | 159.539 ms |
-| Direct later SELECT 42 median (five fresh sessions) | 196.625 ms | 130.314 ms |
-| Authenticated gateway first/later extra latency | **BLOCKED — not measured** | **BLOCKED — not measured** |
+| Prebuilt cold start to TCP ready | 0.261438 s | 0.226217 s |
+| Idle Sail RSS | 64,757,760 B (61.758 MiB) | 65,073,152 B (62.059 MiB) |
+| Peak sampled Sail RSS during analytical sequence | 216,776,704 B (206.734 MiB) | 226,619,392 B (216.121 MiB) |
+| Kernel cgroup peak over analytical sequence | 243,163,136 B (231.898 MiB) | 161,312,768 B (153.840 MiB) |
+| Million-row SUM + COUNT(DISTINCT) ExecutePlan | 0.224430 s | 0.166090 s |
+| Forced stop + container/token-directory removal | 0.106638 s | 0.149353 s |
+| Direct first SELECT 42 control | 202.228 ms | 207.763 ms |
+| Direct later SELECT 42 median (five samples) | 157.558 ms | 162.600 ms |
 
-Start is prebuilt-image process cold start, including supervisor invocation,
-container creation and the first successful TCP readiness probe. It excludes
-image acquisition/build time and does not flush OS/image caches. Readiness is
-TCP readiness, not completion of a catalog query.
+Cold start includes trusted supervisor invocation, container creation and the
+first successful TCP readiness probe on a prebuilt image. It excludes image
+pull/build time and does not flush host/image caches. TCP readiness is not a
+catalog-query readiness promise. Stop is forced SIGKILL-style removal including
+the instance token directory; graceful drain/shutdown time is unverified.
 
-The workload sequence is first SELECT 42, five later SELECT 42 queries, then
+The direct workload is first SELECT 42, five subsequent SELECT 42 requests, then
 `SELECT sum(id) AS total, count(DISTINCT id) AS distinct_ids FROM range(1000000)`.
-Both CPUs returned exactly 499999500000 and 1000000. RSS polling targets every
-50 ms (inspection time adds to that interval); the kernel peak counter captures
-between-poll allocations. Peak counters cover the full sequence. This is a
-finite analytical computation, not an Iceberg/S3 scan, spill or large join.
+Both CPUs require exactly 499999500000 and 1000000. RSS polling targets 50 ms plus
+inspection cost; kernel memory.peak catches between-poll allocations over the
+whole sequence. The computation is representative of finite analytical CPU/hash
+aggregation, not a large Iceberg scan, join or spill.
 
-Direct query timings include a fresh gRPC channel/session and a trusted
-`docker exec` namespace pipe, without gateway TLS/JWT/JWKS/Cedar work. They are
-**not measurements of gateway overhead**. Forced removal is SIGKILL-style
-teardown; graceful drain/shutdown time is unverified.
+## Authenticated lifecycle latency
 
-## Concurrent engine scale: measured; authenticated-user scale blocked
+| CPU / user | First authenticated query ms | Later query median ms | Additional first / later ms versus direct control |
+| --- | ---: | ---: | --- |
+| amd64 / alice | 503.416 | 242.492 | 301.188 / 84.934 |
+| amd64 / bob | 453.447 | 251.881 | 251.219 / 94.323 |
+| arm64 / alice | 489.800 | 274.699 | 282.037 / 112.100 |
+| arm64 / bob | 517.089 | 236.977 | 309.326 / 74.377 |
 
-Each N starts N distinct isolated containers concurrently and records every
-cold-to-ready duration. After readiness, N client threads issue the same
-million-row aggregate concurrently, each against its own engine. Every query
-must return the exact two scalar answers. RSS and cgroup memory are then sampled
-from the warmed instances before teardown. This is N engine processes, not an
-assertion about N authenticated users.
+Times are ExecutePlan wall time, including a fresh TLS connection, live HTTPS
+JWKS lookup, JWT validation, live HTTPS Cedar admission, lifecycle and namespace
+relay. First queries start with no existing user instance; later queries reuse the
+same user's instance and session, with five samples per user. The direct control
+uses an insecure trusted loopback tunnel with the same Docker-exec namespace
+transport and fresh session IDs. The calculated additional times are **observed
+sample contrasts**, including TLS/authentication, not isolated component costs or
+an SLA; warm-session reuse differs from the direct control. No p95/p99 or
+production latency guarantee is inferred from these small samples.
 
-| CPU / N engines | Ready-only RSS MiB | Warmed RSS MiB | Warmed cgroup MiB | Start min / p50 / max (s) | Aggregate query min / p50 / max (s) | Start / query failures |
-| --- | ---: | ---: | ---: | --- | --- | --- |
-| amd64 / 1 | 69.641 | 227.109 | 150.863 | 0.273123 / 0.273123 / 0.273123 | 0.266964 / 0.266964 / 0.266964 | 0 / 0 |
-| amd64 / 5 | 312.152 | 1,110.441 | 731.660 | 0.560933 / 0.620878 / 0.634215 | 0.447797 / 0.513924 / 0.557677 | 0 / 0 |
-| amd64 / 20 | 1,268.367 | 4,384.746 | 2,887.625 | 1.138222 / 2.112858 / 2.532942 | 0.966014 / 2.034590 / 2.291481 | 0 / 0 |
-| arm64 / 1 | 62.047 | 199.141 | 135.043 | 0.198362 / 0.198362 / 0.198362 | 0.198770 / 0.198770 / 0.198770 | 0 / 0 |
-| arm64 / 5 | 296.215 | 1,037.051 | 720.789 | 0.354764 / 0.384018 / 0.407409 | 0.256888 / 0.307620 / 0.378446 | 0 / 0 |
-| arm64 / 20 | 1,188.902 | 4,039.977 | 2,771.750 | 0.822714 / 1.403037 / 1.497107 | 0.384643 / 1.360225 / 1.457582 | 0 / 0 |
+## N concurrent authenticated users
 
-Start samples include supervisor invocation; query samples start after all
-engines and benchmark-only loopback tunnels are ready. These are separate phases,
-not an end-to-end authenticated first-query measurement. The tunnels are test
-transport on the trusted runner and are stopped after each batch. The proposed
-Sail deployment itself publishes no backend ports.
+| CPU / users | Total Sail RSS MiB | Total Sail cgroup MiB | Gateway RSS MiB | Ready min / p50 / max s | First query min / p50 / max s | Failures |
+| --- | ---: | ---: | ---: | --- | --- | ---: |
+| amd64 / 1 | 102.234 | 47.027 | 21.215 | 0.143697 / 0.143697 / 0.143697 | 0.416042 / 0.416042 / 0.416042 | 0 |
+| amd64 / 5 | 497.305 | 216.805 | 21.215 | 0.355987 / 0.393299 / 0.491322 | 0.753273 / 0.832132 / 0.934709 | 0 |
+| amd64 / 20 | 1,905.082 | 856.367 | 21.195 | 0.523205 / 1.239192 / 1.729213 | 1.573246 / 2.917102 / 3.120990 | 0 |
+| arm64 / 1 | 104.867 | 44.598 | 17.188 | 0.170732 / 0.170732 / 0.170732 | 0.470613 / 0.470613 / 0.470613 | 0 |
+| arm64 / 5 | 506.066 | 209.727 | 17.191 | 0.311292 / 0.378709 / 0.436204 | 0.668571 / 0.745110 / 0.795578 | 0 |
+| arm64 / 20 | 2,007.875 | 841.016 | 18.211 | 0.389499 / 0.735071 / 1.211035 | 0.817732 / 2.268571 / 2.634481 | 0 |
 
-RSS sums count shared mapped pages more than once; cgroup totals include charged
-anonymous memory, tmpfs/cache and in-container relay processes. Neither is total
-host RAM. Shared platform services, Docker/containerd/shims, host-side controller
-helpers and startup-burst peak overhead are excluded. Cgroup charges and shared
-page ownership depend on cache/teardown history. No PSS or fleet-wide synchronized
-peak is claimed. The JSON also records the sum of individual cgroup peaks; those
-peaks need not occur simultaneously.
+Every user has a distinct genuine Rauthy PKCE identity and its own Sail instance.
+Concurrent first requests execute SELECT 42 and require exactly `[{"answer": 42}]`.
+Ready durations are the supervisor's internal container-start-to-TCP-ready
+samples; first-query durations include authentication/admission/orchestration and
+are the actual user-visible cold-request samples. All individual samples are in
+JSON; min/p50/max are distributions within these single batches, not repeated-run
+confidence estimates. Memory is sampled after the batch while all N instances
+are resident. Scale is for this light workload, not 20 heavy analytical queries.
 
-## Caps, limit behavior and cleanup: measured independently
+RSS sums count shared mapped pages more than once. Cgroup totals include charged
+anonymous memory, tmpfs/cache and in-container relay processes. They exclude
+shared Rauthy/Lakekeeper/Cedar/storage/PostgreSQL services, Docker/containerd/shims,
+host-side helpers, and startup-burst peaks. Gateway RSS is shown separately;
+these mixed accounting quantities are not a measurement of total host RAM.
+Shared page ownership and cgroup charging depend on cache/teardown history.
 
-Every measured container has 536,870,912 B (512 MiB) memory, the same total
-memory+swap limit (no additional swap), one CPU and 128 PIDs. Roots are read-only,
-capabilities dropped, no-new-privileges enabled, with private 128 MiB tmpfs mounts
-for `/tmp` and `/var/lib/sail`.
+## Isolation and lifecycle assertions: PASS on both CPUs
 
-A 805,306,368 B (768 MiB) allocation by an extra process inside the Sail container
-returned **137** on both CPUs; `memory.events.oom_kill` increased from **0 to 1**.
-Docker recorded `OOMKilled=true` while `Running=true`: the allocation process was
-killed and the container remained running. A successful post-OOM Sail query was
-not checked, so application recovery is unverified. Four busy processes under
-the one-CPU quota increased `nr_throttled` **1 → 32 on amd64**, **0 → 31 on arm64**.
+- Real Alice/Bob tokens intentionally use the **same session ID** and forged
+  Spark UserContext. Each reads only its own namespace's exact rows (11/22),
+  denies the other namespace and INSERT/UPDATE/DELETE/DROP/CREATE attempts,
+  inherits a grant to a newly created table (row 33), then reads its granted
+  single table while denying its sibling. Full assertions are per user.
+- Missing tokens return gRPC 16 and a genuine ungranted machine returns 7;
+  neither request starts an engine. Only verified JWT subject selects a backend.
+- Every token file is UID 10001 mode 0400, readable by its own process; mounts
+  are read-only and no private source directory is shared across instances.
+  Host parent directories are root-owned 0700; token directories are UID 10001
+  mode 0500. No Docker socket is mounted into Sail. Root/controller access is
+  trusted; container isolation does not protect against a compromised host/kernel.
+- No Sail ports are published. Sail binds loopback inside each separate network
+  namespace. A peer instance's TCP probe to the other's bridge IP returns
+  ECONNREFUSED (111). Separate private tmpfs markers are invisible to the peer.
+- After inactivity the 15-second configured timeout (one-second sweep) removes
+  the container and token files. Tests require absence within 60 seconds, rather
+  than claiming an exact measured 15-second eviction SLA.
+- Killing an instance creates a different random replacement for the same user,
+  removes the old token directory, and returns a correct query. A second user's
+  same-session-ID query cannot see the first user's temporary view after restart.
+- Five simultaneous first requests for one identity create exactly one instance.
+- The unchanged owner-paced stream outlives idle TTL: the same instance remains
+  after 25 seconds and one ExecutePlan returns all 1,000,000 unique IDs, all
+  SHA-512 payloads, 123 batches and sum 499999500000. Completion takes
+  **88.643848 s amd64 / 88.516384 s arm64**, with no reattachment/retry/reset.
+- Cleanup after every batch and after the full fixture leaves zero supervised
+  containers and no instance token files; final cleanup removes the whole
+  private runtime tree, including real user credentials and fixture keys.
 
-Final independent cleanup found **zero supervised containers** and removed the
-entire synthetic-token runtime directory on both CPUs. This establishes fixture
-cleanup, not crash/restart reconciliation of a production gateway or actual
-end-user JWT lifecycle cleanup.
+The role's reaper uses a stream lease to protect active forwarding. The helper
+receives credentials through private stdin JSON, not argv/container environment,
+and updates token files atomically through read-only directory mounts. Catalog
+credentials remain the verified user's token; no per-session upstream change is
+needed. Atomic same-token reuse ran here; deliberate rotation to a newly minted
+JWT, refresh/expiry races and issued-storage-credential revocation are unverified.
 
-## Implemented authenticated design: not runtime-qualified
+## Resource caps and behavior at the limit
 
-Upstream [PR #2929](https://github.com/lakehq/sail/pull/2929) declined dynamic
-session catalog configuration and recommended a separate lightweight server for
-each client needing different catalogs. S3 additionally found that the pinned
-Sail session manager looks up an existing session by session ID without checking
-user ownership.
+Every instance has 536,870,912 B (512 MiB) memory, the same total memory+swap limit
+(no additional swap), one CPU and 128 PIDs. Roots are read-only, capabilities are
+dropped and no-new-privileges is enabled. `/tmp` and `/var/lib/sail` are separate
+private 128 MiB tmpfs mounts.
 
-The existing `sail-gateway` role now optionally selects a distinct instance by
-verified JWT subject **after** signature/issuer/audience validation and Cedar
-admission. Client UserContext and session IDs never select a destination in the
-implementation. S3's shared-backend mode remains when `SAIL_LIFECYCLE_HELPER` is
-unset. No new Rust crates, features or lockfile entries were added.
+On both CPUs a 805,306,368 B (768 MiB) allocation by an extra in-container process
+is killed with **exit 137**, and `memory.events.oom_kill` increases **0 → 1**.
+Docker records `OOMKilled=true` while the container remains `Running=true`.
+The allocation child was killed; a successful post-OOM Sail query was not checked,
+so application recovery after pressure is unverified. Four busy processes under
+the one-CPU quota increase `nr_throttled` **0 → 31 amd64 / 0 → 30 arm64**.
+This is real cgroup enforcement, not an authorization denial or a large-query SLA.
 
-![S5 proposed topology; authenticated path not runtime-qualified](../diagrams/s5-per-user-sail.svg)
+## Cost model and recommendation
 
-The host gateway invokes a trusted absolute-path supervisor with private stdin
-JSON. JWTs never enter helper argv or container environment. A per-user mutex
-coalesces startup; a stream lease prevents idle reaping while forwarding. The
-full fixture uses a 15-second idle timeout and one-second sweep. Neither its
-reaping behavior nor same-user startup coalescing has native runtime evidence yet.
+At N=20 after SELECT 42, charged Sail memory is **42.818 MiB/user amd64** and
+**42.051 MiB/user arm64**, plus the gateway and fixed shared platform services.
+That is the cost of these light warmed instances, not an analytical-user budget.
+The single analytical sequence reaches **231.898/153.840 MiB cgroup peak** and
+**206.734/216.121 MiB sampled PID RSS** on amd64/arm64.
 
-Sail listens on 127.0.0.1:50052 inside its own container network namespace. The
-host gateway enters via an unbuffered `docker exec` HTTP/2 pipe; no Sail ports are
-published. This simple per-RPC process transport adds overhead which still needs
-the blocked gateway latency measurement. The controller is a privileged Docker
-administrator; Sail receives no Docker socket, capabilities, host networking or
-host PID namespace. Production needs a narrowly scoped controller trust boundary.
+The earlier unchanged-Sail engine-only benchmark in run 44243517929 also remains
+in JSON as historical_engine_only: 20 concurrent million-row aggregates, no
+configured catalog/authenticated gateway, used **2,887.625/2,771.750 MiB** warmed
+cgroup memory (144.381/138.588 MiB per engine). It is a distinct workload/profile
+and is not relabeled as the current 20-user authentication test. It was not rerun
+unchanged under the CI-first policy.
 
-Only the instance's own read-only token directory/configuration and public CA
-are mounted. Host parent directories are root-owned 0700, token directories UID
-10001 mode 0500, and token files UID 10001 mode 0400. Atomic directory-mounted file
-replacement refreshes the same verified subject's JWT without exposing partial
-contents. The [pinned upstream catalog client](https://github.com/lakehq/sail/blob/ac4690078021cf2a5402dc5c7b38a886f1916c73/crates/sail-catalog-iceberg/src/provider.rs)
-resolves credentials per REST request; real-user refresh remains untested here.
-The host controller/root can read credentials by design. Container separation is
-not protection from a compromised host/kernel.
+Use `RAM ≈ fixed services + resident users × workload memory + burst/headroom`.
+Resident means retained through the idle window, not registered users or active
+RPCs. A conservative initial reservation is **512 MiB per resident user plus
+runtime/controller overhead**, reflecting the enforced cap: **20 caps alone total
+10 GiB**. The cap is an enforcement limit, not an OS reservation or proof all
+queries fit. For this particular analytical sample, multiplying the larger
+232 MiB observed profile peak by 20 gives about 4.53 GiB before fixed services
+and headroom; that extrapolation is not a concurrent-workload capacity guarantee.
+If RAM costs P per GiB-hour, the linear user component is
+`P × resident_users × per_user_MiB / 1024` per hour, plus fixed services/headroom.
 
-A crashed instance is removed with its token directory before a new random
-instance is created. The full harness intentionally reuses one session ID for
-Alice and Bob, forges UserContext, verifies distinct namespace rows, cross-user
-and write denials, new-table inheritance, then single-table/sibling isolation.
-It also checks missing/denied credentials create no engine, concurrent same-user
-startup, private mounts/tmpfs, peer TCP refusal, temp-view separation after a
-crash, idle cleanup and the unchanged paced million-row stream beyond idle TTL.
-These assertions are implemented but **BLOCKED, not passed**.
+Keep per-team as the owner's MVP default. The measured subsecond starts, modest
+incremental warm latency and bounded memory support per-user pools for sensitive
+groups as a **hybrid target after platform qualification**. Configure aggregate
+admission and pressure control before scaling: per-instance caps alone do not
+prevent host exhaustion. Per-user mode is opt-in per deployment here; automatic
+mixed per-team/per-group routing is not implemented.
 
-## Memory cost model and recommendation
+## Implemented topology and remaining limits
 
-At 20 warmed engines, charged memory averaged **144.381 MiB/engine on amd64** and
-**138.588 MiB/engine on arm64**. Summed PID RSS averaged **219.237/201.999 MiB**.
-The largest individual cgroup peak across the measured fleets was
-**160.664/157.570 MiB**. A fresh TCP-ready engine's small footprint is therefore
-not the appropriate active-user budget: residency grows after execution.
+Upstream [PR #2929](https://github.com/lakehq/sail/pull/2929) recommended separate
+lightweight servers for clients needing different catalogs. S3 found the pinned
+session manager looks up sessions by ID without checking user ownership.
+The same `sail-gateway` role now selects a process by verified subject **after**
+JWT validation and Cedar admission. When `SAIL_LIFECYCLE_HELPER` is unset it keeps
+S3's shared-backend behavior; that mode retains its session-ownership limitation.
 
-For this workload and cache state, a first approximation is
-`RAM ≈ fixed shared overhead + live warmed users × 145 MiB + query/burst headroom`.
-This is a workload-specific estimate, not a production sizing guarantee. The
-512 MiB per-instance cap gives a conservative reservation of
-`fixed overhead + live users × 512 MiB + runtime/controller overhead`:
-**20 instance caps alone total 10 GiB**. A cap is an enforcement limit, not an OS
-reservation or proof every query fits. Aggregate admission/pressure control is
-still required; independent caps cannot prevent host exhaustion.
+![S5 topology: native feasibility controls pass; full platform remains red](../diagrams/s5-per-user-sail.svg)
 
-If RAM costs P per GiB-hour, the linear component is
-`P × live_users × per_user_MiB / 1024` per hour, plus fixed services/headroom.
-Live means a resident engine retained through the idle window, not a registered
-user or an active RPC count. The 15-second fixture TTL is not a recommended
-production timeout. CPU sharing, cache duplication, cold-start bursts, realistic
-storage queries and post-OOM behavior need separate capacity qualification.
+The supervisor is a trusted absolute-path host helper and Docker administrator.
+An unbuffered per-RPC Docker-exec pipe enters only the selected instance's private
+loopback namespace. Its process/inspection overhead is part of the measured
+latency. No new Rust crate, feature, Cargo.lock version or upstream patch was
+needed. This spike controller needs a narrower production privilege boundary.
 
-**Recommendation: retain per-team for the MVP; pursue hybrid after unblocking
-S5.** Per-user engines look affordable for a bounded sensitive-user pool on memory
-alone, but do not enable them as a qualified enforcement boundary yet. First
-complete the genuine Rauthy/gateway/Lakekeeper controls and scope storage access.
-The inherited STS-disabled fixture supplies shared static S3 credentials; an
-admitted direct-path plan can bypass catalog grants. Process separation closes
-neither that storage bypass nor all plan-level authorization gaps by itself.
+Remaining limits: shared static S3 keys/direct paths bypass catalog grants;
+C3 membership revocation, C7 recovery and C8 durability remain red; admitted
+streams/cached metadata/storage handles have separate revocation semantics.
+Idle expiry/crash loses sessions and temporary state. Controller death mid-helper
+can leave orphans until reconciliation; host restart scavenging, distributed/HA
+ownership, cancellation races and aggregate startup admission are absent.
+Graceful drain, post-OOM query recovery, arbitrary Spark compatibility, large
+joins/spills, 20 concurrent catalog scans, sustained load and production sizing
+are unverified. The 15-second fixture TTL is not a production recommendation.
 
-## Unverified controls, failures and validation
+## Unchanged S3 and C1–C8 regression results
 
-| Requested control | amd64 | arm64 |
+All 14 S3 controls pass on each CPU, including valid human/machine tokens,
+missing/expired/wrong-audience/wrong-key/denied-token rejection, revocation on a
+fresh RPC, verified TLS, backend isolation, and the unchanged paced stream with
+result-connection PING/ACK progress under backpressure.
+
+| Case | amd64 | arm64 |
 | --- | --- | --- |
-| Single Sail start/RSS/query/forced stop | Measured | Measured |
-| N=1/5/20 engines with concurrent aggregate queries | Measured; 0/0 failures | Measured; 0/0 failures |
-| Memory/CPU cap enforcement and final synthetic-file cleanup | Measured | Measured |
-| Authenticated start/reuse, first/later gateway extra latency | BLOCKED | BLOCKED |
-| Actual N=1/5/20 authenticated users | BLOCKED | BLOCKED |
-| Per-user Lakekeeper C1/C2, forged/same-session-ID routing | BLOCKED | BLOCKED |
-| Full-profile peer isolation, actual JWT permissions/refresh | BLOCKED | BLOCKED |
-| Idle reap, crash/reuse, foreign temp view, active stream lease | BLOCKED | BLOCKED |
-| Graceful stop, post-OOM query recovery, host/controller restart/HA | Unverified | Unverified |
+| C1 | PASS | PASS |
+| C2 | PASS | PASS |
+| C3 | FAIL | FAIL |
+| C4 | PASS | PASS |
+| C5 | PASS | PASS |
+| C6 | PASS | PASS |
+| C7 | FAIL | FAIL |
+| C8 | FAIL | FAIL |
 
-Failure modes: idle expiry/crash destroys session state and temp views; retries
-need explicit reconnect semantics. A controller crash mid-helper can orphan
-containers/credentials until reconciliation. Distributed ownership, restart
-scavenging, cancellation races and aggregate startup admission are absent.
-Token refresh requires new authenticated RPCs; already admitted streams and
-cached metadata/storage handles have distinct revocation semantics. Shared
-storage credentials, full plan/path authorization, HA and sustained/heavy-query
-capacity remain gaps.
+C5 passes PyIceberg, Trino and Sail on each CPU. **C3 direct-claim adaptation is
+unchanged**: unmapped groups deny, explicit group-to-resource mapping permits,
+and removing that mapping denies the old token. The original IdP-membership
+removal assertion is also retained and FAILS because the unexpired JWT still
+contains the group. The three direct-claim subchecks never substitute for that
+assertion. C7 fails the post-restart recovery wait; C8 fails exact durable
+relationship/grant-state preservation. Between-case fixture resets remain outside
+assertions. Repeated durable migrations remain unverified.
 
-The complete workspace tests and both binaries passed native compilation/tests
-on both CPUs. Local changed-package tests/Clippy, formatting, Python compilation,
-YAML/SVG parsing, LF and diff checks pass. The dependency guard confirms all 690
-locked package identities are unchanged; Cargo.lock has zero diff from S3.
-S1/S3 assertions were retained, but their runtime re-execution in this run was
-blocked before fixture startup. Historical S1 C3/C7/C8 failures remain unresolved.
-The [actual audit log](https://github.com/datopsis/datopsis-authz/actions/runs/44243517929/job/134596809095)
-retains three vulnerabilities (libsqlite3-sys / RUSTSEC-2026-0459; quick-xml /
-RUSTSEC-2026-0194 and RUSTSEC-2026-0195), plus six warnings. No suppression,
-continue-on-error audit bypass or GitHub settings/permissions/secrets change.
+The [actual lint log](https://github.com/datopsis/datopsis-authz/actions/runs/44815134976/job/136561381940)
+retains three inherited vulnerabilities: libsqlite3-sys / RUSTSEC-2026-0459,
+quick-xml / RUSTSEC-2026-0194 and RUSTSEC-2026-0195, plus six warnings.
+Native jobs and the required test aggregate therefore remain **FAIL**, even
+though all bounded S5 and S3 assertions pass. No gate was weakened or suppressed.
 
-Earlier run 44240967339 established the same native acquisition blocker; run
-44242223299 measured independent ready-only fleet memory. The authoritative run
-above adds concurrent aggregate queries to measure warmed fleets. Earlier
-build-only runs were superseded/cancelled, not accepted as runtime passes. The
-final evidence/documentation follow-up changes no tested runtime code.
+Native workspace compilation/unit tests, YAML validation, formatting and the
+690-package lock guard ran in the existing Actions jobs. Local work for this
+update was limited to source edits, Python syntax/LF/diff checks and reading CI
+logs/artifacts. Cargo.lock and workflow/required checks are unchanged. No secrets,
+raw credential artifacts, GitHub settings/secrets/permissions changes, force push,
+merge, sign-off or coauthor trailer.
+
+## Historical acquisition failure
+
+The earlier 1e114b8 Rauthy pin rejected rotated FIDO metadata before authenticated
+testing. [Historical acquisition evidence](S5-rauthy-acquisition.json) retains
+that failure and its hashes; it is **resolved for testing by the coordinator's
+01375ef pin**, not an active blocker or a bypass of verification. Earlier
+engine-only results remain labeled as such. The current native run supersedes
+the old BLOCKED S5 verdict; historical S1/S3 reports retain their original inputs.

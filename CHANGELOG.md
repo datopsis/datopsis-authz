@@ -10,3 +10,6 @@
 - Add the S5 opt-in per-user Sail lifecycle experiment, private token mounts and
   resource caps. Record native engine startup/warmed-fleet costs; authenticated
   lifecycle/isolation remains blocked by the pinned Rauthy FIDO metadata input.
+- Record authenticated S5/S3 passes on both native architectures using the
+  coordinator-approved Rauthy 01375ef testing pin; preserve C3/C7/C8 and audit
+  failures, actual first/warm latency, per-user grants, lifecycle and scale data.
