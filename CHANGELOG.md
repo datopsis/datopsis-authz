@@ -2,6 +2,8 @@
 
 ## Catalog MVP slice 1 (unreleased)
 
+- Bound FIDO publisher HTTP 429 retries and reuse each CI job's exact verified feed bytes; retain the owner's hash, signature/path/serial/date and fresh-CRL verification.
+
 - Repin Rauthy to coordinator-approved unmerged PR #3 commit 01375efb2a14692a7977f2f8aa60121f3fcc2f01 (verified FIDO serial 302); retain its red SvelteKit gate disclosure.
 - Repin the catalog PostgreSQL fixture to merged 18.7 commit 1054729c5fa934e2a801a36d81a8b2b264aa8829 without editing the external harness; retain all checksum and provenance guards.
 

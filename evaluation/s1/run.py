@@ -41,7 +41,17 @@ elif sys.argv[1:] == ['build']:
     sys.path.insert(0, str(SOURCE/'integration'))
     import build as owner
     owner.PINS['postgresql-lakekeeper-ubi'] = INPUTS['postgresql-lakekeeper-ubi']['revision']
-    module.build()
+    from fixture_inputs import seed_rauthy_feed
+    from unittest.mock import patch
+    original_run = rauthy.run
+    def invoke_rauthy(*args, **kwargs):
+        if args[:2] == ('bash', 'scripts/build.sh'):
+            seed_rauthy_feed(kwargs['cwd'], ROOT/'.sources/fixture-inputs/fido-mds.jwt', arch)
+        return original_run(*args, **kwargs)
+    # Reuse only generated, checksum-verified input. No owner source is edited;
+    # its original checksum, authenticated-feed and provenance checks still run.
+    with patch.object(rauthy, 'run', invoke_rauthy):
+        module.build()
     # Additional extension-free relationship-store image, with strict provenance.
     revision = INPUTS['postgresql-ubi']['revision']
     source = ROOT/'.sources/postgresql-ubi'
