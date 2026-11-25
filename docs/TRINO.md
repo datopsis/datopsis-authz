@@ -108,10 +108,16 @@ audits. Runtime evidence belongs in the PR and sanitized Actions artifacts. The
 [current evaluation record](evals/2026-11-25-trino.md) records blocked cases explicitly.
 No local image builds, artifact acquisition, scans or runtime tests are permitted.
 
-Until the coordinator supplies the child trino-ubi commit, CI temporarily uses
-`685ff5bca0037d38e3c2e2ed47a60f2540dad7c2` plus the official 484 OPA ZIP,
-SHA-256 `f8627b3f2da8950e8209ddcf8fd436cc0e536459dd438c81261593ab8310dc24`.
-The CI helper verifies its size, safe layout and all 62 JAR hashes. This temporary
-layer is not qualification of a hardened release image. Replace it with the
-coordinator-approved immutable owner commit when available. No new Cargo crate
-or version is needed. The inherited quick-xml lint failure remains unsuppressed.
+CI builds the coordinator-approved unmerged [trino-ubi PR #8](https://github.com/datopsis/trino-ubi/pull/8)
+commit `9343071e44fc58e4848c6e6b66ae1403a394d17f` directly through the pinned owner
+fixture builder. It contains Iceberg and OPA 484; OPA remains opt-in through the
+configuration above. No derived plugin layer or separate plugin acquisition is
+used. The same immutable revision is recorded in fixture inputs and S2 results;
+the owner builder retains native architecture, source and artifact-lock checks.
+This is an approved test pin, not release-image qualification: the unmerged
+combined image remains red on known Iceberg JAR CVEs. The referenced PR can move;
+CI uses only the approved full commit. Rauthy remains blocked pending the
+coordinator's replacement pin for the verified in-repository serial-303 FIDO copy.
+Do not work around the existing Rauthy checksum or authenticated-feed guards.
+No new Cargo crate or version is needed. The inherited quick-xml lint failure
+remains unsuppressed.

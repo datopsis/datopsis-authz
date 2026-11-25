@@ -9,5 +9,10 @@
   },
   "postgresql-lakekeeper-ubi": {
     "revision": "1054729c5fa934e2a801a36d81a8b2b264aa8829"
+  },
+  "trino-ubi": {
+    "revision": "9343071e44fc58e4848c6e6b66ae1403a394d17f",
+    "source_pr": "https://github.com/datopsis/trino-ubi/pull/8",
+    "status": "Coordinator-approved unmerged Iceberg + opt-in OPA test pin; known Iceberg JAR CVEs keep the image security gate RED; not release-qualified"
   }
 }

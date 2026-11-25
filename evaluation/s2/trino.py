@@ -51,7 +51,7 @@ def start(catalog, key, users, mode):
             run('sudo', 'chmod', '0400', path)
         else:
             path.chmod(0o755)
-    container('trino', 'localhost/trino-opa:s2', env={
+    container('trino', 'localhost/trino-ubi:integration', env={
         'S3_ACCESS_KEY_ID':catalog.storage.access, 'S3_SECRET_ACCESS_KEY':catalog.storage.password,
         'IDP_CLIENT_SECRET':catalog.provider.client_secret,
     }, mounts=[(directory, '/etc/trino')], extra=[

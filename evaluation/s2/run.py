@@ -25,7 +25,7 @@ rauthy.REVISION = INPUTS['rauthy-ubi']['revision']
 
 CASES = ('S2.1', 'S2.2', 'S2.3', 'S2.4', 'S2.5', 'S2.single', 'S2.groups', 'S2.audit', 'S2.durable', 'S2.credentials')
 results = {'run': {'architecture':os.environ['INTEGRATION_ARCH'], 'uname':platform.machine(), 'url':os.environ['RUN_URL'],
-    'source':os.environ.get('GITHUB_SHA'), 'fixture':PIN, 'trino_ubi':'685ff5bca0037d38e3c2e2ed47a60f2540dad7c2'}}
+    'source':os.environ.get('GITHUB_SHA'), 'fixture':PIN, 'trino_ubi':INPUTS['trino-ubi']['revision'], 'trino_input':INPUTS['trino-ubi']}}
 results.update({case:{'status':'blocked','reason':'Fixture prerequisites have not completed'} for case in CASES})
 
 def record(name, fn, required=False):

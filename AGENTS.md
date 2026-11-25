@@ -9,6 +9,9 @@ Pin external repositories by full commit; do not modify them. Lakekeeper source:
 e8379a528bf413c05aad49e56bc8cd507b5e077a. Rauthy:
 01375efb2a14692a7977f2f8aa60121f3fcc2f01 (coordinator-approved unmerged PR #3 test pin).
 
+Trino image: 9343071e44fc58e4848c6e6b66ae1403a394d17f (coordinator-approved
+unmerged PR #8 test pin; Iceberg JAR CVE gate remains RED; OPA opt-in).
+
 Fail closed. Do not weaken C1-C8. Explicitly document C3's direct-claim adaptation.
 Blocked prerequisites never pass. No secrets or raw credential artifacts. No
 GitHub settings changes, force pushes, merges, sign-offs or coauthor trailers.

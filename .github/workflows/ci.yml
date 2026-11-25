@@ -106,8 +106,6 @@ jobs:
           docker run --rm localhost/lakekeeper-datopsis:s1 version
           docker run --rm localhost/authz-serve:s1 policy
       - run: python3 scripts/image-evidence.py
-      - name: Temporary checksum-pinned official 484 OPA layer over trino-ubi 685ff5b
-        run: python3 scripts/trino-opa-image.py
       - name: Trino scalar, batch, row, mask, parity, revocation, audit and outage assertions
         id: s2
         run: .venv/bin/python evaluation/s2/run.py

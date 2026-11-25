@@ -40,6 +40,7 @@ elif sys.argv[1:] == ['build']:
     common.OUT = ROOT/'reports/s1'
     sys.path.insert(0, str(SOURCE/'integration'))
     import build as owner
+    owner.PINS['trino-ubi'] = INPUTS['trino-ubi']['revision']
     owner.PINS['postgresql-lakekeeper-ubi'] = INPUTS['postgresql-lakekeeper-ubi']['revision']
     from fixture_inputs import seed_rauthy_feed
     from unittest.mock import patch

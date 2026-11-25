@@ -1,6 +1,9 @@
 > Historical feasibility evidence. Production slice 2 is implemented separately on
 > top of catalog slice 1; see [production protocol, semantics and limits](../TRINO.md).
 > The volatile-store and audit gaps below describe the spike, not the current serve role.
+> Production CI now uses approved trino-ubi commit
+> `9343071e44fc58e4848c6e6b66ae1403a394d17f` directly (unmerged PR #8; Iceberg CVE gate red).
+> The temporary layer described below is historical only.
 > Native MVP results must be taken from the slice-2 PR, not these earlier runs.
 
 # S2: Trino 484 OPA enforcement backed by Cedar
