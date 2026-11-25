@@ -197,9 +197,23 @@ def evaluate():
         'mask_rows':rows(user,'SELECT id, sensitive FROM iceberg.s2.allowed ORDER BY id',[[1,None],[3,None]]),
         'denied':deny(user,'SELECT * FROM iceberg.s2.denied')})
     def audit():
+        from urllib.parse import urlsplit, unquote
+        from common import write
+        # Credentials stay in a protected env file, never psql's argument list.
+        database = urlsplit(run('sudo','cat',WORK/'cedar-db-url').strip())
+        pg_env = {'PGHOST':database.hostname,'PGPORT':str(database.port or 5432),
+            'PGDATABASE':unquote(database.path.lstrip('/')),'PGUSER':unquote(database.username),
+            'PGPASSWORD':unquote(database.password),'PGSSLMODE':'verify-full','PGSSLROOTCERT':'/ca/ca.pem'}
+        write(WORK/'audit.env','\n'.join(k+'='+v for k,v in pg_env.items())+'\n')
         query = "SELECT json_build_object('wire',count(*) FILTER (WHERE action LIKE 'trino:%'), 'cedar',count(*) FILTER (WHERE reason LIKE 'trino_cedar_%'), 'denied',count(*) FILTER (WHERE NOT decision AND action LIKE 'trino:%'), 'missing_results',count(*) FILTER (WHERE action LIKE 'trino:%' AND result IS NULL), 'routes',array_agg(DISTINCT split_part(action, ':', 2)) FILTER (WHERE action LIKE 'trino:%')) FROM authz_audit"
-        command = 'export PGSSLROOTCERT=/ca/ca.pem; psql "$(cat /run/cedar-db-url)" -At -c "'+query+'"'
-        data = json.loads(run('docker','run','--rm','--network','container:fga-postgres','-v',f'{WORK/"cedar-db-url"}:/run/cedar-db-url:ro','-v',f'{catalog.provider.ca}:/ca/ca.pem:ro','localhost/postgresql-ubi:integration','bash','-c',command))
+        # Compare the persisted row and scalar mask expressions, not just log counts.
+        row_result = json.dumps({'result':[{'expression':'"region" = \'eu\''}]}).replace("'", "''")
+        mask_result = json.dumps({'result':{'expression':'NULL'}})
+        query = query.replace("'routes',", "'exact_row',bool_or(result = '"+row_result+"'::jsonb), 'exact_mask',bool_or(result = '"+mask_result+"'::jsonb), 'routes',")
+        data = json.loads(run('docker','run','--rm','-i','--network','container:fga-postgres',
+            '--env-file',WORK/'audit.env','-v',f'{catalog.provider.ca}:/ca/ca.pem:ro',
+            'localhost/postgresql-ubi:integration','psql','-XAt','-f','-',input=query+';\n'))
+        assert data['exact_row'] is True and data['exact_mask'] is True, data
         assert data['wire'] > 0 and data['cedar'] > 0 and data['denied'] > 0, data
         assert data['missing_results'] == 0, data
         assert sorted(data['routes']) == ['allow','batch','batch_masks','mask','rows'], data

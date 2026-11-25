@@ -141,7 +141,7 @@ fn allowed(store: &Evaluation<'_>, input: &Input, resource: &Value) -> Result<bo
         return Ok(false);
     };
     for (name, b) in &store.trino {
-        let parts: Vec<String> =
+        let parts: [String; 3] =
             serde_json::from_str(name).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
         if parts[0] == catalog
             && schema.is_none_or(|s| s == parts[1])

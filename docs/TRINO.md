@@ -104,7 +104,8 @@ CI retains C1–C8, job names `lint` and `test`, and native amd64/arm64 executio
 S2 assertions cover exact SELECT/SHOW/metadata rows, row restrictions, NULL masks
 and owner exceptions, table parity, shared grant and live-group revocation within
 five seconds, engine outage, restart durability, credential separation and durable
-audits. Runtime evidence belongs in the PR and sanitized Actions artifacts.
+audits. Runtime evidence belongs in the PR and sanitized Actions artifacts. The
+[current evaluation record](evals/2026-11-25-trino.md) records blocked cases explicitly.
 No local image builds, artifact acquisition, scans or runtime tests are permitted.
 
 Until the coordinator supplies the child trino-ubi commit, CI temporarily uses

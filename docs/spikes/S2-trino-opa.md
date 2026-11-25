@@ -39,8 +39,8 @@ results, Cedar wire logs and scalar Trino startup logs were read on both CPUs.
 Trino reported version **484**, loaded system access control **opa**, and passed
 verified TLS controls. No QEMU; runners were ubuntu-24.04 and ubuntu-24.04-arm.
 
-Durable sanitized evidence: [amd64](S2-results-amd64.json) and
-[arm64](S2-results-arm64.json). These retain exact rows/denials, principal/UUID
+Durable sanitized evidence: [amd64](https://github.com/datopsis/datopsis-authz/blob/73d2dd9528c5956da2a5e1399ad5f77ed565f7e0/docs/spikes/S2-results-amd64.json) and
+[arm64](https://github.com/datopsis/datopsis-authz/blob/73d2dd9528c5956da2a5e1399ad5f77ed565f7e0/docs/spikes/S2-results-arm64.json). These retain exact rows/denials, principal/UUID
 parity, native input revisions, base/derived image IDs, ZIP/JAR hashes, labels,
 platform binary/library hashes and the unchanged C-suite outcomes. Full sanitized
 service artifacts remain in the run for 14 days. The final evidence-only commit
@@ -93,7 +93,7 @@ this spike does not establish backend or production acceptance.
   (`484` tag resolves to `e2d50bb733e193607c44be84ad80ce2430ba1d01`).
 - S1 pins Lakekeeper `9bd377162345b64a716f0a4fcffe4e7e7f3c7534` and Cedar 4.14.1.
 
-Source hashes and immutable URLs are retained in [S2-source-inventory.json](S2-source-inventory.json).
+Source hashes and immutable URLs are retained in [S2-source-inventory.json](https://github.com/datopsis/datopsis-authz/blob/73d2dd9528c5956da2a5e1399ad5f77ed565f7e0/docs/spikes/S2-source-inventory.json).
 
 ## Supported wire features (source evidence, runtime qualification above)
 
