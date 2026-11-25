@@ -118,8 +118,8 @@ jobs:
         if: always()
         run: |
           if test -x .venv/bin/python; then
-            .venv/bin/python evaluation/s2/run.py cleanup
             .venv/bin/python evaluation/s1/run.py cleanup
+            .venv/bin/python evaluation/s2/run.py cleanup
           fi
       - name: Retain sanitized evidence
         if: always()

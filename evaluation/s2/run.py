@@ -190,7 +190,8 @@ def evaluate():
             run('docker','network','connect','authz-backend','trino')
             rows(user,'SELECT id FROM iceberg.s2.allowed ORDER BY id',[[1],[3]])
     record('S2.5',outage)
-    save('trino-batch.log.json', {'log':run('docker','logs','trino')})
+    batch_log = subprocess.run(['docker','logs','trino'],capture_output=True,text=True,check=True)
+    save('trino-batch.log.json', {'log':batch_log.stdout+batch_log.stderr})
     run('docker','rm','-f','trino')
     sql, tls = start(catalog,trino_key,users,'single')
     record('S2.single',lambda:{'tables':rows(user,'SHOW TABLES FROM iceberg.s2',[['allowed']]),
