@@ -31,6 +31,9 @@ impl Database {
         sqlx::raw_sql(include_str!("../../../migrations/0001_catalog.sql"))
             .execute(&mut *tx)
             .await?;
+        sqlx::raw_sql(include_str!("../../../migrations/0002_trino.sql"))
+            .execute(&mut *tx)
+            .await?;
         tx.commit().await?;
         Ok(())
     }
@@ -72,9 +75,18 @@ impl Database {
         verdict: &Verdict,
         reason: &str,
     ) -> anyhow::Result<()> {
-        sqlx::query("INSERT INTO authz_audit(principal,action,resource,decision,policy_ids,reason) VALUES ($1,$2,$3,$4,$5,$6)")
+        Self::audit_result(tx, check, verdict, reason, None).await
+    }
+    pub async fn audit_result(
+        tx: &mut Transaction<'_, Postgres>,
+        check: &Check,
+        verdict: &Verdict,
+        reason: &str,
+        result: Option<&serde_json::Value>,
+    ) -> anyhow::Result<()> {
+        sqlx::query("INSERT INTO authz_audit(principal,action,resource,decision,policy_ids,reason,result) VALUES ($1,$2,$3,$4,$5,$6,$7)")
             .bind(&check.principal).bind(&check.action).bind(Json(&check.resource))
-            .bind(verdict.allowed).bind(Json(&verdict.policies)).bind(reason)
+            .bind(verdict.allowed).bind(Json(&verdict.policies)).bind(reason).bind(result.map(Json))
             .execute(&mut **tx).await?;
         Ok(())
     }

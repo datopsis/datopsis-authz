@@ -1,9 +1,9 @@
-# Catalog MVP architecture (slice 1)
+# Catalog and Trino MVP architecture (slices 1–2)
 
 Owner go: 2026-11-17. One platform program with roles, Cedar library, Apache-2.0,
 and a thin adapter compiled into Lakekeeper. This slice implements `serve`,
-repeatable database migration and schema validation only. Epochs, Trino's OPA
-endpoint, Sail gateway, token broker and hardened images are deferred.
+repeatable database migration, schema validation and [Trino OPA enforcement](TRINO.md).
+Epochs, Sail gateway, token broker and hardened images are deferred.
 
 ![As built](diagrams/authz-architecture.svg)
 

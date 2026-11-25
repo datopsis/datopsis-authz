@@ -116,6 +116,9 @@ def setup(arch, record):
     record('rauthy',lambda:provider.start(arch),required=True)
     key = secret()
     write(WORK/'cedar-key',key)
+    write(WORK/'trino-key',secret())
+    run('sudo','chown','root:root',WORK/'trino-key')
+    run('sudo','chmod','0440',WORK/'trino-key')
     run('sudo','chown','root:root',WORK/'cedar-key')
     run('sudo','chmod','0440',WORK/'cedar-key')
     run('docker','network','create','--internal','slice1-idp')
@@ -129,10 +132,10 @@ def setup(arch, record):
     tls = leaf('cedar')
     container('cedar','localhost/authz-serve:s1',['serve'],env={
         'AUTHZ_TLS_CERT':'/tls/cert.pem','AUTHZ_TLS_KEY':'/tls/key.pem','AUTHZ_KEY_FILE':'/run/cedar-key',
-        'AUTHZ_DATABASE_URL_FILE':'/run/cedar-db-url','AUTHZ_DATABASE_CA_FILE':'/ca/ca.pem',
+        'AUTHZ_TRINO_KEY_FILE':'/run/trino-key','AUTHZ_DATABASE_URL_FILE':'/run/cedar-db-url','AUTHZ_DATABASE_CA_FILE':'/ca/ca.pem',
         'AUTHZ_RAUTHY_USERS_URL':provider.base+'/auth/v1/users','AUTHZ_RAUTHY_CA_FILE':'/ca/ca.pem',
         'AUTHZ_RAUTHY_KEY_FILE':'/run/rauthy-reader','AUTHZ_MACHINE_PRINCIPALS':'oidc~operator,oidc~lakekeeper,oidc~expiry'},
-        mounts=[(tls,'/tls'),(WORK/'cedar-key','/run/cedar-key'),(WORK/'rauthy-reader','/run/rauthy-reader'),
+        mounts=[(WORK/'trino-key','/run/trino-key'),(tls,'/tls'),(WORK/'cedar-key','/run/cedar-key'),(WORK/'rauthy-reader','/run/rauthy-reader'),
                 (WORK/'cedar-db-url','/run/cedar-db-url'),(ca,'/ca/ca.pem')],network='container:fga-postgres')
     address = backend_address()
     run('sudo','tee','/etc/hosts',input=Path('/etc/hosts').read_text()+f'{address} cedar # idp-bakeoff\n')

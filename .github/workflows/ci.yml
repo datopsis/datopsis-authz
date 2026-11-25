@@ -1,4 +1,4 @@
-name: Catalog MVP
+name: Catalog and Trino MVP
 on:
   pull_request:
   push:
@@ -48,7 +48,7 @@ jobs:
           test "$(uname -m)" = "$EXPECTED_MACHINE"
           df -h
           sudo apt-get update -qq
-          sudo apt-get install -y protobuf-compiler libssl-dev pkg-config postgresql
+          sudo apt-get install -y protobuf-compiler libssl-dev pkg-config postgresql apache2-utils
       - name: Pinned acceptance fixture and blocked-result initialization
         run: |
           git clone https://github.com/datopsis/lakehouse-integration .sources/lakehouse-integration
@@ -57,6 +57,7 @@ jobs:
           .venv/bin/pip install --require-hashes -r .sources/lakehouse-integration/requirements.txt
           echo "RUN_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_ENV"
       - run: .venv/bin/python evaluation/s1/run.py initialize
+      - run: .venv/bin/python evaluation/s2/run.py initialize
       - name: Fixture unit checks
         run: python3 -m unittest discover -s evaluation/s1 -p 'test_*.py'
       - name: Verify immutable fixture inputs before compilation
@@ -105,18 +106,29 @@ jobs:
           docker run --rm localhost/lakekeeper-datopsis:s1 version
           docker run --rm localhost/authz-serve:s1 policy
       - run: python3 scripts/image-evidence.py
+      - name: Temporary checksum-pinned official 484 OPA layer over trino-ubi 685ff5b
+        run: python3 scripts/trino-opa-image.py
+      - name: Trino scalar, batch, row, mask, parity, revocation, audit and outage assertions
+        id: s2
+        run: .venv/bin/python evaluation/s2/run.py
       - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
+        if: ${{ !cancelled() && steps.s2.outcome != 'skipped' }}
         run: .venv/bin/python evaluation/s1/run.py
       - name: Cleanup and sanitize evidence
         if: always()
         run: |
-          if test -x .venv/bin/python; then .venv/bin/python evaluation/s1/run.py cleanup; fi
+          if test -x .venv/bin/python; then
+            .venv/bin/python evaluation/s2/run.py cleanup
+            .venv/bin/python evaluation/s1/run.py cleanup
+          fi
       - name: Retain sanitized evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: s1-${{ matrix.runner }}-${{ github.run_id }}
-          path: reports/s1/
+          path: |
+            reports/s1/
+            reports/s2/
           if-no-files-found: error
           retention-days: 14
 

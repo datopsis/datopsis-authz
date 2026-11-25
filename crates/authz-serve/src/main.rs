@@ -1,4 +1,5 @@
 mod database;
+mod opa;
 use authz_core::{Check, Mutation, Store, Verdict};
 use axum::{
     Json, Router,
@@ -141,6 +142,7 @@ mod membership_tests {
 #[derive(Clone)]
 struct App {
     key: String,
+    trino_key: Option<String>,
     live: Live,
     db: Database,
 }
@@ -369,13 +371,26 @@ async fn main() -> anyhow::Result<()> {
             limit: Arc::new(tokio::sync::Semaphore::new(16)),
         }
     };
+    let trino_key = std::env::var("AUTHZ_TRINO_KEY_FILE")
+        .ok()
+        .map(std::fs::read_to_string)
+        .transpose()?
+        .map(|s| s.trim().to_owned());
+    if let Some(ref trino_key) = trino_key {
+        anyhow::ensure!(
+            trino_key.len() >= 32 && trino_key != &key,
+            "Trino needs a separate decision-only credential of at least 32 characters"
+        );
+    }
     let app = App {
+        trino_key,
         key,
         live,
         db: Database::from_env().await?,
     };
     let router = Router::new()
         .route("/decide", post(decide))
+        .route("/opa/{endpoint}", post(opa::handle))
         .route("/permissions", post(permissions))
         .route("/mutate", post(mutate))
         .route("/snapshot", post(snapshot))

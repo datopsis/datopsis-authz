@@ -58,10 +58,30 @@ pub struct Grant {
 pub struct Store {
     pub parents: BTreeMap<String, (Resource, Option<Resource>)>,
     pub grants: Vec<Grant>,
+    /// Durable SQL-name bindings and bounded obligations; trusted administration only.
+    #[serde(default)]
+    pub trino: BTreeMap<String, TrinoBinding>,
+    #[serde(default)]
+    pub regions: BTreeMap<String, String>,
 }
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TrinoBinding {
+    pub resource: Resource,
+    pub region_column: Option<String>,
+    pub sensitive_column: Option<String>,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum Mutation {
+    BindTrino {
+        name: Vec<String>,
+        binding: TrinoBinding,
+    },
+    SetRegion {
+        principal: String,
+        region: String,
+    },
     Put {
         resource: Resource,
         parent: Option<Resource>,
@@ -78,6 +98,31 @@ pub enum Mutation {
 impl Store {
     pub fn mutate(&mut self, mutation: Mutation) -> Result<()> {
         match mutation {
+            Mutation::BindTrino { name, binding } => {
+                anyhow::ensure!(
+                    name.len() == 3
+                        && name.iter().all(|s| !s.is_empty())
+                        && binding.resource.kind == "Table"
+                        && self.parents.contains_key(&binding.resource.key()),
+                    "invalid binding"
+                );
+                anyhow::ensure!(
+                    [&binding.region_column, &binding.sensitive_column]
+                        .iter()
+                        .all(|s| s
+                            .as_ref()
+                            .is_none_or(|s| !s.is_empty() && !s.contains('\0'))),
+                    "invalid column"
+                );
+                self.trino.insert(serde_json::to_string(&name)?, binding);
+            }
+            Mutation::SetRegion { principal, region } => {
+                anyhow::ensure!(
+                    !principal.is_empty() && !region.contains('\0'),
+                    "invalid region"
+                );
+                self.regions.insert(principal, region);
+            }
             Mutation::Put {
                 resource,
                 parent,
@@ -102,6 +147,10 @@ impl Store {
                 {
                     bail!("hierarchy cycle");
                 }
+                // Detach/rename invalidates SQL names. Rebinding is explicit and fail closed.
+                if parent.is_none() {
+                    self.trino.retain(|_, b| b.resource != resource);
+                }
                 self.parents
                     .insert(resource.key(), (resource.clone(), parent));
                 if let Some(id) = owner {
@@ -116,6 +165,7 @@ impl Store {
                 }
             }
             Mutation::Delete { resource } => {
+                self.trino.retain(|_, b| b.resource != resource);
                 self.parents.remove(&resource.key());
                 self.grants
                     .retain(|g| g.resource != resource && g.subject != resource);
@@ -138,7 +188,9 @@ impl Store {
                     .contains(&grant.resource.kind.as_str()),
                     "unsupported resource"
                 );
-                if !["owner", "select"].contains(&grant.access.as_str()) {
+                if !["owner", "select", "unmask", "unrestricted_rows"]
+                    .contains(&grant.access.as_str())
+                {
                     bail!("unsupported grant");
                 }
                 if remove {
@@ -188,6 +240,10 @@ impl Store {
             let upward = discover && self.ancestors(&g.resource).contains(&check.resource);
             let actions = if g.access == "owner" {
                 "true"
+            } else if g.access == "unmask" {
+                "context.operation == \"unmask\""
+            } else if g.access == "unrestricted_rows" {
+                "context.operation == \"unrestricted_rows\""
             } else {
                 "[\"read_data\", \"get_metadata\", \"list_tables\", \"list_views\", \"list_namespaces\", \"include_in_list\", \"use\", \"get_config\"].contains(context.operation)"
             };
@@ -235,6 +291,63 @@ pub fn validate_schema() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn durable_bindings_detach_and_exception_grants() -> Result<()> {
+        // An existing slice-1 graph remains readable without new fields.
+        let mut store: Store = serde_json::from_value(json!({"parents":{},"grants":[]}))?;
+        let table = Resource::new("Table", "one");
+        let binding = TrinoBinding {
+            resource: table.clone(),
+            region_column: Some("region".into()),
+            sensitive_column: Some("secret".into()),
+        };
+        let bind = Mutation::BindTrino {
+            name: vec!["iceberg".into(), "ns".into(), "one".into()],
+            binding,
+        };
+        assert!(store.mutate(bind.clone()).is_err());
+        store.mutate(Mutation::Put {
+            resource: table.clone(),
+            parent: None,
+            owner: None,
+        })?;
+        store.mutate(bind.clone())?;
+        store.mutate(Mutation::SetRegion {
+            principal: "alice".into(),
+            region: "eu".into(),
+        })?;
+        store.mutate(Mutation::Grant {
+            grant: Grant {
+                subject: Resource::new("User", "alice"),
+                resource: table.clone(),
+                access: "unmask".into(),
+            },
+            remove: false,
+        })?;
+        let mut check = Check {
+            deny: false,
+            principal: "alice".into(),
+            groups: vec![],
+            action: "read_data".into(),
+            resource: table.clone(),
+        };
+        assert!(!store.decide(&check)?.allowed);
+        check.action = "unmask".into();
+        assert!(store.decide(&check)?.allowed);
+        let mut restored: Store = serde_json::from_value(serde_json::to_value(&store)?)?;
+        assert_eq!(restored.trino.len(), 1);
+        assert_eq!(restored.regions["alice"], "eu");
+        restored.mutate(Mutation::Put {
+            resource: table.clone(),
+            parent: None,
+            owner: None,
+        })?;
+        assert!(restored.trino.is_empty());
+        restored.mutate(bind)?;
+        restored.mutate(Mutation::Delete { resource: table })?;
+        assert!(restored.trino.is_empty());
+        Ok(())
+    }
     #[test]
     fn malformed_graph_is_an_evaluation_error() {
         let mut store = Store::default();
