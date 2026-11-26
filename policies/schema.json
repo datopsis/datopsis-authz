@@ -1,0 +1,177 @@
+{
+  "": {
+    "entityTypes": {
+      "Group": {
+        "shape": {
+          "type": "Record",
+          "attributes": {}
+        }
+      },
+      "User": {
+        "memberOfTypes": [
+          "Group"
+        ],
+        "shape": {
+          "type": "Record",
+          "attributes": {}
+        }
+      },
+      "Server": {
+        "memberOfTypes": [
+          "Server",
+          "Project",
+          "Warehouse",
+          "Namespace",
+          "Table",
+          "View",
+          "Role",
+          "GenericTable"
+        ],
+        "shape": {
+          "type": "Record",
+          "attributes": {}
+        }
+      },
+      "Project": {
+        "memberOfTypes": [
+          "Server",
+          "Project",
+          "Warehouse",
+          "Namespace",
+          "Table",
+          "View",
+          "Role",
+          "GenericTable"
+        ],
+        "shape": {
+          "type": "Record",
+          "attributes": {}
+        }
+      },
+      "Warehouse": {
+        "memberOfTypes": [
+          "Server",
+          "Project",
+          "Warehouse",
+          "Namespace",
+          "Table",
+          "View",
+          "Role",
+          "GenericTable"
+        ],
+        "shape": {
+          "type": "Record",
+          "attributes": {}
+        }
+      },
+      "Namespace": {
+        "memberOfTypes": [
+          "Server",
+          "Project",
+          "Warehouse",
+          "Namespace",
+          "Table",
+          "View",
+          "Role",
+          "GenericTable"
+        ],
+        "shape": {
+          "type": "Record",
+          "attributes": {}
+        }
+      },
+      "Table": {
+        "memberOfTypes": [
+          "Server",
+          "Project",
+          "Warehouse",
+          "Namespace",
+          "Table",
+          "View",
+          "Role",
+          "GenericTable"
+        ],
+        "shape": {
+          "type": "Record",
+          "attributes": {}
+        }
+      },
+      "View": {
+        "memberOfTypes": [
+          "Server",
+          "Project",
+          "Warehouse",
+          "Namespace",
+          "Table",
+          "View",
+          "Role",
+          "GenericTable"
+        ],
+        "shape": {
+          "type": "Record",
+          "attributes": {}
+        }
+      },
+      "Role": {
+        "memberOfTypes": [
+          "Server",
+          "Project",
+          "Warehouse",
+          "Namespace",
+          "Table",
+          "View",
+          "Role",
+          "GenericTable"
+        ],
+        "shape": {
+          "type": "Record",
+          "attributes": {}
+        }
+      },
+      "GenericTable": {
+        "memberOfTypes": [
+          "Server",
+          "Project",
+          "Warehouse",
+          "Namespace",
+          "Table",
+          "View",
+          "Role",
+          "GenericTable"
+        ],
+        "shape": {
+          "type": "Record",
+          "attributes": {}
+        }
+      }
+    },
+    "actions": {
+      "check": {
+        "appliesTo": {
+          "principalTypes": [
+            "User"
+          ],
+          "resourceTypes": [
+            "Server",
+            "Project",
+            "Warehouse",
+            "Namespace",
+            "Table",
+            "View",
+            "Role",
+            "GenericTable",
+            "User"
+          ],
+          "context": {
+            "type": "Record",
+            "attributes": {
+              "operation": {
+                "type": "String"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
