@@ -2,6 +2,8 @@
 
 ## Catalog MVP slice 1 (unreleased)
 
+- Refresh the coordinator-approved unmerged Rauthy PR #3 test pin to 1bedace6e61627820e0f863a86c6ccc791f5e22b (verified FIDO serial 303). Keep checksum/authenticated-feed guards and the red SvelteKit disclosure.
+
 - Correct the catalog grant fixture's single-table API route and measure C4 from the mutation response acknowledgement, before readback.
 
 - Bound FIDO publisher HTTP 429 retries and reuse each CI job's exact verified feed bytes; retain the owner's hash, signature/path/serial/date and fresh-CRL verification.

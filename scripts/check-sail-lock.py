@@ -5,8 +5,8 @@ import json
 import tomllib
 from pathlib import Path
 
-# Semantic digest of slice 2 Cargo.lock at 504995adeacc9b403913bbf71bbec5c90dbb78be.
-BASE = "ea6d6ca37de2ac16e79358aa5c502cfff7ac7fbb30f98636ffcfe1aa4994cab7"
+# Semantic digest of slice 2 Cargo.lock at cdcdb9d79ce0936aa0bf968ef083f1b21521b421.
+BASE = "8744967a8317ce0ded7f5fdd5402593b2849fdc1f96f53e0c03d17f6b98438d1"
 lock = tomllib.loads(Path('Cargo.lock').read_text())
 edges = {'bytes', 'h2', 'http 1.5.0', 'jsonwebtoken 10.4.0', 'tokio-rustls'}
 package = next(p for p in lock['package'] if p['name']=='authz-serve')
