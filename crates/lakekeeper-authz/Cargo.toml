@@ -1,0 +1,14 @@
+[package]
+name = "lakekeeper-authz"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+[dependencies]
+anyhow.workspace = true
+serde_json.workspace = true
+reqwest.workspace = true
+axum.workspace = true
+lakekeeper.workspace = true
+authz-core = { path = "../authz-core" }
+async-trait = "0.1"
+serde.workspace = true

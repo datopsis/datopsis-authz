@@ -1,0 +1,13 @@
+{
+  "rauthy-ubi": {
+    "revision": "1bedace6e61627820e0f863a86c6ccc791f5e22b",
+    "source_pr": "https://github.com/datopsis/rauthy-ubi/pull/3",
+    "status": "Coordinator-approved unmerged test pin; SvelteKit vulnerability gate RED pending owner decision"
+  },
+  "postgresql-ubi": {
+    "revision": "c31b5b8f53873c0e733d5271df45fba4643a4334"
+  },
+  "postgresql-lakekeeper-ubi": {
+    "revision": "1054729c5fa934e2a801a36d81a8b2b264aa8829"
+  }
+}

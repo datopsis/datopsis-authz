@@ -1,0 +1,33 @@
+# Early loader proof against the same pinned Micro base used by the fixture.
+FROM registry.access.redhat.com/ubi9/ubi-micro:9.8@sha256:6d9eff186ce3ccf399c1835265e7fd3f83bd112cc3422da2d39fd44e234aab59 AS loader-probe
+COPY --chmod=0555 target/spike-libs/ /usr/lib64/
+COPY --chmod=0555 target/debug/lakekeeper-bin-datopsis /usr/local/bin/lakekeeper-datopsis
+COPY --chmod=0555 target/debug/authz-serve /usr/local/bin/datopsis-authz
+USER 999:0
+ENTRYPOINT ["/usr/local/bin/lakekeeper-datopsis"]
+CMD ["version"]
+
+# Evaluation-only runtime built from the owner-built pinned UBI image.
+FROM localhost/lakekeeper-ubi:integration AS catalog
+ARG SOURCE_REVISION
+ARG LOCK_SHA256
+LABEL org.opencontainers.image.source="https://github.com/datopsis/datopsis-authz" \
+      io.datopsis.artifact-lock.sha256="${LOCK_SHA256}" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}" \
+      io.datopsis.lakekeeper.source="9bd377162345b64a716f0a4fcffe4e7e7f3c7534"
+# The pinned public crate's selected dependency graph links OpenSSL, whereas
+# the upstream release binary used by the base image does not need these libs.
+COPY --chmod=0555 target/spike-libs/ /usr/lib64/
+COPY --chmod=0555 target/debug/lakekeeper-bin-datopsis /usr/local/bin/lakekeeper-datopsis
+ENTRYPOINT ["/usr/local/bin/lakekeeper-datopsis"]
+CMD ["serve"]
+FROM localhost/lakekeeper-ubi:integration AS decisions
+ARG SOURCE_REVISION
+ARG LOCK_SHA256
+LABEL org.opencontainers.image.source="https://github.com/datopsis/datopsis-authz" \
+      io.datopsis.artifact-lock.sha256="${LOCK_SHA256}" \
+      org.opencontainers.image.revision="${SOURCE_REVISION}"
+COPY --chmod=0555 target/spike-libs/ /usr/lib64/
+COPY --chmod=0555 target/debug/authz-serve /usr/local/bin/datopsis-authz
+ENTRYPOINT ["/usr/local/bin/datopsis-authz"]
+CMD ["serve"]
