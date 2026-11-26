@@ -116,8 +116,12 @@ used. The same immutable revision is recorded in fixture inputs and S2 results;
 the owner builder retains native architecture, source and artifact-lock checks.
 This is an approved test pin, not release-image qualification: the unmerged
 combined image remains red on known Iceberg JAR CVEs. The referenced PR can move;
-CI uses only the approved full commit. Rauthy remains blocked pending the
-coordinator's replacement pin for the verified in-repository serial-303 FIDO copy.
-Do not work around the existing Rauthy checksum or authenticated-feed guards.
+CI uses only the approved full commit. Rauthy uses coordinator-approved unmerged PR #3 commit
+`1bedace6e61627820e0f863a86c6ccc791f5e22b`: live FIDO serial 303 and the
+PostgreSQL 18.7 fixture. Its known SvelteKit finding keeps that image gate RED.
+The owner's release-tempo decision requires the live feed to match its locked
+bytes. A newer publication blocks builds until rauthy-ubi refreshes and the
+coordinator approves a new pin. No in-repository feed or fallback is used; do not
+work around checksum, freshness or authenticated-feed verification guards.
 No new Cargo crate or version is needed. The inherited quick-xml lint failure
 remains unsuppressed.

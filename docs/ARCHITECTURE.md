@@ -12,9 +12,9 @@ calling the adapter. Decisions use its authenticated principal; JWT group claims
 are discarded. Serve reads Rauthy's authoritative User API using Users/read only,
 verified TLS, redirects disabled, a 2-second timeout and a 250 ms bounded cache.
 No per-principal opt-in or epoch/claim fallback exists. The fixture's Rauthy image
-is pinned at `01375efb2a14692a7977f2f8aa60121f3fcc2f01`. This coordinator-approved
+is pinned at `1bedace6e61627820e0f863a86c6ccc791f5e22b`. This coordinator-approved
 [unmerged Rauthy PR #3](https://github.com/datopsis/rauthy-ubi/pull/3) test pin
-verifies FIDO serial 302. Its SvelteKit gate remains RED pending an owner decision;
+verifies FIDO serial 303. Its SvelteKit gate remains RED pending an owner decision;
 building it for acceptance does not waive that gate. Normal tokens live 900s.
 Explicitly configured machine subjects can receive direct grants when the User
 API returns 404, but never group grants; all other missing users fail closed.
