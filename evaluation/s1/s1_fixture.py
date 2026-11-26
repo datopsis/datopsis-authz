@@ -71,7 +71,11 @@ def migrate(catalog):
 
 
 class CedarCatalog(upstream.AuthCatalog):
-    def start_backend(self, audience='lakekeeper,operator,expiry'):
+    authz_audiences = 'lakekeeper,operator,expiry'
+
+    def start_backend(self, audience=None):
+        if audience is None:
+            audience = self.authz_audiences
         # Substitute only the image and adapter-specific mounts. All OIDC/TLS
         # arguments remain the pinned Catalog.start_backend implementation.
         from catalog import Catalog
@@ -94,7 +98,7 @@ class CedarCatalog(upstream.AuthCatalog):
             module.run = original
 
 
-def setup(arch, record, machine_principals=()):
+def setup(arch, record, machine_principals=(), extra_catalog_audiences=()):
     ca = pki()
     os.environ['AWS_CA_BUNDLE'] = str(ca)
     run('docker','network','create','--internal',upstream.NETWORK)
@@ -146,6 +150,7 @@ def setup(arch, record, machine_principals=()):
     storage = Storage(ca)
     record('storage_tls',storage.start,required=True)
     catalog = CedarCatalog(provider,env,storage)
+    catalog.authz_audiences = ",".join((catalog.authz_audiences, *extra_catalog_audiences))
     record('lakekeeper_tls',catalog.start,required=True)
     operator = provider.token('operator')
     record('seed',lambda:catalog.seed(operator),required=True)

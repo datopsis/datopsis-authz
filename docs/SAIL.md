@@ -45,7 +45,12 @@ namespace. Bind Sail to `127.0.0.1:50052`, publish no backend port, and mount on
 that team's protected catalog-token directory. Give each team a separate Rauthy
 machine identity and only its team's Lakekeeper grants. **Never put an operator
 or shared cross-team catalog token in Sail.** Register those machine principals
-in serve's explicit `AUTHZ_MACHINE_PRINCIPALS` list. Mount catalog-token files
+in serve's explicit `AUTHZ_MACHINE_PRINCIPALS` list. Add each dedicated OAuth
+client audience to Lakekeeper's exact `LAKEKEEPER__OPENID_AUDIENCE` allowlist.
+For example, the fixture retains `lakekeeper,operator,expiry` and adds only
+`sail-team-a,sail-team-b`. Do not use an audience wildcard or admit the engine
+client audiences at the gateway: `SAIL_AUDIENCE` remains the end-user client
+allowlist. Mount catalog-token files
 read-only, UID 10001 mode 0400, with private parent directories. Refresh each
 team's machine token using a trusted supervisor and atomic replacement inside its
 own mounted directory. Automatic issuance/lifecycle is the later token-broker

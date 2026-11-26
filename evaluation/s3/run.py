@@ -143,7 +143,9 @@ def evaluate():
         write(path,clients)
         return result
     with patch.object(Rauthy,'config_rauthy',config):
-        catalog, operator, key = setup(ARCH,record,machine_principals=('oidc~sail-team-a','oidc~sail-team-b'))
+        catalog, operator, key = setup(ARCH,record,
+            machine_principals=('oidc~sail-team-a','oidc~sail-team-b'),
+            extra_catalog_audiences=('sail-team-a','sail-team-b'))
     for image, pin in (('localhost/sail-ubi:integration',SAIL_PIN),('localhost/rauthy-ubi:authz',INPUTS['rauthy-ubi']['revision'])):
         obj = json.loads(run('docker','image','inspect',image))[0]
         assert obj['Architecture']==ARCH and obj['Config']['Labels']['org.opencontainers.image.revision']==pin
@@ -162,6 +164,12 @@ def evaluate():
             t.append(pa.Table.from_pylist([{'id':11 if name=='a' else 22}]))
         namespace = 'namespace:'+admin.load_namespace_properties('team_'+name)['namespace_id']
         grant(catalog,key,'user:oidc~'+decode(team_tokens[name])[1]['sub'],'select',namespace)
+    # Fail early on catalog credential configuration. A 401 must never be
+    # mistaken for a team's authorization denial in the real Sail controls.
+    for name, token in team_tokens.items():
+        response = catalog.http.request('GET',catalog.base+'/catalog/v1/config',
+            params={'warehouse':catalog.warehouse},headers={'Authorization':'Bearer '+token})
+        assert response.status_code == 200, (name,'team catalog token',response.status_code)
     launch(catalog,key,team_tokens)
     paths = {name:token_file(name,token) for name,token in tokens.items()}
     record('valid',lambda:{name:probe(path,'OK') for name,path in paths.items()})
