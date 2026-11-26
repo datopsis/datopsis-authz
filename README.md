@@ -6,7 +6,7 @@ open as evidence. Native C1–C8 and dependency-gate results are recorded in the
 unverified work is not an acceptance pass.
 
 The fixture pins coordinator-approved Rauthy PR #3 at
-`01375efb2a14692a7977f2f8aa60121f3fcc2f01` (verified FIDO serial 302).
+`1bedace6e61627820e0f863a86c6ccc791f5e22b` (verified FIDO serial 303).
 That PR is unmerged and its SvelteKit vulnerability gate remains RED pending
 an owner decision. This test pin does not claim image security qualification.
 The runtime dependency gate also blocks on Lakekeeper's Azure/quick-xml path.

@@ -1,6 +1,6 @@
 {
   "rauthy-ubi": {
-    "revision": "01375efb2a14692a7977f2f8aa60121f3fcc2f01",
+    "revision": "1bedace6e61627820e0f863a86c6ccc791f5e22b",
     "source_pr": "https://github.com/datopsis/rauthy-ubi/pull/3",
     "status": "Coordinator-approved unmerged test pin; SvelteKit vulnerability gate RED pending owner decision"
   },
