@@ -25,3 +25,11 @@ The [S5 costs cited in deployment documentation](../SAIL.md#per-team-instance-co
 apply per team process here. Direct storage credentials bypass catalog checks:
 row/column-restricted tables must remain inaccessible to non-enforcing Sail and
 direct clients. This slice does not qualify Phase D storage-path isolation.
+
+
+Slice 4a now composes the regression fixture from the separate, source-built
+`authz` and `lakekeeper-authz` images. [Image/runtime details](../IMAGES.md) and
+[the build boundary](../diagrams/hardened-images.svg) replace the spike binary
+layers. This change does not qualify a new runtime pass: the slice-4a PR must
+supply its own native evidence and unsuppressed security results. The Cedar
+Authorizer interface and behavior are unchanged by the Lakekeeper 0.13.9 bump.

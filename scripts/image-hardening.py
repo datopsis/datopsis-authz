@@ -29,10 +29,13 @@ for name, binary in [('authz','datopsis-authz'),('lakekeeper-authz','lakekeeper-
     assert labels['org.opencontainers.image.revision'] == revision
     assert labels['io.datopsis.artifact-lock.sha256'] == lock_sha
     status = subprocess.check_output(['docker','run','--rm',*flags,'--entrypoint','/bin/bash',image,
-        '-c','id -u; cat /proc/self/status; if touch /write-probe 2>/dev/null; then exit 1; fi'],text=True)
+        '-c','id -u; cat /proc/self/status; if touch /tmp/write-probe 2>/dev/null; then exit 1; fi'],text=True)
     assert status.splitlines()[0] == '10001'
     assert 'CapEff:\t0000000000000000' in status
     assert 'CapPrm:\t0000000000000000' in status
+    assert 'CapBnd:\t0000000000000000' in status
+    assert 'CapInh:\t0000000000000000' in status
+    assert 'CapAmb:\t0000000000000000' in status
     assert 'NoNewPrivs:\t1' in status
     if name == 'authz':
         roles = [run(name,'policy',True)]

@@ -64,8 +64,8 @@ from catalog_grants import grant
 
 
 def migrate(catalog):
-    run('docker', 'run', '--rm', '--label', 'datopsis.idp-bakeoff=true', '--network', 'container:'+catalog.proxy, '--env-file', catalog.env, '-v', f'{catalog.provider.ca}:/ca/ca.pem:ro', 'localhost/lakekeeper-datopsis:s1', 'migrate')
-    run('docker', 'run', '--rm', '--network', 'container:fga-postgres',
+    run('docker', 'run', '--rm', '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges:true', '--label', 'datopsis.idp-bakeoff=true', '--network', 'container:'+catalog.proxy, '--env-file', catalog.env, '-v', f'{catalog.provider.ca}:/ca/ca.pem:ro', 'localhost/lakekeeper-datopsis:s1', 'migrate')
+    run('docker', 'run', '--rm', '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges:true', '--network', 'container:fga-postgres',
         '--env-file', WORK/'cedar.env', '-v', f'{WORK/"cedar-db-url"}:/run/cedar-db-url:ro',
         '-v', f'{catalog.provider.ca}:/ca/ca.pem:ro', 'localhost/authz-serve:s1', 'migrate')
 
