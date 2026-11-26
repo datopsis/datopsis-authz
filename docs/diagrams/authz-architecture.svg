@@ -1,10 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="700" viewBox="0 0 1120 700" role="img" aria-labelledby="title desc">
-<title id="title">Catalog and Trino authorization, MVP slices 1–2</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="850" viewBox="0 0 1120 850" role="img" aria-labelledby="title desc">
+<title id="title">Catalog and Trino authorization, MVP slices 1–3</title>
 <desc id="desc">Lakekeeper and Trino call one serve role over private verified TLS. Both use Cedar grants and live Rauthy membership from the same durable PostgreSQL graph. Trino additionally enforces row filters and column masks. Direct storage credentials bypass these SQL restrictions and must be withheld from clients.</desc>
 <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#94a3b8"/></marker></defs>
 <rect width="1120" height="700" fill="#0f172a"/>
 <g font-family="sans-serif" fill="#e2e8f0">
-<text x="35" y="42" font-size="25">Datopsis authorization · catalog + Trino</text>
+<text x="35" y="42" font-size="25">Datopsis authorization · catalog + Trino + Sail</text>
 <text x="35" y="72" font-size="14">One Rust workspace · one serve role · one Cedar policy and relationship store</text>
 <g fill="#1e293b" stroke="#475569" stroke-width="2">
 <rect x="35" y="120" width="270" height="135" rx="10"/>
@@ -50,5 +50,10 @@
 <text x="55" y="560" font-size="17" fill="#fbbf24">Row / column rules require engine-only storage access</text>
 <text x="55" y="590" font-size="14">Direct credentials bypass SQL obligations. Withhold them from clients and non-enforcing engines.</text>
 <text x="55" y="620" font-size="14">Separate engine decision key · trusted name provisioning · rename invalidates bindings until explicitly rebound</text>
-<text x="55" y="645" font-size="13" fill="#94a3b8">Deferred: scoped STS broker · Sail gateway · hardened release images · epochs · automatic name reconciliation</text>
+<text x="55" y="645" font-size="13" fill="#94a3b8">Deferred: scoped STS broker · hardened release images · epochs · automatic name reconciliation</text>
+<rect x="35" y="690" width="1050" height="125" rx="10" fill="#1e293b" stroke="#475569"/>
+<text x="55" y="720" font-size="18">sail-gateway → one private Sail instance per team</text>
+<text x="55" y="747" font-size="14">TLS / JWKS → serve live groups (250 ms) → unique team socket → Sail loopback → team catalog identity</text>
+<text x="55" y="774" font-size="14">Gateway commits every admission to PostgreSQL · independent HTTP/2 drivers keep PINGs moving under pressure</text>
+<text x="55" y="800" font-size="13" fill="#fbbf24">Team members share permissions/state. No row/column-restricted tables or broad direct-storage credentials in Sail.</text>
 </g></svg>

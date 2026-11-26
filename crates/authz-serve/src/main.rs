@@ -1,4 +1,5 @@
 mod database;
+mod gateway;
 mod opa;
 use authz_core::{Check, Mutation, Store, Verdict};
 use axum::{
@@ -154,6 +155,20 @@ fn authenticate(app: &App, headers: &HeaderMap) -> Result<(), StatusCode> {
     } else {
         Err(StatusCode::UNAUTHORIZED)
     }
+}
+// Trusted gateway only. Membership comes from exactly the catalog/Trino live path.
+// The gateway commits the final admission audit (including invalid JWTs) itself.
+async fn sail_groups(
+    State(app): State<App>,
+    headers: HeaderMap,
+    Json(principal): Json<String>,
+) -> Result<Json<Vec<String>>, StatusCode> {
+    authenticate(&app, &headers)?;
+    app.live
+        .groups(&principal)
+        .await?
+        .map(Json)
+        .ok_or(StatusCode::FORBIDDEN)
 }
 async fn decide(
     State(app): State<App>,
@@ -328,10 +343,10 @@ async fn main() -> anyhow::Result<()> {
             Database::from_env().await?;
             return Ok(());
         }
+        "sail-gateway" => return gateway::run().await,
+        "sail-socket" => return gateway::socket().await,
         "serve" => (),
-        _ => anyhow::bail!(
-            "slice 1 supports serve, migrate and policy only; other roles are not implemented"
-        ),
+        _ => anyhow::bail!("supported roles: serve, migrate, policy, sail-gateway, sail-socket"),
     }
     let key = std::fs::read_to_string(std::env::var("AUTHZ_KEY_FILE")?)?
         .trim()
@@ -390,6 +405,7 @@ async fn main() -> anyhow::Result<()> {
     };
     let router = Router::new()
         .route("/decide", post(decide))
+        .route("/sail/groups", post(sail_groups))
         .route("/opa/{endpoint}", post(opa::handle))
         .route("/permissions", post(permissions))
         .route("/mutate", post(mutate))

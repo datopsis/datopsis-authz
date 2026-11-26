@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="680" viewBox="0 0 1120 680" role="img" aria-labelledby="title desc">
+<title id="title">Sail gateway: one instance and catalog identity per team</title>
+<desc id="desc">TLS JWT gateway resolves exactly one team using serve's current Rauthy groups with a 250 millisecond cache. The gateway commits durable admission audit before connecting to a private team socket. Each socket bridges to a separate Sail loopback listener. Team A and B have separate catalog tokens and Lakekeeper grants. Users within a team share permissions. Direct storage access cannot enforce row and column rules.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#94a3b8"/></marker></defs>
+<rect width="1120" height="680" fill="#0f172a"/>
+<g font-family="sans-serif" fill="#e2e8f0">
+<text x="30" y="40" font-size="25">Sail · one engine and catalog identity per team</text>
+<text x="30" y="70" font-size="14">Owner decision 2026-11-26 · one platform binary · per-user / per-session identity deferred</text>
+<g fill="#1e293b" stroke="#475569" stroke-width="2">
+<rect x="30" y="110" width="235" height="120" rx="10"/>
+<rect x="335" y="110" width="350" height="120" rx="10"/>
+<rect x="770" y="110" width="320" height="120" rx="10"/>
+<rect x="30" y="300" width="310" height="170" rx="10"/>
+<rect x="400" y="300" width="310" height="170" rx="10"/>
+<rect x="770" y="300" width="320" height="170" rx="10"/>
+</g>
+<g font-size="18">
+<text x="48" y="140">Spark Connect users</text><text x="353" y="140">sail-gateway · TLS / JWT</text>
+<text x="788" y="140">serve → live Rauthy groups</text>
+<text x="48" y="330">Team A · private namespace</text><text x="418" y="330">Team B · private namespace</text>
+<text x="788" y="330">Lakekeeper + Cedar</text>
+</g>
+<g font-size="14" fill="#cbd5e1">
+<text x="48" y="172">Genuine Rauthy JWT</text><text x="48" y="201">900-second token backstop</text>
+<text x="353" y="172">Exactly one CURRENT team group</text><text x="353" y="201">No client-controlled backend selection</text>
+<text x="788" y="172">250 ms cache · fail closed</text><text x="788" y="201">JWT / asserted groups ignored</text>
+<text x="48" y="360">Private socket → loopback :50052</text><text x="48" y="390">Sail A · only catalog token A</text>
+<text x="48" y="420">Users in A share permissions/state</text><text x="48" y="449">No published backend port</text>
+<text x="418" y="360">Private socket → loopback :50052</text><text x="418" y="390">Sail B · only catalog token B</text>
+<text x="418" y="420">Users in B share permissions/state</text><text x="418" y="449">No published backend port</text>
+<text x="788" y="360">Separate grants for identities A / B</text><text x="788" y="390">Verified TLS catalog requests</text>
+<text x="788" y="420">PostgreSQL · verify-full</text><text x="788" y="449">Durable append-only admission audit</text>
+</g>
+<g fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)">
+<path d="M265 168 H335"/><path d="M685 168 H770"/><path d="M440 230 L185 300"/>
+<path d="M555 230 V300"/><path d="M340 390 L368 490 H930 V470"/><path d="M710 390 H770"/>
+<path d="M650 230 L788 300"/>
+</g>
+<g font-size="12" fill="#93c5fd"><text x="278" y="155">TLS</text><text x="697" y="155">TLS</text>
+<text x="650" y="268">Commit audit before admission</text></g>
+<rect x="30" y="530" width="1060" height="120" rx="10" fill="#1e293b" stroke="#475569"/>
+<text x="48" y="559" font-size="17" fill="#fbbf24">Catalog isolation requires scoped storage access too</text>
+<text x="48" y="587" font-size="14">Row/column-restricted tables: no direct storage credentials; use only an enforcing engine.</text>
+<text x="48" y="613" font-size="14">Sail plans can use direct paths. Broad storage keys bypass catalog grants. Phase D remains separate.</text>
+<text x="48" y="638" font-size="13" fill="#94a3b8">S3 blocking oracle: 1,000,000 exact rows / hashes / sum · no retries · PING ACK under downstream backpressure</text>
+</g></svg>

@@ -1,4 +1,4 @@
-name: Catalog and Trino MVP
+name: Catalog, Trino and Sail MVP
 on:
   pull_request:
   push:
@@ -13,6 +13,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - run: python3 scripts/check-lf.py
       - run: cargo fmt --all -- --check
+      - run: python3 scripts/check-sail-lock.py
       - run: |
           python3 -m pip install PyYAML==6.0.2
           python3 -c 'import yaml,pathlib; [yaml.safe_load(p.read_text()) for p in pathlib.Path(".github/workflows").glob("*.yml")]'
@@ -58,6 +59,7 @@ jobs:
           echo "RUN_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_ENV"
       - run: .venv/bin/python evaluation/s1/run.py initialize
       - run: .venv/bin/python evaluation/s2/run.py initialize
+      - run: .venv/bin/python evaluation/s3/run.py initialize
       - name: Fixture unit checks
         run: python3 -m unittest discover -s evaluation/s1 -p 'test_*.py'
       - name: Verify immutable fixture inputs before compilation
@@ -106,11 +108,16 @@ jobs:
           docker run --rm localhost/lakekeeper-datopsis:s1 version
           docker run --rm localhost/authz-serve:s1 policy
       - run: python3 scripts/image-evidence.py
+        id: images
+      - name: Sail JWT, team isolation, live revocation, fail closed, audit and blocking paced stream
+        if: ${{ !cancelled() && steps.images.outcome == 'success' }}
+        run: .venv/bin/python evaluation/s3/run.py
       - name: Trino scalar, batch, row, mask, parity, revocation, audit and outage assertions
+        if: ${{ !cancelled() && steps.images.outcome == 'success' }}
         id: s2
         run: .venv/bin/python evaluation/s2/run.py
       - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
-        if: ${{ !cancelled() && steps.s2.outcome != 'skipped' }}
+        if: ${{ !cancelled() && steps.images.outcome == 'success' }}
         run: .venv/bin/python evaluation/s1/run.py
       - name: Cleanup and sanitize evidence
         if: always()
@@ -118,6 +125,7 @@ jobs:
           if test -x .venv/bin/python; then
             .venv/bin/python evaluation/s1/run.py cleanup
             .venv/bin/python evaluation/s2/run.py cleanup
+            .venv/bin/python evaluation/s3/run.py cleanup
           fi
       - name: Retain sanitized evidence
         if: always()
@@ -127,6 +135,7 @@ jobs:
           path: |
             reports/s1/
             reports/s2/
+            reports/s3/
           if-no-files-found: error
           retention-days: 14
 

@@ -94,7 +94,7 @@ class CedarCatalog(upstream.AuthCatalog):
             module.run = original
 
 
-def setup(arch, record):
+def setup(arch, record, machine_principals=()):
     ca = pki()
     os.environ['AWS_CA_BUNDLE'] = str(ca)
     run('docker','network','create','--internal',upstream.NETWORK)
@@ -134,7 +134,7 @@ def setup(arch, record):
         'AUTHZ_TLS_CERT':'/tls/cert.pem','AUTHZ_TLS_KEY':'/tls/key.pem','AUTHZ_KEY_FILE':'/run/cedar-key',
         'AUTHZ_TRINO_KEY_FILE':'/run/trino-key','AUTHZ_DATABASE_URL_FILE':'/run/cedar-db-url','AUTHZ_DATABASE_CA_FILE':'/ca/ca.pem',
         'AUTHZ_RAUTHY_USERS_URL':provider.base+'/auth/v1/users','AUTHZ_RAUTHY_CA_FILE':'/ca/ca.pem',
-        'AUTHZ_RAUTHY_KEY_FILE':'/run/rauthy-reader','AUTHZ_MACHINE_PRINCIPALS':'oidc~operator,oidc~lakekeeper,oidc~expiry'},
+        'AUTHZ_RAUTHY_KEY_FILE':'/run/rauthy-reader','AUTHZ_MACHINE_PRINCIPALS':','.join(('oidc~operator','oidc~lakekeeper','oidc~expiry', *machine_principals))},
         mounts=[(WORK/'trino-key','/run/trino-key'),(tls,'/tls'),(WORK/'cedar-key','/run/cedar-key'),(WORK/'rauthy-reader','/run/rauthy-reader'),
                 (WORK/'cedar-db-url','/run/cedar-db-url'),(ca,'/ca/ca.pem')],network='container:fga-postgres')
     address = backend_address()

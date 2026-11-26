@@ -1,6 +1,6 @@
 # datopsis-authz (working name)
 
-Apache-2.0 catalog authorization service, catalog slice 1 and Trino slice 2 of the owner-approved MVP
+Apache-2.0 catalog authorization service, catalog slice 1, Trino slice 2 and Sail slice 3 of the owner-approved MVP
 (2026-11-17). The owner will rename this repository. The four spike PRs remain
 open as evidence. Native C1–C8 and dependency-gate results are recorded in the PR;
 unverified work is not an acceptance pass.
@@ -18,9 +18,10 @@ One Rust workspace produces the platform program (`authz-serve`, installed as
 `datopsis-authz`) and a thin Lakekeeper binary containing `lakekeeper-authz`.
 `serve` evaluates Cedar against a PostgreSQL relationship/grant store.
 `migrate` applies the repeatable schema. `policy` validates the Cedar schema.
-`sail-gateway` and `token-broker` return an explicit unsupported-role error.
+`sail-gateway` admits users to isolated team engines; its private `sail-socket` helper
+bridges each engine’s loopback listener to the gateway. `token-broker` remains unsupported.
 Trino enforcement uses the same serve role through its OPA-compatible API; see
-[Trino setup and semantics](docs/TRINO.md). Sail admission, policy bundles/analysis
+[Trino setup and semantics](docs/TRINO.md). See [Sail configuration and team isolation limits](docs/SAIL.md). Policy bundles/analysis
 and hardened release images belong to later slices. The existing C5 engine/client catalog checks remain.
 
 Implemented catalog behavior: owner and select grants, inherited resource
