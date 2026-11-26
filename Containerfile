@@ -13,7 +13,9 @@ RUN sha256sum --check SHA256SUMS \
     && mkdir /toolchain /cargo-auditable \
     && tar -xf tools/rust.tar.xz -C /toolchain --strip-components=1 \
     && /toolchain/install.sh --prefix=/usr/local --without=rust-docs --disable-ldconfig \
-    && tar -xf tools/cargo-auditable.crate -C /cargo-auditable --strip-components=1 \
+    && tar -xf tools/cargo-auditable.tar.xz -C /cargo-auditable --strip-components=1 \
+    && cp /cargo-auditable/cargo-auditable /usr/local/bin/cargo-auditable \
+    && chmod 0555 /usr/local/bin/cargo-auditable \
     && unzip tools/protoc.zip -d /usr/local \
     && rm -rf /toolchain
 ENV PATH="/usr/local/bin:/usr/bin:/bin" CARGO_HOME=/cargo CARGO_BUILD_JOBS=2 OPENSSL_NO_VENDOR=1
@@ -27,12 +29,10 @@ COPY migrations/ migrations/
 RUN python3 -c 'import hashlib,json; assert hashlib.sha256(open("Cargo.lock","rb").read()).hexdigest() == json.load(open("/image-input-lock.json"))["cargo_lock_sha256"]' \
     && rustc --version | grep -F 'rustc 1.94.1 ' \
     && sha256sum Cargo.lock > /cargo-lock.sha256 \
-    && cargo fetch --locked \
-    && cargo fetch --locked --manifest-path /cargo-auditable/Cargo.toml
+    && cargo fetch --locked
 FROM acquire AS build
-RUN --network=none cargo install --frozen --path /cargo-auditable --root /usr/local \
-    && cargo test --workspace --locked --offline \
-    && cargo auditable build --release --locked --offline -p authz-serve -p lakekeeper-bin-datopsis \
+RUN --network=none cargo test --workspace --release --locked --offline
+RUN --network=none cargo auditable build --release --locked --offline -p authz-serve -p lakekeeper-bin-datopsis \
     && sha256sum --check /cargo-lock.sha256
 FROM ${RUNTIME} AS micro
 FROM acquire AS runtime-root

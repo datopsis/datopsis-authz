@@ -120,6 +120,17 @@ jobs:
           docker tag localhost/lakekeeper-authz:s4a localhost/lakekeeper-datopsis:s1
       - name: Native role selection, provenance and hardening assertions
         run: python3 scripts/image-hardening.py
+      - name: Qualify embedded inventories before external fixture builds
+        run: python3 scripts/shipped-rustsec.py --inventory-only
+      - name: Retain native build and hardening evidence immediately
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: image-build-${{ matrix.arch }}-${{ github.run_id }}
+          path: |
+            reports/images/**/build-hardening.json
+            reports/images/**/cargo-auditable.json
+          if-no-files-found: error
+          retention-days: 14
       - run: python3 scripts/tls-smoke.py
       - name: Build pinned owner fixture images without source changes
         run: |

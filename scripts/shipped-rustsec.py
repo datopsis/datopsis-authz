@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Gate every RustSec advisory against cargo-auditable data in the shipped ELFs."""
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -37,7 +38,17 @@ def inventory(path):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--inventory-only', action='store_true')
+    args = parser.parse_args()
     root = Path('reports/images')
+    if args.inventory_only:
+        for name in ['authz', 'lakekeeper-authz']:
+            directory = root/name
+            metadata = inventory(directory/'binary')
+            (directory/'cargo-auditable.json').write_text(json.dumps(metadata,indent=2)+'\n')
+            print(name, 'validated cargo-auditable format', metadata['format'])
+        return 0
     result = subprocess.run(['cargo', 'audit', '--json', '--file', 'Cargo.lock'], capture_output=True, text=True)
     if result.returncode not in (0, 1):
         raise RuntimeError('RustSec execution failed: '+result.stderr)

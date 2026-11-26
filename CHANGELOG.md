@@ -2,6 +2,11 @@
 
 ## Slice 4a (in progress)
 
+- Pin cargo-auditable 0.7.8 native tool archives by official release SHA-256;
+  preserve the required format-2 proc-macro distinction and qualify inventories
+  before external fixture builds. Reuse release dependencies for workspace tests.
+
+
 - Upgrade unmodified Lakekeeper to 0.13.9 at `a8e013b30e99e5a184486fe166c3ffb3781a7c36`.
   Carry upstream's seven SQLx 0.9.0 patches by full commit
   `2018fe72a7d64b34e7da99f13642a6a61d2af082`, fixing cancellation during BEGIN

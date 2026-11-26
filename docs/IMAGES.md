@@ -19,13 +19,18 @@ mint tokens or start a listener. Policy validation starts no listener.
 PR Actions for acquisition, image builds, scans, runtime checks and native CPU
 validation. `artifacts/images.lock.json` records each architecture's builder and
 Micro image digests, full build/runtime RPM closure by NEVRA and SHA-256, Rust
-1.94.1 archive, protoc 30.2 and cargo-auditable 0.7.7 checksums, and Cargo.lock's
+1.94.1 archive, protoc 30.2 and cargo-auditable 0.7.8 native tool archive checksums, and Cargo.lock's
 hash. RPM snapshots are copied from datopsis/rauthy-ubi commit
 4d196b87639e410a01ca5dab353826ae13ee445c; they are explicit reviewed inputs,
 not a resolver run during builds. The full builder closure is conservative; only
 the runtime closure reaches the final image. Installation checks bytes, exact
 NEVRAs and Red Hat signatures, with network disabled. Cargo acquisition precedes
 `cargo auditable build --release --locked --offline` with network disabled.
+The tool archives use the official musl builds and release-asset SHA-256 values.
+Version 0.7.8 emits format 2, fixing proc-macro classification when a crate also
+has test/example/build targets. Embedded inventory qualification runs before
+external fixture builds. Unit tests use the release profile to reuse the same
+compiled dependencies in the auditable image build; every workspace test remains.
 No upstream Lakekeeper source is patched.
 
 Lakekeeper source matches lakekeeper-ubi: 0.13.9 at

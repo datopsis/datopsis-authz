@@ -6113,9 +6113,9 @@
           "sha256": "294b3d81fa72e62581276290c60c81eb8b58498d333d422ca1dfc432877d0c40"
         },
         "cargo-auditable": {
-          "url": "https://static.crates.io/crates/cargo-auditable/cargo-auditable-0.7.7.crate",
-          "sha256": "ccdd489bc94d1338cd04389a842e00661300331ec915fb376b4810ef7d480b5d",
-          "filename": "cargo-auditable.crate"
+          "filename": "cargo-auditable.tar.xz",
+          "url": "https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.8/cargo-auditable-x86_64-unknown-linux-musl.tar.xz",
+          "sha256": "6de0005fc0d414551da45d679bca258565d521ff8ee51c9da10ceed6b957a033"
         },
         "protoc": {
           "filename": "protoc.zip",
@@ -12259,9 +12259,9 @@
           "sha256": "bb1267e956ef7887049236d26b37e987da383e190c7d95c80731a302af01b650"
         },
         "cargo-auditable": {
-          "url": "https://static.crates.io/crates/cargo-auditable/cargo-auditable-0.7.7.crate",
-          "sha256": "ccdd489bc94d1338cd04389a842e00661300331ec915fb376b4810ef7d480b5d",
-          "filename": "cargo-auditable.crate"
+          "filename": "cargo-auditable.tar.xz",
+          "url": "https://github.com/rust-secure-code/cargo-auditable/releases/download/v0.7.8/cargo-auditable-aarch64-unknown-linux-musl.tar.xz",
+          "sha256": "3a84e9242f1309e519e7eeb941e08c7857ca62ce663913c222a73481120461a5"
         },
         "protoc": {
           "filename": "protoc.zip",
@@ -12271,5 +12271,6 @@
       }
     }
   },
-  "cargo_lock_sha256": "be94d33ad72321b9a34a0939b0f8830221f35d08a80415a3df0c56aa058f1eda"
+  "cargo_lock_sha256": "be94d33ad72321b9a34a0939b0f8830221f35d08a80415a3df0c56aa058f1eda",
+  "cargo_auditable_version": "0.7.8"
 }
