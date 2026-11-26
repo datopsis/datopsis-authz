@@ -106,7 +106,10 @@ def launch(catalog, key, team_tokens):
             env={'SAIL_SOCKET':'/socket/sail.sock'},network='container:sail-'+name,
             extra=restricted+['--user','999:0','-v',f'{sockets}:/socket:rw'])
         teams.append(dict(id=name,group=group,socket='/teams/'+name+'/sail.sock'))
-        wait(lambda: (sockets/'sail.sock').exists())
+        def socket_ready():
+            run('sudo','test','-S',sockets/'sail.sock')
+            return True
+        wait(socket_ready)
         wait(lambda:run('docker','exec','sail-'+name,'/usr/bin/python3.12','-c',
             "import socket; socket.create_connection(('127.0.0.1',50052),timeout=1).close(); print('ready')"))
     config = WORK/'teams.json'
@@ -120,8 +123,10 @@ def launch(catalog, key, team_tokens):
         mounts=[(leaf('sail'),'/tls'),(catalog.provider.ca,'/ca/ca.pem'),(WORK/'cedar-key','/run/cedar-key'),
             (WORK/'cedar-db-url','/run/cedar-db-url'),(config,'/teams.json'),
             (WORK/'team-a/socket','/teams/a'),(WORK/'team-b/socket','/teams/b')],
-        extra=restricted+['--user','999:0','--network-alias','sail'])
-    run('docker','network','connect',BACKEND_NETWORK,'gateway')
+        network=BACKEND_NETWORK,extra=restricted+['--user','999:0'])
+    # The audit database must resolve at process startup. Attach the public
+    # client/IdP network afterwards; no request is sent before both are ready.
+    run('docker','network','connect','--alias','sail',common.NETWORK,'gateway')
     from common import host
     host('gateway','sail')
     wait(lambda:transport('sail',50051,catalog.provider.ca))
@@ -276,6 +281,11 @@ def audit(catalog, team_tokens):
     persisted = sql("SELECT coalesce(json_object_agg(k,n),'{}'::json) FROM (SELECT (result->>'grpc_status')||':'||(resource->>'id') k,count(*) n FROM authz_audit WHERE action='sail:admit' GROUP BY 1) s;")
     assert dict(observed)==persisted and len(events)>0, (observed,persisted)
     result['exact_admission_records'] = len(events)
+    refused = Counter(e['grpc_status'] for e in events if e['grpc_status'] != 0)
+    # Independent client controls: five invalid JWTs, two valid expiry-token
+    # membership denials, two old-token revocations, and three dependency outages.
+    assert refused == {16:5, 7:4, 14:3}, refused
+    assert sum(e['grpc_status']==0 for e in events) >= 17, observed
     assert result['permits']>0 and result['denials']>0 and sorted(result['teams'])==['sail:a','sail:b'], result
     assert result['missing_results']==result['invalid_principals']==0, result
     assert set(result['reasons'])=={'sail_team_permit','sail_invalid_token','sail_team_deny','sail_dependency_unavailable'}, result
