@@ -8,7 +8,7 @@ share permissions. Per-user/per-session identity and hardened images are later s
 Pin external repositories by full commit; do not modify them. Lakekeeper source:
 9bd377162345b64a716f0a4fcffe4e7e7f3c7534. Acceptance harness:
 e8379a528bf413c05aad49e56bc8cd507b5e077a. Rauthy:
-1bedace6e61627820e0f863a86c6ccc791f5e22b (coordinator-approved unmerged PR #3 test pin).
+52c3fec20beca1975467a9c955730082cef8bf46 (coordinator-approved unmerged PR #3 test pin).
 
 Trino image: 9343071e44fc58e4848c6e6b66ae1403a394d17f (coordinator-approved
 unmerged PR #8 test pin; Iceberg JAR CVE gate remains RED; OPA opt-in).

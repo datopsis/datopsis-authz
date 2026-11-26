@@ -25,7 +25,33 @@ jobs:
           name: dependency-audit
           path: reports/audit/
           if-no-files-found: error
+  fido:
+    name: FIDO metadata
+    runs-on: ubuntu-24.04
+    outputs:
+      key: ${{ steps.rauthy-fido-key.outputs.key }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Read locked Rauthy FIDO cache key
+        id: rauthy-fido-key
+        run: python3 scripts/check-fixture-inputs.py --cache-key >> "$GITHUB_OUTPUT"
+      - name: Restore Rauthy FIDO feed bytes
+        id: rauthy-fido-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .sources/fixture-inputs/fido-mds.jwt
+          key: ${{ steps.rauthy-fido-key.outputs.key }}
+      - name: Verify Rauthy FIDO feed (always, including cache hits)
+        id: rauthy-fido-verified
+        run: python3 scripts/check-fixture-inputs.py
+      - name: Save verified Rauthy FIDO feed bytes
+        if: ${{ success() && steps.rauthy-fido-verified.outcome == 'success' && steps.rauthy-fido-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .sources/fixture-inputs/fido-mds.jwt
+          key: ${{ steps.rauthy-fido-key.outputs.key }}
   native:
+    needs: fido
     name: native (${{ matrix.runner }})
     strategy:
       fail-fast: false
@@ -43,6 +69,7 @@ jobs:
       CARGO_BUILD_JOBS: 2
       INTEGRATION_ARCH: ${{ matrix.arch }}
       EXPECTED_MACHINE: ${{ matrix.machine }}
+      FIDO_MDS_CACHE_DIR: ${{ github.workspace }}/.sources/fixture-inputs
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - run: |
@@ -62,7 +89,12 @@ jobs:
       - run: .venv/bin/python evaluation/s3/run.py initialize
       - name: Fixture unit checks
         run: python3 -m unittest discover -s evaluation/s1 -p 'test_*.py'
-      - name: Verify immutable fixture inputs before compilation
+      - name: Restore verified Rauthy FIDO feed bytes
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .sources/fixture-inputs/fido-mds.jwt
+          key: ${{ needs.fido.outputs.key }}
+      - name: Verify immutable fixture inputs before compilation (including cache hits)
         run: python3 scripts/check-fixture-inputs.py
       - name: Restore native compiler cache
         id: rust-cache
@@ -141,10 +173,11 @@ jobs:
 
   test:
     name: test
-    needs: native
+    needs: [fido, native]
     if: always()
     runs-on: ubuntu-24.04
     steps:
-      - run: test "$NATIVE_RESULT" = success
+      - run: test "$FIDO_RESULT" = success && test "$NATIVE_RESULT" = success
         env:
+          FIDO_RESULT: ${{ needs.fido.result }}
           NATIVE_RESULT: ${{ needs.native.result }}

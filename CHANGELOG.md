@@ -1,5 +1,14 @@
 # Changelog
 
+## Slice 4a (in progress)
+
+- Pin the coordinator-approved unmerged Rauthy PR #3 test input to
+  `52c3fec20beca1975467a9c955730082cef8bf46` (same verified FIDO serial 303;
+  known SvelteKit gate remains RED).
+- Warm the exact SHA-256-keyed feed cache once before native CI. Run the pinned
+  owner's full publisher/freshness verification on every cache hit and again in
+  each image build; cache only JWT bytes and save before later security gates.
+
 ## Catalog MVP slice 1 (unreleased)
 
 - Refresh the coordinator-approved unmerged Rauthy PR #3 test pin to 1bedace6e61627820e0f863a86c6ccc791f5e22b (verified FIDO serial 303). Keep checksum/authenticated-feed guards and the red SvelteKit disclosure.

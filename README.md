@@ -6,9 +6,9 @@ open as evidence. Native C1–C8 and dependency-gate results are recorded in the
 unverified work is not an acceptance pass.
 
 The fixture pins coordinator-approved Rauthy PR #3 at
-`1bedace6e61627820e0f863a86c6ccc791f5e22b` (verified FIDO serial 303).
-That PR is unmerged and its SvelteKit vulnerability gate remains RED pending
-an owner decision. This test pin does not claim image security qualification.
+`52c3fec20beca1975467a9c955730082cef8bf46` (verified FIDO serial 303).
+That PR adds a hash-keyed FIDO cache and is unmerged. Its known SvelteKit
+vulnerability gate remains RED pending an owner decision. This test pin does not claim image security qualification.
 The runtime dependency gate also blocks on Lakekeeper's Azure/quick-xml path.
 Owner decision 2026-11-18: "upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress".
 Lint stays red with no ignore or S3-only patch; merge waits for upstream's fix.
