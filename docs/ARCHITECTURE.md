@@ -6,11 +6,14 @@ repeatable database migration, schema validation and [Trino OPA enforcement](TRI
 [Sail admission](SAIL.md) uses the same live membership path and one isolated
 engine/catalog identity per team. The gateway commits all admission audits to the
 same PostgreSQL database, including invalid JWT refusals and service outages.
-Epochs, token broker and hardened images are deferred.
+Epochs and token broker are deferred. [Slice-4a images](IMAGES.md) build the
+platform and catalog separately with locked UBI inputs and embedded shipped-crate
+inventories. Public catalog TLS is now terminated in the composition binary;
+the unchanged upstream API and metrics stay loopback-only.
 
 ![As built](diagrams/authz-architecture.svg)
 
-Lakekeeper at `9bd377162345b64a716f0a4fcffe4e7e7f3c7534` verifies tokens before
+Lakekeeper at `a8e013b30e99e5a184486fe166c3ffb3781a7c36` verifies tokens before
 calling the adapter. Decisions use its authenticated principal; JWT group claims
 are discarded. Serve reads Rauthy's authoritative User API using Users/read only,
 verified TLS, redirects disabled, a 2-second timeout and a 250 ms bounded cache.

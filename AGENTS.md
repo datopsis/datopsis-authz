@@ -3,10 +3,10 @@
 Owner approved the MVP on 2026-11-17. This branch implements catalog slice 1, Trino slice 2 (2026-11-25), and per-team Sail slice 3 (2026-11-26). Preserve the owner's one-monorepo, one-platform-program
 with roles decision. The Lakekeeper adapter is compiled into a separate catalog
 binary. Trino enforcement shares serve; Sail gateway uses one isolated engine/catalog identity per team; users within a team
-share permissions. Per-user/per-session identity and hardened images are later slices.
+share permissions. Per-user/per-session identity is a later slice. Slice 4a builds hardened source images.
 
 Pin external repositories by full commit; do not modify them. Lakekeeper source:
-9bd377162345b64a716f0a4fcffe4e7e7f3c7534. Acceptance harness:
+a8e013b30e99e5a184486fe166c3ffb3781a7c36. Acceptance harness:
 e8379a528bf413c05aad49e56bc8cd507b5e077a. Rauthy:
 52c3fec20beca1975467a9c955730082cef8bf46 (coordinator-approved unmerged PR #3 test pin).
 

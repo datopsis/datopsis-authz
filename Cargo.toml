@@ -13,11 +13,23 @@ serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 axum = "0.8"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-lakekeeper = { git = "https://github.com/lakekeeper/lakekeeper", rev = "9bd377162345b64a716f0a4fcffe4e7e7f3c7534" }
-lakekeeper-storage-postgres = { git = "https://github.com/lakekeeper/lakekeeper", rev = "9bd377162345b64a716f0a4fcffe4e7e7f3c7534" }
+lakekeeper = { git = "https://github.com/lakekeeper/lakekeeper", rev = "a8e013b30e99e5a184486fe166c3ffb3781a7c36" }
+lakekeeper-storage-postgres = { git = "https://github.com/lakekeeper/lakekeeper", rev = "a8e013b30e99e5a184486fe166c3ffb3781a7c36" }
 [profile.dev]
 debug = 0
 incremental = false
 [profile.release]
 debug = 0
 strip = true
+
+# sqlx 0.9.0 returns a connection to the pool still inside a transaction when `begin()` is
+# cancelled during `BEGIN` (transact-rs/sqlx#4393). The fork is 0.9.0 plus the fix #4394.
+# Drop this patch with the first sqlx release that contains #4394.
+[patch.crates-io]
+sqlx = { git = "https://github.com/lakekeeper/sqlx.git", rev = "2018fe72a7d64b34e7da99f13642a6a61d2af082" }
+sqlx-core = { git = "https://github.com/lakekeeper/sqlx.git", rev = "2018fe72a7d64b34e7da99f13642a6a61d2af082" }
+sqlx-macros = { git = "https://github.com/lakekeeper/sqlx.git", rev = "2018fe72a7d64b34e7da99f13642a6a61d2af082" }
+sqlx-macros-core = { git = "https://github.com/lakekeeper/sqlx.git", rev = "2018fe72a7d64b34e7da99f13642a6a61d2af082" }
+sqlx-mysql = { git = "https://github.com/lakekeeper/sqlx.git", rev = "2018fe72a7d64b34e7da99f13642a6a61d2af082" }
+sqlx-postgres = { git = "https://github.com/lakekeeper/sqlx.git", rev = "2018fe72a7d64b34e7da99f13642a6a61d2af082" }
+sqlx-sqlite = { git = "https://github.com/lakekeeper/sqlx.git", rev = "2018fe72a7d64b34e7da99f13642a6a61d2af082" }

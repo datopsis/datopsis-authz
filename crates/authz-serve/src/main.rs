@@ -345,8 +345,11 @@ async fn main() -> anyhow::Result<()> {
         }
         "sail-gateway" => return gateway::run().await,
         "sail-socket" => return gateway::socket().await,
+        "token-broker" => anyhow::bail!("token-broker is not implemented; refusing startup"),
         "serve" => (),
-        _ => anyhow::bail!("supported roles: serve, migrate, policy, sail-gateway, sail-socket"),
+        _ => anyhow::bail!(
+            "supported roles: serve, migrate, policy, sail-gateway, sail-socket; token-broker is unsupported"
+        ),
     }
     let key = std::fs::read_to_string(std::env::var("AUTHZ_KEY_FILE")?)?
         .trim()

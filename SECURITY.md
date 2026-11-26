@@ -6,7 +6,8 @@ or exploit details in public issues.
 Slice 1 protects catalog decisions. It does not prevent direct S3 access using
 existing static engine credentials, revoke already-issued storage credentials,
 or revoke data already fetched. STS and engine-side enforcement remain later work.
-The current images are acceptance tooling, not hardened production releases.
+Slice 4a adds hardened source images with blocking admission gates; they are not
+security-qualified releases while the known shipped quick-xml findings remain.
 
 Lakekeeper validates OIDC signatures, issuer, audience and expiry. The adapter
 asserts the verified principal to serve over verified TLS using a protected
@@ -43,3 +44,17 @@ are reported separately. No advisory ignores are permitted. The pinned Lakekeepe
 currently requires vulnerable quick-xml 0.40.1 through unconditional Azure SDK
 dependencies. Owner decision 2026-11-18: "upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress". Keep lint RED with no ignore entry and no S3-only
 Lakekeeper patch. Continue the other slice-1 work; merge waits for upstream's fix.
+
+
+Image deployments must enforce read-only roots, UID 10001, no capabilities and
+no-new-privileges. Both public service transports require TLS with operator
+material and fail closed on missing configuration. Catalog plaintext API/metrics
+are constrained to loopback behind its in-process TLS transport. Do not expose
+these private listeners. No default encryption/service key or TLS-off switch is
+accepted. See [runtime configuration](docs/IMAGES.md).
+
+Shipped RustSec classification comes from each actual binary's cargo-auditable
+runtime inventory; build/proc-macro/unselected dependencies are reported
+separately. Every shipped advisory warning/vulnerability blocks. Both image
+scanners and native UBI fix queries are mandatory; no query failure can qualify
+an RPM deferral. Provenance must match the PR head and the artifact lock hash.

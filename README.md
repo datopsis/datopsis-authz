@@ -19,10 +19,10 @@ One Rust workspace produces the platform program (`authz-serve`, installed as
 `serve` evaluates Cedar against a PostgreSQL relationship/grant store.
 `migrate` applies the repeatable schema. `policy` validates the Cedar schema.
 `sail-gateway` admits users to isolated team engines; its private `sail-socket` helper
-bridges each engine’s loopback listener to the gateway. `token-broker` remains unsupported.
+bridges each engine’s loopback listener to the gateway. `token-broker` fails closed until implemented.
 Trino enforcement uses the same serve role through its OPA-compatible API; see
 [Trino setup and semantics](docs/TRINO.md). See [Sail configuration and team isolation limits](docs/SAIL.md). Policy bundles/analysis
-and hardened release images belong to later slices. The existing C5 engine/client catalog checks remain.
+belong to later slices. Slice 4a adds [hardened authz and lakekeeper-authz images](docs/IMAGES.md), pending security admission. The existing C5 engine/client catalog checks remain.
 
 Implemented catalog behavior: owner and select grants, inherited resource
 permissions, item-filtered discovery, namespace/table/view lifecycle hooks,
@@ -73,3 +73,12 @@ The adapter needs `AUTHZ_ENDPOINT=https://…`, `AUTHZ_CA_FILE`, `AUTHZ_KEY_FILE
 must be provisioned in `AUTHZ_MACHINE_PRINCIPALS` (comma-separated); they never
 receive group membership from a missing-user response. There are no default
 service credentials. Keep serve isolated from catalog clients.
+
+## Images
+
+The `authz` image runs the single platform binary with an explicit role.
+The `lakekeeper-authz` image compiles our Cedar adapter into unmodified Lakekeeper
+0.13.9. Both use locked UBI 9 source builds, Micro runtimes, UID 10001, verified
+TLS, cargo-auditable inventories and blocking image/RustSec gates.
+See [image configuration, runtime controls and admission](docs/IMAGES.md).
+Known quick-xml findings still block release; neither image is security-qualified.

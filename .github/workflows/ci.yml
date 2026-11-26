@@ -11,9 +11,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - run: python3 scripts/check-lf.py
       - run: cargo fmt --all -- --check
       - run: python3 scripts/check-sail-lock.py
+      - run: python3 -m unittest discover -s tests
       - run: |
           python3 -m pip install PyYAML==6.0.2
           python3 -c 'import yaml,pathlib; [yaml.safe_load(p.read_text()) for p in pathlib.Path(".github/workflows").glob("*.yml")]'
@@ -32,6 +35,8 @@ jobs:
       key: ${{ steps.rauthy-fido-key.outputs.key }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Read locked Rauthy FIDO cache key
         id: rauthy-fido-key
         run: python3 scripts/check-fixture-inputs.py --cache-key >> "$GITHUB_OUTPUT"
@@ -66,12 +71,15 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
+      SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
       CARGO_BUILD_JOBS: 2
       INTEGRATION_ARCH: ${{ matrix.arch }}
       EXPECTED_MACHINE: ${{ matrix.machine }}
       FIDO_MDS_CACHE_DIR: ${{ github.workspace }}/.sources/fixture-inputs
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - run: |
           test "$(uname -m)" = "$EXPECTED_MACHINE"
           df -h
@@ -96,50 +104,33 @@ jobs:
           key: ${{ needs.fido.outputs.key }}
       - name: Verify immutable fixture inputs before compilation (including cache hits)
         run: python3 scripts/check-fixture-inputs.py
-      - name: Restore native compiler cache
-        id: rust-cache
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
-        with:
-          path: |
-            target
-            .cargo-cache
-          key: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-${{ github.sha }}
-          restore-keys: |
-            s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-
-            s1-rust-${{ runner.arch }}-
-      - name: Native UBI compiler, workspace tests and both binaries
+      - name: Acquire locked native UBI inputs
+        run: python3 scripts/image-inputs.py "$INTEGRATION_ARCH"
+      - name: Build both hardened images from this head
+        id: hardened-build
         run: |
-          docker build -f Containerfile.builder -t s1-builder .
-          mkdir -p .cargo-cache
-          docker run --rm -v "$PWD:/work" -v "$PWD/.cargo-cache:/root/.cargo/registry" s1-builder bash -c 'cargo test --workspace --locked && cargo build --workspace --locked && python3 scripts/collect-runtime-libs.py target/debug/lakekeeper-bin-datopsis target/debug/authz-serve target/spike-libs'
-          sudo chown -R "$(id -u):$(id -g)" target .cargo-cache
-      - name: Save native compiler cache
-        if: ${{ !cancelled() && steps.rust-cache.outcome == 'success' }}
-        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
-        with:
-          path: |
-            target
-            .cargo-cache
-          key: s1-rust-${{ runner.arch }}-${{ hashFiles('Cargo.lock', 'Containerfile.builder', '.cargo/config.toml') }}-${{ github.sha }}
+          source .image-bundle/build.env
+          for image in authz lakekeeper-authz; do
+            docker build -f Containerfile --target "$image" -t "localhost/$image:s4a" \
+              --build-arg "BUILDER=$BUILDER" --build-arg "RUNTIME=$RUNTIME" \
+              --build-arg "SOURCE_REVISION=$SOURCE_REVISION" \
+              --build-arg "LOCK_SHA256=$(sha256sum artifacts/images.lock.json | cut -d ' ' -f 1)" .
+          done
+          docker tag localhost/authz:s4a localhost/authz-serve:s1
+          docker tag localhost/lakekeeper-authz:s4a localhost/lakekeeper-datopsis:s1
+      - name: Native role selection, provenance and hardening assertions
+        run: python3 scripts/image-hardening.py
       - run: python3 scripts/tls-smoke.py
-      - name: Check runtime loader before expensive fixture builds
-        run: |
-          docker build -f Containerfile.spike --target loader-probe -t localhost/lakekeeper-loader:s1 .
-          docker run --rm localhost/lakekeeper-loader:s1 version
-          docker run --rm --entrypoint /usr/local/bin/datopsis-authz localhost/lakekeeper-loader:s1 policy
       - name: Build pinned owner fixture images without source changes
         run: |
           sudo apt-get install -y rpm podman gnupg argon2
           .venv/bin/python evaluation/s1/run.py build
-      - name: Compose spike images into fixture
-        run: |
-          docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" --build-arg LOCK_SHA256="$(sha256sum Cargo.lock | cut -d ' ' -f 1)" -f Containerfile.spike --target catalog -t localhost/lakekeeper-datopsis:s1 .
-          docker build --build-arg SOURCE_REVISION="$GITHUB_SHA" --build-arg LOCK_SHA256="$(sha256sum Cargo.lock | cut -d ' ' -f 1)" -f Containerfile.spike --target decisions -t localhost/authz-serve:s1 .
       - name: Runtime loader and policy schema smoke
         run: |
           docker run --rm localhost/lakekeeper-datopsis:s1 version
           docker run --rm localhost/authz-serve:s1 policy
-      - run: python3 scripts/image-evidence.py
+      - run: |
+          python3 scripts/image-evidence.py
         id: images
       - name: Sail JWT, team isolation, live revocation, fail closed, audit and blocking paced stream
         if: ${{ !cancelled() && steps.images.outcome == 'success' }}
@@ -151,6 +142,61 @@ jobs:
       - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
         if: ${{ !cancelled() && steps.images.outcome == 'success' }}
         run: .venv/bin/python evaluation/s1/run.py
+      - name: Trivy authz (unfiltered)
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: localhost/authz:s4a
+          format: json
+          output: reports/images/authz/trivy.json
+          exit-code: '0'
+          ignore-unfixed: false
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      - name: Grype authz (unfiltered)
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439
+        with:
+          image: localhost/authz:s4a
+          output-format: json
+          output-file: reports/images/authz/grype.json
+          severity-cutoff: negligible
+          only-fixed: false
+          fail-build: false
+          grype-version: v0.118.0
+          cache-db: true
+      - name: Blocking UBI gate authz
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        run: bash scripts/run-image-gate.sh authz
+      - name: Trivy lakekeeper-authz (unfiltered)
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: localhost/lakekeeper-authz:s4a
+          format: json
+          output: reports/images/lakekeeper-authz/trivy.json
+          exit-code: '0'
+          ignore-unfixed: false
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      - name: Grype lakekeeper-authz (unfiltered)
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439
+        with:
+          image: localhost/lakekeeper-authz:s4a
+          output-format: json
+          output-file: reports/images/lakekeeper-authz/grype.json
+          severity-cutoff: negligible
+          only-fixed: false
+          fail-build: false
+          grype-version: v0.118.0
+          cache-db: true
+      - name: Blocking UBI gate lakekeeper-authz
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        run: bash scripts/run-image-gate.sh lakekeeper-authz
+      - name: Blocking shipped RustSec and separate build-only report
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        run: |
+          cargo install cargo-audit --version 0.22.2 --locked
+          python3 scripts/shipped-rustsec.py
       - name: Cleanup and sanitize evidence
         if: always()
         run: |
@@ -168,6 +214,8 @@ jobs:
             reports/s1/
             reports/s2/
             reports/s3/
+            reports/images/
+            !reports/images/**/binary
           if-no-files-found: error
           retention-days: 14
 

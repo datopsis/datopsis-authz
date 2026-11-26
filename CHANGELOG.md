@@ -2,6 +2,20 @@
 
 ## Slice 4a (in progress)
 
+- Upgrade unmodified Lakekeeper to 0.13.9 at `a8e013b30e99e5a184486fe166c3ffb3781a7c36`.
+  Carry upstream's seven SQLx 0.9.0 patches by full commit
+  `2018fe72a7d64b34e7da99f13642a6a61d2af082`, fixing cancellation during BEGIN
+  (transact-rs/sqlx#4393 via #4394); drop with the first SQLx release containing
+  #4394. Adopt upstream Azure revision `bbdb4946ff486feec05506240358a8e4e9a074e8`.
+  Record every added/removed lock identity in the slice-4a dependency review.
+- Build separate authz and lakekeeper-authz source images on locked UBI 9 RPMs;
+  embed cargo-auditable data and gate shipped RustSec findings separately from
+  build-only reports. Trivy/Grype gates retain the organization UBI availability rule.
+- Terminate catalog TLS in our composition binary; constrain unmodified upstream
+  API/metrics to loopback. No Cedar authorizer behavior or interface change.
+- Require C6 absence of credential-less storage entries since Lakekeeper 0.13.6.
+
+
 - Pin the coordinator-approved unmerged Rauthy PR #3 test input to
   `52c3fec20beca1975467a9c955730082cef8bf46` (same verified FIDO serial 303;
   known SvelteKit gate remains RED).

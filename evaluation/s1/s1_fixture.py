@@ -71,6 +71,37 @@ def migrate(catalog):
 
 
 class CedarCatalog(upstream.AuthCatalog):
+    def start(self):
+        # Keep the fixture's external TLS oracle. Add verified TLS on its backend
+        # hop using generated config, without editing the pinned owner's source.
+        import catalog as module
+        from unittest.mock import patch
+        import shutil
+        profile = module.ROOT/'.sources/nginx-ubi/examples/profiles/lakekeeper'
+        generated = WORK/('catalog-' + self.name)/'tls-upstream-profile'
+        shutil.copytree(profile, generated, dirs_exist_ok=True)
+        config = generated/'nginx.conf'
+        text = config.read_text()
+        old = 'proxy_pass http://127.0.0.1:8182;'
+        assert text.count(old) == 1
+        text = text.replace(old, f"""proxy_pass https://127.0.0.1:8182;
+            proxy_ssl_verify on;
+            proxy_ssl_trusted_certificate /ca/ca.pem;
+            proxy_ssl_server_name on;
+            proxy_ssl_name {self.hostname};""")
+        config.write_text(text)
+        original = module.run
+        def invoke(*args, **kwargs):
+            args = list(args)
+            mount = f'{profile}:/etc/nginx/profile:ro'
+            if mount in args:
+                args[args.index(mount)] = f'{generated}:/etc/nginx/profile:ro'
+                index = args.index(module.PROXY_IMAGE)
+                args[index:index] = ['-v', f'{self.provider.ca}:/ca/ca.pem:ro']
+            return original(*args, **kwargs)
+        with patch.object(module, 'run', invoke):
+            return super().start()
+
     authz_audiences = 'lakekeeper,operator,expiry'
 
     def start_backend(self, audience=None):
@@ -89,7 +120,15 @@ class CedarCatalog(upstream.AuthCatalog):
             args = list(args)
             if 'localhost/lakekeeper-ubi:integration' in args:
                 index = args.index('localhost/lakekeeper-ubi:integration')
-                args[index:index+1] = ['-v', f'{WORK / "cedar-key"}:/run/cedar-key:ro', 'localhost/lakekeeper-datopsis:s1']
+                tls = WORK/('catalog-' + self.name)/'tls'
+                args[index:index+1] = [
+                    '-v', f'{WORK / "cedar-key"}:/run/cedar-key:ro',
+                    '-v', f'{tls}:/tls:ro',
+                    '-e', 'AUTHZ_TLS_CERT=/tls/server.crt',
+                    '-e', 'AUTHZ_TLS_KEY=/tls/server.key',
+                    '-e', 'LAKEKEEPER_TLS_LISTEN=127.0.0.1:8182',
+                    '-e', 'LAKEKEEPER__LISTEN_PORT=8183',
+                    'localhost/lakekeeper-datopsis:s1']
             return original(*args, **kwargs)
         module.run = invoke
         try:

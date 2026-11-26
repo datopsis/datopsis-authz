@@ -290,6 +290,8 @@ def evaluate(arch):
         ), "Denied response contains S3 credential fields"
         allowed = http.json("GET", base + "bakeoff/tables/sample", headers=auth)
         config = allowed.get("config", {})
+        # Lakekeeper >=0.13.6 omits credential-less storage entries (29c53e3).
+        assert "storage-credentials" not in allowed, "Static non-STS profile must omit credential-less entries"
         credential_blocks = allowed.get("storage-credentials", [])
         for block in credential_blocks:
             assert not any(
