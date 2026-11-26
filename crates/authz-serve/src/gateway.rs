@@ -38,6 +38,7 @@ struct Gateway {
 #[derive(Clone, Deserialize)]
 struct Claims {
     sub: String,
+    exp: u64,
 }
 
 #[derive(Clone, Deserialize)]
@@ -142,7 +143,7 @@ impl Gateway {
             return Err(16);
         }
         let kid = header.kid.ok_or(16u8)?;
-        // Fetch on each RPC in this spike: no stale-key cache or unknown-kid fallback.
+        // Fetch on each RPC: no stale-key cache or unknown-kid fallback.
         let jwks: JwkSet =
             serde_json::from_slice(&self.call(&self.jwks, None).await.map_err(|_| 14u8)?)
                 .map_err(|_| 14u8)?;
@@ -211,6 +212,9 @@ impl Gateway {
             _ => "sail_invalid_request",
         };
         let mut tx = self.db.0.begin().await?;
+        sqlx::query("SET LOCAL statement_timeout = '2s'")
+            .execute(&mut *tx)
+            .await?;
         Database::audit_result(
             &mut tx,
             &check,
@@ -423,6 +427,18 @@ async fn forward(
             }
             return refuse(respond, code);
         }
+    }
+    // A slow upload or live lookup must not extend a token's validity.
+    if std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(true, |now| now.as_secs() >= claims.exp)
+    {
+        let code = if app.audit(None, Some(team), 16, &method).await.is_ok() {
+            16
+        } else {
+            14
+        };
+        return refuse(respond, code);
     }
     if app
         .audit(Some(claims), Some(team), 0, &method)
