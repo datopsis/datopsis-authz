@@ -51,6 +51,7 @@ class FidoCache(unittest.TestCase):
              patch.object(preflight, 'SOURCE', self.source), \
              patch.object(preflight, 'CACHE', cache), \
              patch('sys.argv', ['check-fixture-inputs.py']), \
+             patch.dict(preflight.os.environ, {'INTEGRATION_ARCH': 'amd64'}), \
              patch.object(preflight.subprocess, 'check_output', side_effect=[revision, '', revision, '']), \
              patch.object(preflight.subprocess, 'run') as run:
             preflight.main()

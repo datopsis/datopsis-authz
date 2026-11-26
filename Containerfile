@@ -8,7 +8,7 @@ WORKDIR /bundle
 RUN sha256sum --check SHA256SUMS \
     && rpmkeys --checksig build-rpms/*.rpm \
     && rpm -qp --qf '%{NAME}-%{EPOCHNUM}:%{VERSION}-%{RELEASE}.%{ARCH}\n' build-rpms/*.rpm | sort > /actual-nevras \
-    && diff -u build-rpms.nevras /actual-nevras \
+    && test "$(cat build-rpms.nevras)" = "$(cat /actual-nevras)" \
     && rpm --upgrade --replacepkgs build-rpms/*.rpm \
     && mkdir /toolchain /cargo-auditable \
     && tar -xf tools/rust.tar.xz -C /toolchain --strip-components=1 \
@@ -41,7 +41,7 @@ WORKDIR /bundle
 RUN --network=none sha256sum --check SHA256SUMS \
     && rpmkeys --root /runtime --checksig rpms/*.rpm \
     && rpm -qp --qf '%{NAME}-%{EPOCHNUM}:%{VERSION}-%{RELEASE}.%{ARCH}\n' rpms/*.rpm | sort > /actual-runtime-nevras \
-    && diff -u rpms.nevras /actual-runtime-nevras \
+    && test "$(cat rpms.nevras)" = "$(cat /actual-runtime-nevras)" \
     && rpm --root /runtime --upgrade --replacepkgs rpms/*.rpm \
     && find /runtime -xdev -type f -perm /6000 -exec chmod a-s '{}' + \
     && rm -rf /runtime/var/cache/* /runtime/var/log/* /runtime/tmp/*
