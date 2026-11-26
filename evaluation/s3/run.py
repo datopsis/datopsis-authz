@@ -195,9 +195,11 @@ def evaluate():
     def team(name):
         other = 'b' if name=='a' else 'a'
         value = 11 if name=='a' else 22
+        # Sail 0.7.3 names this SHOW TABLES column 'database'. Require the
+        # complete exact records, then exercise both reads and cross-team denials.
         return dict(tables=rows(tokens[name],'SHOW TABLES IN bakeoff.team_'+name,
-                    [{'namespace':'team_'+name,'tableName':'sample','isTemporary':False},
-                     {'namespace':'team_'+name,'tableName':'sibling','isTemporary':False}],shared_session),
+                    [{'database':'team_'+name,'tableName':'sample','isTemporary':False},
+                     {'database':'team_'+name,'tableName':'sibling','isTemporary':False}],shared_session),
             own=rows(tokens[name],'SELECT id FROM bakeoff.team_'+name+'.sample',[{'id':value}],shared_session),
             other=denied(tokens[name],'SELECT * FROM bakeoff.team_'+other+'.sample',shared_session))
     record('team_a',lambda:team('a'))
