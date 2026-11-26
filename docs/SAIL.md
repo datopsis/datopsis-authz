@@ -154,5 +154,5 @@ upstream DATA credit is released only after downstream acceptance. The private
 socket bridge relays bytes without changing Sail's keepalive settings.
 C1–C8 and every slice-2 assertion remain separate blocking regression checks.
 Missing prerequisites remain BLOCKED, and inherited security gates stay red.
-See the slice-3 evaluation record for actual evidence; spike passes do not qualify
+See the [S3 follow-on report](spikes/S3-sail-gateway.md) and PR evaluation record for actual evidence; spike passes do not qualify
 this implementation. Local checks are limited to lightweight source/unit checks.
