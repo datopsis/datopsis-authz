@@ -12,12 +12,12 @@ import sys
 def read_lock(path):
     # Cargo-generated v4 lock syntax only. UBI 9's Python 3.9 has no tomllib.
     # Reject unknown syntax instead of silently skipping integrity fields.
-    blocks = path.read_text().split('[[package]]')
+    blocks = re.split(r'\[\[(package|patch\.unused)\]\]', path.read_text())
     header = '\n'.join(line for line in blocks[0].splitlines() if line and not line.startswith('#'))
     if header != 'version = 4':
         raise ValueError('Unexpected Cargo.lock header')
-    packages = []
-    for block in blocks[1:]:
+    packages, unused = [], []
+    for kind, block in zip(blocks[1::2], blocks[2::2]):
         package = {}
         match = re.search(r'dependencies = (\[[^]]*\])', block)
         if match:
@@ -35,10 +35,10 @@ def read_lock(path):
             package[field[1]] = json.loads(field[2])
         if not package.get('name') or not package.get('version'):
             raise ValueError('Missing package identity')
-        packages.append(package)
+        (packages if kind == 'package' else unused).append(package)
     if not packages:
         raise ValueError('Empty package lock')
-    return {'package': packages}
+    return {'package': packages, 'unused_patches': unused}
 
 
 def identity(package):
@@ -60,6 +60,12 @@ def dependencies(package, packages):
 
 def verify_subset(original, isolated):
     reviewed = {identity(p): p for p in original['package']}
+    for patch in isolated.get('unused_patches', []):
+        # Cargo records a no-longer-selected patch as metadata, not a package.
+        # It must still refer to an exact reviewed identity, without new edges.
+        before = reviewed.get(identity(patch))
+        if before is None or 'dependencies' in patch or any(before.get(k) != v for k,v in patch.items()):
+            raise ValueError('Unreviewed unused patch record: '+str(patch))
     for package in isolated['package']:
         key = identity(package)
         if key not in reviewed:
@@ -93,10 +99,16 @@ def main():
     original = read_lock(source/'Cargo.lock')
     isolated = read_lock(destination/'Cargo.lock')
     verify_subset(original, isolated)
+    host = next(line.split(': ', 1)[1] for line in subprocess.check_output(
+        ['rustc', '-vV'], text=True).splitlines() if line.startswith('host: '))
+    metadata = json.loads(subprocess.check_output(['cargo', 'metadata', '--locked', '--offline',
+        '--format-version', '1', '--filter-platform', host], cwd=destination, text=True))
+    if any(p['name'] in {'sqlx', 'sqlx-sqlite', 'libsqlite3-sys'} for p in metadata['packages']):
+        raise ValueError('Authz-only metadata must exclude the multi-database facade and SQLite')
     evidence = {'workspace_members': ['authz-core', 'authz-serve'],
                 'source_packages': len(original['package']),
                 'isolated_packages': len(isolated['package']),
-                'new_packages_or_edges': False}
+                'new_packages_or_edges': False, 'sqlite_in_metadata': False}
     (destination/'workspace-isolation.json').write_text(json.dumps(evidence, indent=2)+'\n')
     print(json.dumps(evidence))
 

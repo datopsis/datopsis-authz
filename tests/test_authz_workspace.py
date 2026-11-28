@@ -2,6 +2,7 @@
 import copy
 import importlib.util
 from pathlib import Path
+import tempfile
 import unittest
 
 spec = importlib.util.spec_from_file_location('isolation', 'scripts/prepare-authz-workspace.py')
@@ -10,6 +11,20 @@ spec.loader.exec_module(isolation)
 
 
 class IsolatedLock(unittest.TestCase):
+    def test_cargo_unused_patch_metadata_requires_exact_reviewed_identity(self):
+        text = 'version = 4\n\n[[package]]\nname = "root"\nversion = "1.0.0"\n\n[[patch.unused]]\nname = "driver"\nversion = "1.0.0"\nsource = "git+reviewed"\n'
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'Cargo.lock';path.write_text(text)
+            isolated = isolation.read_lock(path)
+        self.assertEqual(len(isolated['package']), 1)
+        original = {'package': [{'name':'root','version':'1.0.0'},
+                    {'name':'driver','version':'1.0.0','source':'git+reviewed'}]}
+        isolation.verify_subset(original, isolated)
+        for field,value in [('version','2.0.0'),('source','git+unreviewed'),('dependencies',['root'])]:
+            changed = copy.deepcopy(isolated);changed['unused_patches'][0][field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                isolation.verify_subset(original, changed)
+
     def test_project_lock_is_a_valid_reviewed_subset(self):
         # The project lock is also a valid identity subset of itself.
         lock = isolation.read_lock(Path('Cargo.lock'))
