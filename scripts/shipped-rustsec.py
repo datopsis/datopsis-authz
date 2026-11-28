@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""Gate fixable RustSec advisories against cargo-auditable data in shipped ELFs."""
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import struct
+import subprocess
+import zlib
+
+from rustsec_policy import classify, write_summary
+
+
+def inventory(path):
+    data = path.read_bytes()
+    if data[:6] != b'\x7fELF\x02\x01':
+        raise ValueError('Expected native little-endian ELF64')
+    offset = struct.unpack_from('<Q', data, 40)[0]
+    size, count, strings = struct.unpack_from('<HHH', data, 58)
+    if size != 64 or not 0 < strings < count:
+        raise ValueError('Invalid ELF section table')
+    sections = [struct.unpack_from('<IIQQQQIIQQ', data, offset+i*size) for i in range(count)]
+    table = sections[strings]
+    names = data[table[4]:table[4]+table[5]]
+    matches = [s for s in sections if names[s[0]:].split(b'\0', 1)[0] == b'.dep-v0']
+    if len(matches) != 1:
+        raise ValueError('Missing/duplicate cargo-auditable section')
+    s = matches[0]
+    obj = json.loads(zlib.decompress(data[s[4]:s[4]+s[5]]))
+    packages = obj['packages']
+    if not packages or not all(p.get('name') and p.get('version') for p in packages):
+        raise ValueError('Empty/invalid cargo-auditable inventory')
+    if obj.get('format', 0) < 2:
+        raise ValueError('Inventory must distinguish proc-macros from shipped runtime code')
+    if sum(bool(p.get('root')) for p in packages) != 1:
+        raise ValueError('Inventory must identify exactly one root binary')
+    if any(p.get('kind', 'runtime') not in ('runtime', 'build') for p in packages):
+        raise ValueError('Unknown cargo-auditable dependency kind')
+    return obj
+
+
+def image_inventory(name, path):
+    metadata = inventory(path)
+    if name == 'authz' and any(p['name'] in {'libsqlite3-sys', 'sqlx-sqlite'} for p in metadata['packages']):
+        raise ValueError('Unused SQLite component must be absent from the authz binary inventory')
+    return metadata
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--inventory-only', action='store_true')
+    args = parser.parse_args()
+    root = Path('reports/images')
+    if args.inventory_only:
+        for name in ['authz', 'lakekeeper-authz']:
+            directory = root/name
+            metadata = image_inventory(name, directory/'binary')
+            (directory/'cargo-auditable.json').write_text(json.dumps(metadata,indent=2)+'\n')
+            print(name, 'validated cargo-auditable format', metadata['format'])
+        return 0
+    # Invoke the pinned executable installed before fixture builds, independently
+    # of host rustup toolchain/proxy changes made during owner acquisition.
+    result = subprocess.run([os.environ.get('CARGO_AUDIT_EXECUTABLE', 'cargo-audit'),
+                             'audit', '--json', '--file', 'Cargo.lock'], capture_output=True, text=True)
+    if result.returncode not in (0, 1):
+        raise RuntimeError('RustSec execution failed: '+result.stderr)
+    report = json.loads(result.stdout)
+    (root/'full-lock-rustsec.json').write_text(json.dumps(report, indent=2)+'\n')
+    blocked = False
+    for name in ['authz', 'lakekeeper-authz']:
+        directory = root/name
+        binary = directory/'binary'
+        metadata = image_inventory(name, binary)
+        (directory/'cargo-auditable.json').write_text(json.dumps(metadata, indent=2)+'\n')
+        packages = {(p['name'], p['version']) for p in metadata['packages'] if p.get('kind', 'runtime') == 'runtime'}
+        classification = classify(report, packages)
+        output = {'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
+                  'database':report['database'], 'shipped_package_count':len(packages),
+                  'cargo_lock_sha256': hashlib.sha256(Path('Cargo.lock').read_bytes()).hexdigest(),
+                  'blocking_shipped':classification['blocking'],
+                  'report_only_shipped_no_patch':classification['report_only_no_patch'],
+                  'nonblocking_build_only_or_unselected':classification['report_only_build_or_unselected'],
+                  'report_only_non_advisory_warnings':classification['report_only_non_advisory_warnings']}
+        (directory/'rustsec.json').write_text(json.dumps(output,indent=2)+'\n')
+        write_summary(directory/'rustsec.md', name, classification)
+        blocked |= bool(classification['blocking'])
+    return int(blocked)
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

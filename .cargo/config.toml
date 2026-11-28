@@ -1,0 +1,7 @@
+[build]
+# The pinned upstream crate requires these cfgs; Cargo does not inherit a
+# dependency workspace's .cargo/config.toml into an out-of-tree consumer.
+rustflags = ["--cfg", "tracing_unstable", "--cfg", "tokio_unstable"]
+jobs = 2
+[env]
+SQLX_OFFLINE = "true"

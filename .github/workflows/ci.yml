@@ -1,0 +1,279 @@
+name: Catalog, Trino and Sail MVP
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - run: python3 scripts/check-lf.py
+      - run: cargo fmt --all -- --check
+      - run: python3 scripts/check-sail-lock.py
+      - run: python3 -m unittest discover -s tests
+      - run: |
+          python3 -m pip install PyYAML==6.0.2
+          python3 -c 'import yaml,pathlib; [yaml.safe_load(p.read_text()) for p in pathlib.Path(".github/workflows").glob("*.yml")]'
+      - run: cargo install cargo-audit --version 0.22.2 --locked
+      - run: python3 scripts/dependency-audit.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: dependency-audit
+          path: reports/audit/
+          if-no-files-found: error
+  fido:
+    name: FIDO metadata
+    runs-on: ubuntu-24.04
+    outputs:
+      key: ${{ steps.rauthy-fido-key.outputs.key }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Read locked Rauthy FIDO cache key
+        id: rauthy-fido-key
+        run: python3 scripts/check-fixture-inputs.py --cache-key >> "$GITHUB_OUTPUT"
+      - name: Restore Rauthy FIDO feed bytes
+        id: rauthy-fido-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .sources/fixture-inputs/fido-mds.jwt
+          key: ${{ steps.rauthy-fido-key.outputs.key }}
+      - name: Verify Rauthy FIDO feed (always, including cache hits)
+        id: rauthy-fido-verified
+        run: python3 scripts/check-fixture-inputs.py
+      - name: Save verified Rauthy FIDO feed bytes
+        if: ${{ success() && steps.rauthy-fido-verified.outcome == 'success' && steps.rauthy-fido-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .sources/fixture-inputs/fido-mds.jwt
+          key: ${{ steps.rauthy-fido-key.outputs.key }}
+  native:
+    needs: fido
+    name: native (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: amd64
+            machine: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: arm64
+            machine: aarch64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    env:
+      SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+      CARGO_BUILD_JOBS: 2
+      INTEGRATION_ARCH: ${{ matrix.arch }}
+      EXPECTED_MACHINE: ${{ matrix.machine }}
+      FIDO_MDS_CACHE_DIR: ${{ github.workspace }}/.sources/fixture-inputs
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - run: |
+          test "$(uname -m)" = "$EXPECTED_MACHINE"
+          df -h
+          sudo apt-get update -qq
+          sudo apt-get install -y protobuf-compiler libssl-dev pkg-config postgresql apache2-utils
+      - name: Pinned acceptance fixture and blocked-result initialization
+        run: |
+          git clone https://github.com/datopsis/lakehouse-integration .sources/lakehouse-integration
+          git -C .sources/lakehouse-integration checkout --detach e8379a528bf413c05aad49e56bc8cd507b5e077a
+          python3 -m venv .venv
+          .venv/bin/pip install --require-hashes -r .sources/lakehouse-integration/requirements.txt
+          echo "RUN_URL=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> "$GITHUB_ENV"
+      - run: .venv/bin/python evaluation/s1/run.py initialize
+      - run: .venv/bin/python evaluation/s2/run.py initialize
+      - run: .venv/bin/python evaluation/s3/run.py initialize
+      - name: Fixture unit checks
+        run: python3 -m unittest discover -s evaluation/s1 -p 'test_*.py'
+      - name: Install pinned RustSec tool before owner fixture toolchains
+        run: |
+          cargo install cargo-audit --version 0.22.2 --locked --root "$RUNNER_TEMP/authz-audit"
+          echo "CARGO_AUDIT_EXECUTABLE=$RUNNER_TEMP/authz-audit/bin/cargo-audit" >> "$GITHUB_ENV"
+      - name: Restore verified Rauthy FIDO feed bytes
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: .sources/fixture-inputs/fido-mds.jwt
+          key: ${{ needs.fido.outputs.key }}
+      - name: Verify immutable fixture inputs before compilation (including cache hits)
+        run: python3 scripts/check-fixture-inputs.py
+      - name: Acquire locked native UBI inputs
+        run: python3 scripts/image-inputs.py "$INTEGRATION_ARCH"
+      - name: Build both hardened images from this head
+        id: hardened-build
+        run: |
+          source .image-bundle/build.env
+          for image in authz lakekeeper-authz; do
+            docker build -f Containerfile --target "$image" -t "localhost/$image:s4a" \
+              --build-arg "BUILDER=$BUILDER" --build-arg "RUNTIME=$RUNTIME" \
+              --build-arg "SOURCE_REVISION=$SOURCE_REVISION" \
+              --build-arg "LOCK_SHA256=$(sha256sum artifacts/images.lock.json | cut -d ' ' -f 1)" .
+          done
+          docker tag localhost/authz:s4a localhost/authz-serve:s1
+          docker tag localhost/lakekeeper-authz:s4a localhost/lakekeeper-datopsis:s1
+      - name: Native role selection, provenance and hardening assertions
+        run: python3 scripts/image-hardening.py
+      - name: Qualify embedded inventories before external fixture builds
+        run: python3 scripts/shipped-rustsec.py --inventory-only
+      - name: Retain native build and hardening evidence immediately
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: image-build-${{ matrix.arch }}-${{ github.run_id }}
+          path: |
+            reports/images/**/build-hardening.json
+            reports/images/**/cargo-auditable.json
+          if-no-files-found: error
+          retention-days: 14
+      - run: python3 scripts/tls-smoke.py
+      - name: Build pinned owner fixture images without source changes
+        run: |
+          sudo apt-get install -y rpm podman gnupg argon2
+          .venv/bin/python evaluation/s1/run.py build
+      - name: Runtime loader and policy schema smoke
+        run: |
+          docker run --rm localhost/lakekeeper-datopsis:s1 version
+          docker run --rm localhost/authz-serve:s1 policy
+      - run: |
+          python3 scripts/image-evidence.py
+        id: images
+      - name: Sail JWT, team isolation, live revocation, fail closed, audit and blocking paced stream
+        if: ${{ !cancelled() && steps.images.outcome == 'success' }}
+        run: .venv/bin/python evaluation/s3/run.py
+      - name: Trino scalar, batch, row, mask, parity, revocation, audit and outage assertions
+        if: ${{ !cancelled() && steps.images.outcome == 'success' }}
+        id: s2
+        run: .venv/bin/python evaluation/s2/run.py
+      - name: C1-C8 unchanged assertions except documented backend/C3 adaptation
+        if: ${{ !cancelled() && steps.images.outcome == 'success' }}
+        run: .venv/bin/python evaluation/s1/run.py
+      - name: Trivy authz (unfiltered)
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: localhost/authz:s4a
+          format: json
+          output: reports/images/authz/trivy.json
+          exit-code: '0'
+          ignore-unfixed: false
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      - name: Grype authz (unfiltered)
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439
+        with:
+          image: localhost/authz:s4a
+          output-format: json
+          output-file: reports/images/authz/grype.json
+          severity-cutoff: negligible
+          only-fixed: false
+          fail-build: false
+          grype-version: v0.118.0
+          cache-db: true
+      - name: Blocking UBI gate authz
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        run: bash scripts/run-image-gate.sh authz
+      - name: Trivy lakekeeper-authz (unfiltered)
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: localhost/lakekeeper-authz:s4a
+          format: json
+          output: reports/images/lakekeeper-authz/trivy.json
+          exit-code: '0'
+          ignore-unfixed: false
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+      - name: Grype lakekeeper-authz (unfiltered)
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439
+        with:
+          image: localhost/lakekeeper-authz:s4a
+          output-format: json
+          output-file: reports/images/lakekeeper-authz/grype.json
+          severity-cutoff: negligible
+          only-fixed: false
+          fail-build: false
+          grype-version: v0.118.0
+          cache-db: true
+      - name: Blocking UBI gate lakekeeper-authz
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        run: bash scripts/run-image-gate.sh lakekeeper-authz
+      - name: Blocking shipped RustSec and separate build-only report
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        run: |
+          python3 scripts/shipped-rustsec.py
+      - name: Cleanup and sanitize evidence
+        if: always()
+        run: |
+          if test -x .venv/bin/python; then
+            .venv/bin/python evaluation/s1/run.py cleanup
+            .venv/bin/python evaluation/s2/run.py cleanup
+            .venv/bin/python evaluation/s3/run.py cleanup
+          fi
+      - name: Retain sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: s1-${{ matrix.runner }}-${{ github.run_id }}
+          path: |
+            reports/s1/
+            reports/s2/
+            reports/s3/
+            reports/images/
+            !reports/images/**/binary
+          if-no-files-found: error
+          retention-days: 14
+
+  rustsec-tracking:
+    name: RustSec advisory tracking
+    needs: native
+    if: ${{ always() && !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+      issues: write
+    concurrency:
+      group: rustsec-advisory-tracking
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: s1-*-${{ github.run_id }}
+          path: reports/tracking-inputs
+      - name: Publish the one tracking issue only when its set changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/rustsec-tracking.py --reports reports/tracking-inputs
+
+  test:
+    name: test
+    needs: [fido, native, rustsec-tracking]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - run: |
+          test "$FIDO_RESULT" = success
+          test "$NATIVE_RESULT" = success
+          if test "$TRACKING_RESULT" != success; then
+            test "$TRACKING_RESULT" = skipped
+            test "$IS_FORK" = true
+          fi
+        env:
+          IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+          TRACKING_RESULT: ${{ needs.rustsec-tracking.result }}
+          FIDO_RESULT: ${{ needs.fido.result }}
+          NATIVE_RESULT: ${{ needs.native.result }}
