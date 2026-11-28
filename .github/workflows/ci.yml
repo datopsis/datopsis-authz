@@ -97,6 +97,10 @@ jobs:
       - run: .venv/bin/python evaluation/s3/run.py initialize
       - name: Fixture unit checks
         run: python3 -m unittest discover -s evaluation/s1 -p 'test_*.py'
+      - name: Install pinned RustSec tool before owner fixture toolchains
+        run: |
+          cargo install cargo-audit --version 0.22.2 --locked --root "$RUNNER_TEMP/authz-audit"
+          echo "CARGO_AUDIT_EXECUTABLE=$RUNNER_TEMP/authz-audit/bin/cargo-audit" >> "$GITHUB_ENV"
       - name: Restore verified Rauthy FIDO feed bytes
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
@@ -206,7 +210,6 @@ jobs:
       - name: Blocking shipped RustSec and separate build-only report
         if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
         run: |
-          cargo install cargo-audit --version 0.22.2 --locked
           python3 scripts/shipped-rustsec.py
       - name: Cleanup and sanitize evidence
         if: always()

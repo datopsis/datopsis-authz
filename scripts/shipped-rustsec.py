@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import struct
 import subprocess
@@ -58,7 +59,10 @@ def main():
             (directory/'cargo-auditable.json').write_text(json.dumps(metadata,indent=2)+'\n')
             print(name, 'validated cargo-auditable format', metadata['format'])
         return 0
-    result = subprocess.run(['cargo', 'audit', '--json', '--file', 'Cargo.lock'], capture_output=True, text=True)
+    # Invoke the pinned executable installed before fixture builds, independently
+    # of host rustup toolchain/proxy changes made during owner acquisition.
+    result = subprocess.run([os.environ.get('CARGO_AUDIT_EXECUTABLE', 'cargo-audit'),
+                             'audit', '--json', '--file', 'Cargo.lock'], capture_output=True, text=True)
     if result.returncode not in (0, 1):
         raise RuntimeError('RustSec execution failed: '+result.stderr)
     report = json.loads(result.stdout)
