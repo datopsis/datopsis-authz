@@ -9,6 +9,6 @@ tokio.workspace = true
 lakekeeper.workspace = true
 lakekeeper-storage-postgres.workspace = true
 lakekeeper-authz = { path = "../lakekeeper-authz" }
-# Existing locked transport crates; no new crate or version.
-axum-server = { version = "0.7", features = ["tls-rustls-no-provider"] }
+# Coordinator-approved axum-server 0.9.2 transport refresh (2026-11-27).
+axum-server = { version = "=0.9.2", features = ["tls-rustls-no-provider"] }
 tokio-rustls = "=0.26.6"

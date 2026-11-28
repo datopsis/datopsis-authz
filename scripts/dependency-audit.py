@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import subprocess
 
+from rustsec_policy import classify, write_summary
+
 out = Path('reports/audit')
 out.mkdir(parents=True, exist_ok=True)
 # The two packages are precisely the shipped binaries. Resolve together, just as
@@ -17,19 +19,15 @@ if audit.returncode not in (0,1):
     raise RuntimeError('cargo audit failed to execute')
 report = json.loads(audit.stdout)
 (out/'full-lock.json').write_text(json.dumps(report,indent=2)+'\n')
-runtime = {tuple(line.replace(' (*)','').split()[:2]) for line in tree.splitlines()}
-blocking, nonblocking = [], []
-for finding in report['vulnerabilities']['list']:
-    package = finding['package']
-    item = {'crate':package['name'],'version':package['version'], 'advisory':finding['advisory']['id']}
-    (blocking if (package['name'],'v'+package['version']) in runtime else nonblocking).append(item)
-result = {'blocking_runtime':blocking,'nonblocking_build_or_unselected':nonblocking,'warnings':report.get('warnings',{})}
+runtime = {(line.replace(' (*)','').split()[0], line.replace(' (*)','').split()[1].removeprefix('v'))
+           for line in tree.splitlines()}
+classification = classify(report, runtime)
+result = {'database':report['database'],
+          'blocking_runtime':classification['blocking'],
+          'report_only_runtime_no_patch':classification['report_only_no_patch'],
+          'nonblocking_build_or_unselected':classification['report_only_build_or_unselected'],
+          'report_only_non_advisory_warnings':classification['report_only_non_advisory_warnings'],
+          'warnings':report['warnings']}
 (out/'classification.json').write_text(json.dumps(result,indent=2)+'\n')
-summary = f'Blocking shipped dependency findings: {len(blocking)}\nNon-blocking build-only/unselected findings: {len(nonblocking)}\n\n'+json.dumps(result,indent=2)
-if any(item['crate'] == 'quick-xml' for item in blocking):
-    summary += '\n\nOwner status: upstream Lakekeeper, Azure path, no fix yet; upstream proposal in progress. Lint remains RED; no ignore or S3-only patch. Merge waits for upstream.'
-print(summary)
-if os.environ.get('GITHUB_STEP_SUMMARY'):
-    with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as handle:
-        handle.write('```\n'+summary+'\n```\n')
-raise SystemExit(bool(blocking))
+write_summary(out/'summary.md', 'Selected source runtime', classification)
+raise SystemExit(bool(classification['blocking']))

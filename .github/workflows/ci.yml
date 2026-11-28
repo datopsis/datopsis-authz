@@ -230,13 +230,47 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  rustsec-tracking:
+    name: RustSec advisory tracking
+    needs: native
+    if: ${{ always() && !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+      issues: write
+    concurrency:
+      group: rustsec-advisory-tracking
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: s1-*-${{ github.run_id }}
+          path: reports/tracking-inputs
+      - name: Publish the one tracking issue only when its set changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/rustsec-tracking.py --reports reports/tracking-inputs
+
   test:
     name: test
-    needs: [fido, native]
+    needs: [fido, native, rustsec-tracking]
     if: always()
     runs-on: ubuntu-24.04
     steps:
-      - run: test "$FIDO_RESULT" = success && test "$NATIVE_RESULT" = success
+      - run: |
+          test "$FIDO_RESULT" = success
+          test "$NATIVE_RESULT" = success
+          if test "$TRACKING_RESULT" != success; then
+            test "$TRACKING_RESULT" = skipped
+            test "$IS_FORK" = true
+          fi
         env:
+          IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+          TRACKING_RESULT: ${{ needs.rustsec-tracking.result }}
           FIDO_RESULT: ${{ needs.fido.result }}
           NATIVE_RESULT: ${{ needs.native.result }}

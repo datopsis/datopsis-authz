@@ -417,7 +417,7 @@ async fn main() -> anyhow::Result<()> {
     axum_server::bind_rustls(
         std::env::var("AUTHZ_LISTEN")
             .unwrap_or("0.0.0.0:8443".into())
-            .parse()?,
+            .parse::<std::net::SocketAddr>()?,
         tls,
     )
     .serve(router.into_make_service())

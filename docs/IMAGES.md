@@ -91,7 +91,9 @@ Its availability policy and thresholds are unchanged.
 The independent RustSec gate reads the shipped ELF's `.dep-v0` section, requires
 cargo-auditable format 2 or newer, separates runtime from build/proc-macro
 packages, and classifies every full-lock vulnerability and advisory warning.
-All runtime findings block, regardless of fix availability or severity. Packages
+A runtime advisory blocks iff RustSec reports a nonempty `versions.patched`
+list, irrespective of severity or advisory type (owner decision 2026-11-27).
+No-patch runtime advisories are reported and tracked without blocking. Packages
 not selected for that binary go into a separate non-blocking report. Missing or
 malformed evidence fails closed. No reachability claim or advisory exemption is
 used. Stable Cargo's embedded graph can conservatively overinclude runtime

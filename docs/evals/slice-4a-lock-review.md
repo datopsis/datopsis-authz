@@ -89,3 +89,31 @@ Two direct transport edges were added to `lakekeeper-bin-datopsis`: already lock
 The production `crates/lakekeeper/src/service/authz/mod.rs` prefix before `pub mod tests` is byte-identical between 9bd3771 and a8e013b. The Authorizer trait and all action/lifecycle methods are unchanged. The ServeConfiguration API and authentication/composition calls used by this binary are unchanged. No Cedar authorizer behavior or adapter interface change is required. Storage-postgres pool/state and migrate_core_only signatures are unchanged.
 
 Lakekeeper 0.13.6 (29c53e3) stopped emitting credential-less storage-credentials entries. C6 now explicitly requires absence for its static non-STS profile, retaining all denied-credential and secret-key assertions.
+
+
+## Coordinator-approved TLS refresh (2026-11-27)
+
+Baseline: PR head `56958317324edd37cac6d74ed360036b554d8565`.
+Latest non-yanked 0.9 patch verified from crates.io: **axum-server 0.9.2**
+(0.9.1 is yanked). Both consumers pin exactly `=0.9.2`.
+
+Every additional Cargo.lock identity change:
+
+| Crate | Before | After | Reason |
+| --- | --- | --- | --- |
+| axum-server | 0.7.3 | 0.9.2 | Approved TLS transport refresh |
+| rustls-pemfile | 2.2.0 | removed | axum-server now parses PEM via already-locked rustls-pki-types |
+
+No other crate version, checksum, git source or existing package entry changed.
+The axum-server dependency-edge changes are:
+
+- Before: `arc-swap, bytes, fs-err, http 1.5.0, http-body, hyper, hyper-util, pin-project-lite, rustls, rustls-pemfile, rustls-pki-types, tokio, tokio-rustls, tower-service`
+- After: `arc-swap, bytes, either, fs-err, http 1.5.0, http-body, hyper, hyper-util, pin-project-lite, rustls, rustls-pki-types, socket2, tokio, tokio-rustls, tower-service`
+
+API adaptation: 0.9's `bind_rustls` accepts a generic Address. The serve role's
+listen-address parse now explicitly selects `std::net::SocketAddr`; the same
+address/default is retained. RustlsConfig::from_pem_file and get_inner APIs used
+by both binaries and the Sail gateway are unchanged, so no other Rust adaptation
+is needed. TLS provider, ALPN configuration, roots, verification, role behavior,
+and all negative TLS and C1-C8/Trino/Sail oracles are unchanged. rustls-pki-types
+was already resolved; there is no new dependency tree.

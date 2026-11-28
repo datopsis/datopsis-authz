@@ -3,6 +3,8 @@ import importlib.util
 import json
 from pathlib import Path
 import struct
+import sys
+sys.path.insert(0, str(Path('scripts').resolve()))
 import tempfile
 import unittest
 import zlib

@@ -29,6 +29,15 @@ merge waits for the upstream fix. Rauthy PR #3 is approved for test builds only;
 its SvelteKit gate stays RED pending a separate owner decision. Do not bypass
 its FIDO verification or checksum guards.
 
+Owner decision 2026-11-27: RustSec advisories for shipped crates block iff their
+`versions.patched` list is nonempty, regardless of advisory type. No-patch
+advisories are reported in job summaries and one scheduled tracking issue;
+build-only/unselected findings remain report-only. No per-ID ignore/exemption
+list. Missing/malformed evidence still fails closed. Coordinator approved the
+axum-server 0.7.3 -> 0.9.2 refresh to remove rustls-pemfile, with only required API
+adaptation and a complete lock diff; preserve all TLS negative tests and all 34
+native regression cases on both architectures.
+
 CI-first: locally run only lightweight lint, unit tests, YAML/LF, cargo check/clippy.
 Image builds, artifact acquisition/unpacking, scans, container/runtime tests and
 native multi-architecture validation run only in existing PR Actions jobs. Read

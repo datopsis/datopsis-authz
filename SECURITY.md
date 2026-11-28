@@ -55,6 +55,17 @@ accepted. See [runtime configuration](docs/IMAGES.md).
 
 Shipped RustSec classification comes from each actual binary's cargo-auditable
 runtime inventory; build/proc-macro/unselected dependencies are reported
-separately. Every shipped advisory warning/vulnerability blocks. Both image
+separately. Owner policy (2026-11-27): a shipped RustSec advisory blocks when its
+`versions.patched` list is nonempty, whatever its type. Shipped advisories with
+no patched version are report-only and tracked; their type alone cannot grant
+an exemption. Build-only/unselected findings remain report-only. Invalid or
+missing patch evidence fails closed. Both image
 scanners and native UBI fix queries are mandatory; no query failure can qualify
 an RPM deferral. Provenance must match the PR head and the artifact lock hash.
+
+
+The one [RustSec tracking issue](docs/RUSTSEC-TRACKING.md) is updated only when the
+tracking set (including patch/replacement guidance) changes. Daily checks use
+fresh RustSec data against the latest completed default-branch native image
+inventories and their exact source lock. New patched versions make the advisory
+blocking automatically in both gates, with no per-ID configuration.

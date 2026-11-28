@@ -1,5 +1,19 @@
 # Changelog
 
+## Owner decisions — 2026-11-27
+
+- Upgrade axum-server 0.7.3 to the latest non-yanked 0.9 patch, 0.9.2, in both
+  binaries; remove rustls-pemfile 2.2.0. Only the generic bind address needs an
+  explicit SocketAddr type. Preserve TLS behavior and all native negative cases.
+- Share a data-driven RustSec policy across source lint and shipped-binary
+  gates: published patched versions for shipped crates block for every advisory
+  type. No-patch advisories are reported/tracked without blocking; build-only or
+  unselected crates stay report-only. No per-ID ignores or exemptions.
+- Add one marked tracking issue and daily fresh-advisory tracking, with comments
+  only when its set/patch/replacement guidance changes. PR CI bootstraps the same
+  issue from both native image reports; daily scheduling activates on main.
+
+
 ## Slice 4a (in progress)
 
 - Pin cargo-auditable 0.7.8 native tool archives by official release SHA-256;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gate every RustSec advisory against cargo-auditable data in the shipped ELFs."""
+"""Gate fixable RustSec advisories against cargo-auditable data in shipped ELFs."""
 import argparse
 import hashlib
 import json
@@ -7,6 +7,8 @@ from pathlib import Path
 import struct
 import subprocess
 import zlib
+
+from rustsec_policy import classify, write_summary
 
 
 def inventory(path):
@@ -54,13 +56,6 @@ def main():
         raise RuntimeError('RustSec execution failed: '+result.stderr)
     report = json.loads(result.stdout)
     (root/'full-lock-rustsec.json').write_text(json.dumps(report, indent=2)+'\n')
-    findings = report['vulnerabilities']['list']
-    warnings = report['warnings']
-    if not isinstance(warnings, dict):
-        raise ValueError('Malformed RustSec warnings')
-    for kind, rows in warnings.items():
-        for row in rows:
-            findings.append({**row, 'warning_kind': kind})
     blocked = False
     for name in ['authz', 'lakekeeper-authz']:
         directory = root/name
@@ -68,16 +63,17 @@ def main():
         metadata = inventory(binary)
         (directory/'cargo-auditable.json').write_text(json.dumps(metadata, indent=2)+'\n')
         packages = {(p['name'], p['version']) for p in metadata['packages'] if p.get('kind', 'runtime') == 'runtime'}
-        shipped, build_only = [], []
-        for finding in findings:
-            p = finding['package']
-            (shipped if (p['name'],p['version']) in packages else build_only).append(finding)
+        classification = classify(report, packages)
         output = {'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
                   'database':report['database'], 'shipped_package_count':len(packages),
-                  'blocking_shipped':shipped,'nonblocking_build_only_or_unselected':build_only}
+                  'cargo_lock_sha256': hashlib.sha256(Path('Cargo.lock').read_bytes()).hexdigest(),
+                  'blocking_shipped':classification['blocking'],
+                  'report_only_shipped_no_patch':classification['report_only_no_patch'],
+                  'nonblocking_build_only_or_unselected':classification['report_only_build_or_unselected'],
+                  'report_only_non_advisory_warnings':classification['report_only_non_advisory_warnings']}
         (directory/'rustsec.json').write_text(json.dumps(output,indent=2)+'\n')
-        print(name, 'blocking shipped:',len(shipped),'build-only/unselected:',len(build_only))
-        blocked |= bool(shipped)
+        write_summary(directory/'rustsec.md', name, classification)
+        blocked |= bool(classification['blocking'])
     return int(blocked)
 
 

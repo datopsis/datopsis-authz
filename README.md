@@ -82,3 +82,9 @@ The `lakekeeper-authz` image compiles our Cedar adapter into unmodified Lakekeep
 TLS, cargo-auditable inventories and blocking image/RustSec gates.
 See [image configuration, runtime controls and admission](docs/IMAGES.md).
 Known quick-xml findings still block release; neither image is security-qualified.
+
+RustSec admission follows the owner's 2026-11-27 fixability rule: shipped
+advisories with patched versions block, no-patch advisories are reported and
+tracked, and build-only/unselected crates are report-only. See
+[scheduled advisory tracking](docs/RUSTSEC-TRACKING.md). The coordinator-approved
+axum-server 0.9.2 refresh removes rustls-pemfile without changing TLS policy.
