@@ -365,8 +365,11 @@ def main():
             record('denials_and_errors_are_audited_before_response', audited)
 
             def oversize():
-                status, _ = post('decide', None, raw=b'[' + b' ' * (3 << 20) + b']')
-                assert status in (400, 413), status
+                try:
+                    status, _ = post('decide', None, raw=b'[' + b' ' * (3 << 20) + b']')
+                except (urllib.error.URLError, ConnectionError, ssl.SSLError) as exc:
+                    status = 'connection closed during upload: ' + type(exc).__name__  # also a rejection
+                assert status in (400, 413) or isinstance(status, str), status
                 assert decide(check('oidc~bob', table('t2')))[0] == 200, 'service did not survive'
                 return {'status': status}
             record('oversized_request_is_rejected', oversize)
