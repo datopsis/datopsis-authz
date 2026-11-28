@@ -1,0 +1,18 @@
+{
+  "rauthy-ubi": {
+    "revision": "52c3fec20beca1975467a9c955730082cef8bf46",
+    "source_pr": "https://github.com/datopsis/rauthy-ubi/pull/3",
+    "status": "Coordinator-approved unmerged PR #3 test pin; verified FIDO serial 303, hash-keyed feed cache and PostgreSQL 18.7 fixture; known SvelteKit gate remains RED. A newer feed publication blocks builds until an approved refresh."
+  },
+  "postgresql-ubi": {
+    "revision": "c31b5b8f53873c0e733d5271df45fba4643a4334"
+  },
+  "postgresql-lakekeeper-ubi": {
+    "revision": "1054729c5fa934e2a801a36d81a8b2b264aa8829"
+  },
+  "trino-ubi": {
+    "revision": "9343071e44fc58e4848c6e6b66ae1403a394d17f",
+    "source_pr": "https://github.com/datopsis/trino-ubi/pull/8",
+    "status": "Coordinator-approved unmerged Iceberg + opt-in OPA test pin; known Iceberg JAR CVEs keep the image security gate RED; not release-qualified"
+  }
+}
