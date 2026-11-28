@@ -5,9 +5,24 @@ an execution failure, not evidence that a patch is unavailable.
 """
 import html
 import os
+import re
 from pathlib import Path
 
 GROUPS = ('blocking', 'report_only_no_patch', 'report_only_build_or_unselected')
+
+
+def parse_runtime_tree(tree):
+    runtime = set()
+    for line in tree.splitlines():
+        if not line.strip():
+            continue  # Cargo separates multiple selected package trees with a blank line.
+        parts = line.split()
+        if len(parts) < 2 or not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.+-]+)?', parts[1]):
+            raise ValueError('Malformed Cargo runtime tree row: '+line)
+        runtime.add((parts[0], parts[1][1:]))
+    if not runtime:
+        raise ValueError('Empty Cargo runtime tree')
+    return runtime
 
 
 def audit_findings(report):

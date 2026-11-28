@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 import unittest
 sys.path.insert(0, str(Path('scripts').resolve()))
-from rustsec_policy import classify, markdown
+from rustsec_policy import classify, markdown, parse_runtime_tree
 
 
 def finding(patched, kind=None, name='library'):
@@ -22,6 +22,15 @@ def report(row):
 
 class FixabilityPolicy(unittest.TestCase):
     runtime = {('library','1.0.0')}
+
+    def test_multiple_cargo_trees_allow_separators_and_repeated_dependencies(self):
+        tree = 'first v1.0.0 (/source/first)\nlibrary v1.0.0 (*)\n\nsecond v2.0.0\nlibrary v1.0.0\n'
+        self.assertEqual(parse_runtime_tree(tree), {('first','1.0.0'),('second','2.0.0'),('library','1.0.0')})
+
+    def test_empty_or_malformed_cargo_tree_fails_closed(self):
+        for tree in ['', '\n  \n', 'invalid', 'crate version', 'crate v']:
+            with self.subTest(tree=tree), self.assertRaises(ValueError):
+                parse_runtime_tree(tree)
 
     def test_any_shipped_advisory_with_a_patch_blocks(self):
         for kind in [None,'unsound','unmaintained','notice']:

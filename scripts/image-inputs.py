@@ -4,8 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
-import urllib.request
 
 arch = sys.argv[1]
 lock_path = Path('artifacts/images.lock.json')
@@ -22,9 +22,15 @@ for section, items in [('rpms', lock['packages']), ('build-rpms', lock['build_pa
         path = root/section/item['filename']
         path.parent.mkdir(exist_ok=True)
         if not path.exists():
-            with urllib.request.urlopen(item['url'], timeout=120) as source, path.open('wb') as dest:
-                while chunk := source.read(1024*1024):
-                    dest.write(chunk)
+            # Retry transient transport failures, retaining HTTPS verification and
+            # the locked checksum. Never publish partial/unverified input bytes.
+            partial = path.with_name(path.name+'.partial')
+            subprocess.run(['curl','--fail','--location','--show-error','--silent',
+                '--proto','=https','--proto-redir','=https','--retry','5','--retry-all-errors',
+                '--connect-timeout','30','--max-time','600',
+                '--output',str(partial),item['url']], check=True)
+            assert hashlib.file_digest(partial.open('rb'), 'sha256').hexdigest() == item['sha256'], partial
+            partial.replace(path)
         assert hashlib.file_digest(path.open('rb'), 'sha256').hexdigest() == item['sha256'], path
         checks.append(f"{item['sha256']}  {path.relative_to(root)}")
     if section != 'tools':

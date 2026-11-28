@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 
-from rustsec_policy import classify, write_summary
+from rustsec_policy import classify, parse_runtime_tree, write_summary
 
 out = Path('reports/audit')
 out.mkdir(parents=True, exist_ok=True)
@@ -19,8 +19,7 @@ if audit.returncode not in (0,1):
     raise RuntimeError('cargo audit failed to execute')
 report = json.loads(audit.stdout)
 (out/'full-lock.json').write_text(json.dumps(report,indent=2)+'\n')
-runtime = {(line.replace(' (*)','').split()[0], line.replace(' (*)','').split()[1].removeprefix('v'))
-           for line in tree.splitlines()}
+runtime = parse_runtime_tree(tree)
 classification = classify(report, runtime)
 result = {'database':report['database'],
           'blocking_runtime':classification['blocking'],
