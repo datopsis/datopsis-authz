@@ -39,6 +39,13 @@ def inventory(path):
     return obj
 
 
+def image_inventory(name, path):
+    metadata = inventory(path)
+    if name == 'authz' and any(p['name'] in {'libsqlite3-sys', 'sqlx-sqlite'} for p in metadata['packages']):
+        raise ValueError('Unused SQLite component must be absent from the authz binary inventory')
+    return metadata
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--inventory-only', action='store_true')
@@ -47,7 +54,7 @@ def main():
     if args.inventory_only:
         for name in ['authz', 'lakekeeper-authz']:
             directory = root/name
-            metadata = inventory(directory/'binary')
+            metadata = image_inventory(name, directory/'binary')
             (directory/'cargo-auditable.json').write_text(json.dumps(metadata,indent=2)+'\n')
             print(name, 'validated cargo-auditable format', metadata['format'])
         return 0
@@ -60,7 +67,7 @@ def main():
     for name in ['authz', 'lakekeeper-authz']:
         directory = root/name
         binary = directory/'binary'
-        metadata = inventory(binary)
+        metadata = image_inventory(name, binary)
         (directory/'cargo-auditable.json').write_text(json.dumps(metadata, indent=2)+'\n')
         packages = {(p['name'], p['version']) for p in metadata['packages'] if p.get('kind', 'runtime') == 'runtime'}
         classification = classify(report, packages)

@@ -16,6 +16,12 @@
 
 ## Slice 4a (in progress)
 
+- Isolate authz's PostgreSQL-only production workspace and select its package
+  explicitly. Validate the offline-pruned lock as a strict subset of approved
+  identities/checksums/edges; preserve the committed lock and catalog recipe.
+  Require SQLite to be absent from authz's actual embedded inventory, without
+  suppressing any advisory or changing catalog findings.
+
 - Pin cargo-auditable 0.7.8 native tool archives by official release SHA-256;
   preserve the required format-2 proc-macro distinction and qualify inventories
   before external fixture builds. Reuse release dependencies for workspace tests.

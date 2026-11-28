@@ -33,3 +33,21 @@ Slice 4a now composes the regression fixture from the separate, source-built
 layers. This change does not qualify a new runtime pass: the slice-4a PR must
 supply its own native evidence and unsuppressed security results. The Cedar
 Authorizer interface and behavior are unchanged by the Lakekeeper 0.13.9 bump.
+
+## Slice 4a: authz-only build resolution (2026-11-28)
+
+Authz uses PgPool/Postgres exclusively and disables SQLx defaults. Both the
+standalone and combined selected Cargo trees omit SQLite, and run 46087149241
+compiled SQLx core/Postgres/macros but never sqlx-sqlite or libsqlite3-sys.
+Nevertheless cargo-auditable 0.7.8's stable workspace-wide metadata fallback
+recorded a runtime path authz-serve → sqlx → sqlx-sqlite → libsqlite3-sys. This
+is metadata over-inclusion, not evidence of a required SQLite implementation.
+
+The authz production image now resolves/builds only authz-core/authz-serve in an
+isolated workspace. Its offline-pruned lock must be a subset of the original
+identities, integrity fields and dependency edges before a locked offline build.
+The committed lock, external sources, all workspace tests and catalog production
+recipe remain unchanged. Early embedded-inventory qualification requires SQLite
+absence in authz; the ordinary scanners/RustSec gates and all 34 regressions
+remain required on both CPUs. Current-head native proof is pending PR Actions;
+source-tree inspection alone is not a runtime or image-gate pass.

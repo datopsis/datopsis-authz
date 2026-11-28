@@ -4,7 +4,7 @@
 <text x="35" y="40" font-size="24">Slice 4a: two source-built UBI 9 Micro images</text>
 <rect x="30" y="65" width="940" height="70" rx="8" fill="#dce9f7"/>
 <text x="50" y="95" font-size="18">Pinned head + Cargo.lock + per-CPU RPM/toolchain lock</text>
-<text x="50" y="120" font-size="16">Offline auditable build · native amd64 / arm64 · revision + lock-hash provenance</text>
+<text x="50" y="120" font-size="16">Authz-only resolution / unchanged catalog build · offline · native amd64 / arm64</text>
 <rect x="30" y="155" width="450" height="110" rx="8" fill="#dbeee2"/>
 <text x="50" y="185" font-size="20">authz</text>
 <text x="50" y="215" font-size="16">serve / sail-gateway: TLS only</text>

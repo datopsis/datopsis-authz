@@ -60,3 +60,14 @@ class EmbeddedInventory(unittest.TestCase):
         info['packages'][1]['kind']='unknown'
         with self.assertRaises(ValueError):
             self.parse(elf(info))
+
+    def test_authz_requires_absence_of_unused_sqlite_without_catalog_exemption(self):
+        for name in ('libsqlite3-sys', 'sqlx-sqlite'):
+            info = self.valid()
+            info['packages'][1]['name'] = name
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory)/'binary'
+                path.write_bytes(elf(info))
+                with self.assertRaises(ValueError):
+                    shipped.image_inventory('authz', path)
+                self.assertEqual(shipped.image_inventory('lakekeeper-authz', path), info)

@@ -30,10 +30,19 @@ RUN python3 -c 'import hashlib,json; assert hashlib.sha256(open("Cargo.lock","rb
     && rustc --version | grep -F 'rustc 1.94.1 ' \
     && sha256sum Cargo.lock > /cargo-lock.sha256 \
     && cargo fetch --locked
-FROM acquire AS build
+FROM acquire AS checked
 RUN --network=none cargo test --workspace --release --locked --offline
+FROM checked AS build
 RUN --network=none cargo auditable build --release --locked --offline -p authz-serve -p lakekeeper-bin-datopsis \
     && sha256sum --check /cargo-lock.sha256
+# Keep the catalog recipe unchanged. Authz gets its own resolution workspace,
+# because cargo-auditable's stable metadata fallback resolves all workspace members.
+FROM checked AS build-authz
+COPY scripts/prepare-authz-workspace.py /prepare-authz-workspace.py
+RUN --network=none python3 /prepare-authz-workspace.py /authz-src
+WORKDIR /authz-src
+RUN --network=none CARGO_TARGET_DIR=/src/target cargo auditable build --release --locked --offline -p authz-serve \
+    && cd /src && sha256sum --check /cargo-lock.sha256
 FROM ${RUNTIME} AS micro
 FROM acquire AS runtime-root
 COPY --from=micro / /runtime/
@@ -58,7 +67,7 @@ ENV LANG=C.UTF-8 TZ=UTC
 USER 10001:0
 STOPSIGNAL SIGTERM
 FROM base AS authz
-COPY --from=build --chmod=0555 /src/target/release/authz-serve /usr/local/bin/datopsis-authz
+COPY --from=build-authz --chmod=0555 /src/target/release/authz-serve /usr/local/bin/datopsis-authz
 EXPOSE 8443 50051
 ENTRYPOINT ["/usr/local/bin/datopsis-authz"]
 CMD ["serve"]

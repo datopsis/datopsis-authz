@@ -33,6 +33,17 @@ external fixture builds. Unit tests use the release profile to reuse the same
 compiled dependencies in the auditable image build; every workspace test remains.
 No upstream Lakekeeper source is patched.
 
+Authz production builds select only `-p authz-serve` in a separate workspace
+containing authz-core/authz-serve. Stable cargo-auditable uses `cargo metadata`,
+which otherwise resolves the other workspace members and can overinclude
+optional SQLx SQLite packages that the selected compilation graph never builds.
+The isolated lock is pruned offline from the reviewed source lock; a mandatory
+check allows only removal of package identities/dependency edges, forbidding
+new versions, sources, checksums or edges. Production compilation remains
+`--locked --offline`. The committed Cargo.lock and catalog build are unchanged.
+An early binary inventory assertion requires both sqlx-sqlite and libsqlite3-sys
+to be absent from authz; no RustSec finding is suppressed or reclassified.
+
 Lakekeeper source matches lakekeeper-ubi: 0.13.9 at
 `a8e013b30e99e5a184486fe166c3ffb3781a7c36`. Our workspace carries upstream's
 SQLx cancellation fix pinned by commit, not its mutable tag. See the complete
