@@ -424,3 +424,5 @@ async fn main() -> anyhow::Result<()> {
     .await?;
     Ok(())
 }
+#[cfg(test)]
+mod adversarial;

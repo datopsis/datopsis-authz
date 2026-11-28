@@ -432,3 +432,5 @@ mod tests {
         Ok(())
     }
 }
+#[cfg(test)]
+mod adversarial;

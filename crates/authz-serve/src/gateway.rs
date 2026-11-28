@@ -718,3 +718,6 @@ mod tests {
         Ok(())
     }
 }
+#[cfg(test)]
+#[path = "adversarial/gateway.rs"]
+mod adversarial;

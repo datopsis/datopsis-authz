@@ -501,3 +501,6 @@ mod tests {
         );
     }
 }
+#[cfg(test)]
+#[path = "adversarial/opa.rs"]
+mod adversarial;

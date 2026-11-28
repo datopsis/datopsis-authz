@@ -95,6 +95,7 @@ jobs:
       - run: .venv/bin/python evaluation/s1/run.py initialize
       - run: .venv/bin/python evaluation/s2/run.py initialize
       - run: .venv/bin/python evaluation/s3/run.py initialize
+      - run: .venv/bin/python evaluation/s4c/run.py initialize
       - name: Fixture unit checks
         run: python3 -m unittest discover -s evaluation/s1 -p 'test_*.py'
       - name: Install pinned RustSec tool before owner fixture toolchains
@@ -211,6 +212,23 @@ jobs:
         if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
         run: |
           python3 scripts/shipped-rustsec.py
+      # Slice 4c adversarial review: secure-behaviour assertions. A failure is a
+      # finding for owner triage; these steps run last so they never hide the
+      # evidence above.
+      - name: Slice 4c adversarial unit tests (authz-core and authz-serve)
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p reports/s4c
+          CARGO_TARGET_DIR="$RUNNER_TEMP/s4c-target" cargo test -p authz-core -p authz-serve --locked -- --ignored adversarial 2>&1 | tee reports/s4c/unit-tests.log
+      - name: Slice 4c adversarial image filesystem and configuration checks
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        run: python3 scripts/adversarial-images.py
+      - name: Slice 4c adversarial serve harness (shipped binary, TLS PostgreSQL, mock Rauthy)
+        if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
+        run: python3 scripts/adversarial-serve.py reports/images/authz/binary
+      - name: Slice 4c adversarial runtime (S2 fixture, stock Trino OPA, catalog renames)
+        if: ${{ !cancelled() && steps.images.outcome == 'success' }}
+        run: .venv/bin/python evaluation/s4c/run.py
       - name: Cleanup and sanitize evidence
         if: always()
         run: |
@@ -218,6 +236,7 @@ jobs:
             .venv/bin/python evaluation/s1/run.py cleanup
             .venv/bin/python evaluation/s2/run.py cleanup
             .venv/bin/python evaluation/s3/run.py cleanup
+            .venv/bin/python evaluation/s4c/run.py cleanup
           fi
       - name: Retain sanitized evidence
         if: always()
@@ -228,6 +247,7 @@ jobs:
             reports/s1/
             reports/s2/
             reports/s3/
+            reports/s4c/
             reports/images/
             !reports/images/**/binary
           if-no-files-found: error
