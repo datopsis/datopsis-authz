@@ -218,8 +218,9 @@ jobs:
       - name: Slice 4c adversarial unit tests (authz-core and authz-serve)
         if: ${{ !cancelled() }}
         run: |
+          set -o pipefail
           mkdir -p reports/s4c
-          CARGO_TARGET_DIR="$RUNNER_TEMP/s4c-target" cargo test -p authz-core -p authz-serve --locked -- --ignored adversarial 2>&1 | tee reports/s4c/unit-tests.log
+          CARGO_TARGET_DIR="$RUNNER_TEMP/s4c-target" cargo test -p authz-core -p authz-serve --locked --no-fail-fast -- --ignored adversarial 2>&1 | tee reports/s4c/unit-tests.log
       - name: Slice 4c adversarial image filesystem and configuration checks
         if: ${{ !cancelled() && steps.hardened-build.outcome == 'success' }}
         run: python3 scripts/adversarial-images.py

@@ -270,6 +270,8 @@ if __name__ == '__main__':
         cleanup()
     else:
         save('runtime.json',RESULTS)
+        # S1 leaves its fixture work directory behind; start from S2's clean state.
+        cleanup()
         try:
             evaluate()
         finally:
