@@ -1,0 +1,31 @@
+name: RustSec advisory tracking
+on:
+  schedule:
+    - cron: '23 8 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  track:
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+    concurrency:
+      group: rustsec-advisory-tracking
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: cargo install cargo-audit --version 0.22.2 --locked
+      - name: Refresh advisories for the latest native binaries and update the one issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/rustsec-tracking.py --latest --reports reports/tracking-inputs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: rustsec-tracking-${{ github.run_id }}
+          path: reports/tracking-inputs/
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="850" viewBox="0 0 1120 850" role="img" aria-labelledby="title desc">
+<title id="title">Catalog and Trino authorization, MVP slices 1–3</title>
+<desc id="desc">Lakekeeper and Trino call one serve role over private verified TLS. Both use Cedar grants and live Rauthy membership from the same durable PostgreSQL graph. Trino additionally enforces row filters and column masks. Direct storage credentials bypass these SQL restrictions and must be withheld from clients.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#94a3b8"/></marker></defs>
+<rect width="1120" height="700" fill="#0f172a"/>
+<g font-family="sans-serif" fill="#e2e8f0">
+<text x="35" y="42" font-size="25">Datopsis authorization · catalog + Trino + Sail</text>
+<text x="35" y="72" font-size="14">One Rust workspace · one serve role · one Cedar policy and relationship store</text>
+<g fill="#1e293b" stroke="#475569" stroke-width="2">
+<rect x="35" y="120" width="270" height="135" rx="10"/>
+<rect x="35" y="330" width="270" height="150" rx="10"/>
+<rect x="420" y="245" width="300" height="165" rx="10"/>
+<rect x="820" y="120" width="265" height="135" rx="10"/>
+<rect x="820" y="330" width="265" height="150" rx="10"/>
+</g>
+<g font-size="18">
+<text x="55" y="150">Lakekeeper + thin adapter</text>
+<text x="55" y="361">Trino 484 + stock OPA</text>
+<text x="440" y="277">Platform program: serve</text>
+<text x="840" y="151">Rauthy</text>
+<text x="840" y="361">PostgreSQL · runtime login</text>
+</g>
+<g font-size="14" fill="#cbd5e1">
+<text x="55" y="179">OIDC verification · catalog clients</text>
+<text x="55" y="206">Item filtering · grant management</text>
+<text x="55" y="233">Table-level decisions via /decide</text>
+<text x="55" y="390">Authenticated end users</text>
+<text x="55" y="418">SELECT / SHOW · filtered discovery</text>
+<text x="55" y="446">Row predicates · NULL column masks</text>
+<text x="440" y="307">Native + OPA-compatible routes</text>
+<text x="440" y="335">Cedar · same table UUID / grants</text>
+<text x="440" y="363">Live membership · fail closed</text>
+<text x="440" y="391">Commit audit before responding</text>
+<text x="840" y="180">Authoritative Users/read API</text>
+<text x="840" y="209">250 ms membership cache</text>
+<text x="840" y="237">JWT / Trino groups ignored</text>
+<text x="840" y="391">verify-full · repeatable migrations</text>
+<text x="840" y="419">Graph + SQL bindings + row settings</text>
+<text x="840" y="447">Append-only decisions + exact results</text>
+</g>
+<g stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)" fill="none">
+<path d="M305 204 L420 285"/><path d="M305 395 L420 365"/>
+<path d="M720 285 L820 215"/><path d="M720 365 L820 395"/>
+</g>
+<g font-size="12" fill="#93c5fd">
+<text x="322" y="214">Private TLS</text><text x="321" y="410">/opa/* · TLS</text>
+<text x="734" y="237">TLS</text><text x="745" y="398">TLS</text>
+</g>
+<rect x="35" y="530" width="1050" height="130" rx="10" fill="#1e293b" stroke="#475569"/>
+<text x="55" y="560" font-size="17" fill="#fbbf24">Row / column rules require engine-only storage access</text>
+<text x="55" y="590" font-size="14">Direct credentials bypass SQL obligations. Withhold them from clients and non-enforcing engines.</text>
+<text x="55" y="620" font-size="14">Separate admin / gateway / Trino keys · trusted name provisioning · rename or drop unbinds until rebound</text>
+<text x="55" y="645" font-size="13" fill="#94a3b8">Deferred: scoped STS broker · hardened release images · epochs · automatic name reconciliation</text>
+<rect x="35" y="690" width="1050" height="125" rx="10" fill="#1e293b" stroke="#475569"/>
+<text x="55" y="720" font-size="18">sail-gateway → one private Sail instance per team</text>
+<text x="55" y="747" font-size="14">TLS / JWKS → serve live groups (250 ms) → unique team socket → Sail loopback → team catalog identity</text>
+<text x="55" y="774" font-size="14">Gateway audits admissions (invalid-token flood rate-limited) · independent HTTP/2 drivers keep PINGs moving under pressure</text>
+<text x="55" y="800" font-size="13" fill="#fbbf24">Team members share permissions/state. No row/column-restricted tables or broad direct-storage credentials in Sail.</text>
+</g></svg>
