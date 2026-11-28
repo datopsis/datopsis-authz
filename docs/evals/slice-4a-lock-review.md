@@ -117,3 +117,14 @@ by both binaries and the Sail gateway are unchanged, so no other Rust adaptation
 is needed. TLS provider, ALPN configuration, roots, verification, role behavior,
 and all negative TLS and C1-C8/Trino/Sail oracles are unchanged. rustls-pki-types
 was already resolved; there is no new dependency tree.
+
+## SQLite removal follow-up (2026-11-28)
+
+The sole additional Cargo.lock change replaces authz-serve's `sqlx` dependency
+edge with `sqlx-core` and `sqlx-postgres`. Both already exist at 0.9.0, full
+reviewed SQLx fork revision 2018fe72a7d64b34e7da99f13642a6a61d2af082.
+No package identity, version, source or checksum is added, removed or changed.
+The authz-only derived build lock may prune unreachable packages/edges only,
+with integrity validation before `--locked --offline` compilation. SQLx's facade
+reexports the exact core/Postgres functions/types now imported directly; no
+SQL/transaction/migration/TLS/JSON or catalog code is changed.

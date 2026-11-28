@@ -539,7 +539,8 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
- "sqlx",
+ "sqlx-core",
+ "sqlx-postgres",
  "tokio",
  "tokio-rustls",
 ]

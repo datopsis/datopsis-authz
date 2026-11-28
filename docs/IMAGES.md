@@ -37,10 +37,15 @@ Authz production builds select only `-p authz-serve` in a separate workspace
 containing authz-core/authz-serve. Stable cargo-auditable uses `cargo metadata`,
 which otherwise resolves the other workspace members and can overinclude
 optional SQLx SQLite packages that the selected compilation graph never builds.
+Workspace isolation alone was insufficient in run 46098737795: authz also uses
+the already-pinned sqlx-core/sqlx-postgres directly rather than the multi-database
+sqlx facade. Imports use the very same functions/types the facade reexports;
+Tokio, ring/webpki TLS, JSON handling and VerifyFull settings are preserved.
 The isolated lock is pruned offline from the reviewed source lock; a mandatory
 check allows only removal of package identities/dependency edges, forbidding
 new versions, sources, checksums or edges. Production compilation remains
-`--locked --offline`. The committed Cargo.lock and catalog build are unchanged.
+`--locked --offline`. The committed lock changes only authz dependency edges to
+the already-locked SQLx core/Postgres crates; catalog build inputs are unchanged.
 An early binary inventory assertion requires both sqlx-sqlite and libsqlite3-sys
 to be absent from authz; no RustSec finding is suppressed or reclassified.
 

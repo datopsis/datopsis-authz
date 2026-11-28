@@ -51,3 +51,15 @@ recipe remain unchanged. Early embedded-inventory qualification requires SQLite
 absence in authz; the ordinary scanners/RustSec gates and all 34 regressions
 remain required on both CPUs. Current-head native proof is pending PR Actions;
 source-tree inspection alone is not a runtime or image-gate pass.
+
+Follow-up run 46098737795 showed that workspace isolation alone still records
+SQLite in the stable metadata fallback, despite compiling neither SQLite crate.
+The early absence assertion correctly blocked qualification and skipped the
+regression fixture builds. Authz now depends directly on the existing pinned
+sqlx-core/sqlx-postgres 0.9.0 fork crates, eliminating the multi-database facade
+from its root dependency path. Calls use the facade's identical reexported
+functions/types; PostgreSQL JSON/Tokio/ring-webpki TLS features and VerifyFull
+remain unchanged. The sole committed lock change is authz-serve's dependency
+edge: sqlx → sqlx-core + sqlx-postgres. No package identity/checksum/source/version
+changes. Catalog keeps the facade and its original production recipe/findings.
+Fresh native inventory/gate/regression proof remains pending CI.

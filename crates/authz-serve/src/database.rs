@@ -1,9 +1,8 @@
 use authz_core::{Check, Mutation, Store, Verdict};
-use sqlx::{
-    PgPool, Postgres, Transaction,
-    postgres::{PgConnectOptions, PgPoolOptions, PgSslMode},
-    types::Json,
+use sqlx_core::{
+    query::query, query_as::query_as, raw_sql::raw_sql, transaction::Transaction, types::Json,
 };
+use sqlx_postgres::{PgConnectOptions, PgPool, PgPoolOptions, PgSslMode, Postgres};
 use std::{str::FromStr, time::Duration};
 
 #[derive(Clone)]
@@ -28,10 +27,10 @@ impl Database {
     }
     pub async fn migrate(&self) -> anyhow::Result<()> {
         let mut tx = self.0.begin().await?;
-        sqlx::raw_sql(include_str!("../../../migrations/0001_catalog.sql"))
+        raw_sql(include_str!("../../../migrations/0001_catalog.sql"))
             .execute(&mut *tx)
             .await?;
-        sqlx::raw_sql(include_str!("../../../migrations/0002_trino.sql"))
+        raw_sql(include_str!("../../../migrations/0002_trino.sql"))
             .execute(&mut *tx)
             .await?;
         tx.commit().await?;
@@ -39,18 +38,18 @@ impl Database {
     }
     pub async fn snapshot(&self) -> anyhow::Result<Store> {
         let (Json(store),): (Json<Store>,) =
-            sqlx::query_as("SELECT graph FROM authz_state WHERE singleton")
+            query_as("SELECT graph FROM authz_state WHERE singleton")
                 .fetch_one(&self.0)
                 .await?;
         Ok(store)
     }
     pub async fn locked(&self) -> anyhow::Result<(Transaction<'_, Postgres>, Store)> {
         let mut tx = self.0.begin().await?;
-        sqlx::query("SET LOCAL statement_timeout = '2s'")
+        query("SET LOCAL statement_timeout = '2s'")
             .execute(&mut *tx)
             .await?;
         let (Json(store),): (Json<Store>,) =
-            sqlx::query_as("SELECT graph FROM authz_state WHERE singleton FOR UPDATE")
+            query_as("SELECT graph FROM authz_state WHERE singleton FOR UPDATE")
                 .fetch_one(&mut *tx)
                 .await?;
         Ok((tx, store))
@@ -63,7 +62,7 @@ impl Database {
         Ok(())
     }
     pub async fn save(tx: &mut Transaction<'_, Postgres>, store: &Store) -> anyhow::Result<()> {
-        sqlx::query("UPDATE authz_state SET graph=$1 WHERE singleton")
+        query("UPDATE authz_state SET graph=$1 WHERE singleton")
             .bind(Json(store))
             .execute(&mut **tx)
             .await?;
@@ -84,7 +83,7 @@ impl Database {
         reason: &str,
         result: Option<&serde_json::Value>,
     ) -> anyhow::Result<()> {
-        sqlx::query("INSERT INTO authz_audit(principal,action,resource,decision,policy_ids,reason,result) VALUES ($1,$2,$3,$4,$5,$6,$7)")
+        query("INSERT INTO authz_audit(principal,action,resource,decision,policy_ids,reason,result) VALUES ($1,$2,$3,$4,$5,$6,$7)")
             .bind(&check.principal).bind(&check.action).bind(Json(&check.resource))
             .bind(verdict.allowed).bind(Json(&verdict.policies)).bind(reason).bind(result.map(Json))
             .execute(&mut **tx).await?;

@@ -212,7 +212,7 @@ impl Gateway {
             _ => "sail_invalid_request",
         };
         let mut tx = self.db.0.begin().await?;
-        sqlx::query("SET LOCAL statement_timeout = '2s'")
+        sqlx_core::query::query("SET LOCAL statement_timeout = '2s'")
             .execute(&mut *tx)
             .await?;
         Database::audit_result(

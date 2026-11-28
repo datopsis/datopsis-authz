@@ -20,7 +20,9 @@
   explicitly. Validate the offline-pruned lock as a strict subset of approved
   identities/checksums/edges; preserve the committed lock and catalog recipe.
   Require SQLite to be absent from authz's actual embedded inventory, without
-  suppressing any advisory or changing catalog findings.
+  suppressing any advisory or changing catalog findings. Use the already-pinned
+  SQLx core/PostgreSQL crates directly after isolation alone proved insufficient;
+  preserve their identical facade-reexported APIs and TLS/JSON/runtime features.
 
 - Pin cargo-auditable 0.7.8 native tool archives by official release SHA-256;
   preserve the required format-2 proc-macro distinction and qualify inventories

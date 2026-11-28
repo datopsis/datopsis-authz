@@ -12271,6 +12271,6 @@
       }
     }
   },
-  "cargo_lock_sha256": "8d8092f75df9a088300b01bac27302a72e1f8f6e7413a05da1d89ae0ff27af8e",
+  "cargo_lock_sha256": "22c6637cefbac4ae60d57cb21f3f49ea6e5c81c09000fa098f274e9e16df6c23",
   "cargo_auditable_version": "0.7.8"
 }
