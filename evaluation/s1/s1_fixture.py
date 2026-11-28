@@ -63,11 +63,21 @@ def restore(catalog, key, state):
 from catalog_grants import grant
 
 
+RUNTIME_ROLE = 'authz_runtime'
+
+
+def migrate_authz(ca):
+    """Explicit schema step with the owner login; serve itself never runs DDL."""
+    write(WORK/'cedar-migrate.env', 'AUTHZ_DATABASE_URL_FILE=/run/cedar-db-url\nAUTHZ_DATABASE_CA_FILE=/ca/ca.pem\n'
+          'AUTHZ_RUNTIME_ROLE='+RUNTIME_ROLE+'\n')
+    run('docker', 'run', '--rm', '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges:true', '--network', 'container:fga-postgres',
+        '--env-file', WORK/'cedar-migrate.env', '-v', f'{WORK/"cedar-owner-db-url"}:/run/cedar-db-url:ro',
+        '-v', f'{ca}:/ca/ca.pem:ro', 'localhost/authz-serve:s1', 'migrate')
+
+
 def migrate(catalog):
     run('docker', 'run', '--rm', '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges:true', '--label', 'datopsis.idp-bakeoff=true', '--network', 'container:'+catalog.proxy, '--env-file', catalog.env, '-v', f'{catalog.provider.ca}:/ca/ca.pem:ro', 'localhost/lakekeeper-datopsis:s1', 'migrate')
-    run('docker', 'run', '--rm', '--read-only', '--cap-drop=ALL', '--security-opt=no-new-privileges:true', '--network', 'container:fga-postgres',
-        '--env-file', WORK/'cedar.env', '-v', f'{WORK/"cedar-db-url"}:/run/cedar-db-url:ro',
-        '-v', f'{catalog.provider.ca}:/ca/ca.pem:ro', 'localhost/authz-serve:s1', 'migrate')
+    migrate_authz(catalog.provider.ca)
 
 
 class CedarCatalog(upstream.AuthCatalog):
@@ -160,6 +170,10 @@ def setup(arch, record, machine_principals=(), extra_catalog_audiences=()):
     key = secret()
     write(WORK/'cedar-key',key)
     write(WORK/'trino-key',secret())
+    # Separate decision-only credential for the Sail gateway (/sail/groups).
+    write(WORK/'gateway-key',secret())
+    run('sudo','chown','root:root',WORK/'gateway-key')
+    run('sudo','chmod','0440',WORK/'gateway-key')
     run('sudo','chown','root:root',WORK/'trino-key')
     run('sudo','chmod','0440',WORK/'trino-key')
     run('sudo','chown','root:root',WORK/'cedar-key')
@@ -169,23 +183,33 @@ def setup(arch, record, machine_principals=(), extra_catalog_audiences=()):
     run('docker','network','connect','slice1-idp','fga-postgres')
     # The service receives Users/read only; fixture mutation uses its separate admin key.
     write(WORK/'rauthy-reader', provider.reader_key)
-    write(WORK/'cedar-db-url',authz_db)
-    run('sudo','chown','root:root',WORK/'rauthy-reader',WORK/'cedar-db-url')
-    run('sudo','chmod','0440',WORK/'rauthy-reader',WORK/'cedar-db-url')
+    # The fixture database login owns the schema; serve runs as a separate
+    # least-privilege runtime login created here and granted by `migrate`.
+    from urllib.parse import urlsplit, quote
+    owner = urlsplit(authz_db)
+    runtime_password = secret()
+    run('docker','exec','-i','fga-postgres','psql','-h','/tmp','-U','postgres','-v','ON_ERROR_STOP=1',
+        input=f"CREATE ROLE {RUNTIME_ROLE} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD '{runtime_password}';\n")
+    runtime_db = owner._replace(netloc=f'{RUNTIME_ROLE}:{quote(runtime_password, safe="")}@{owner.hostname}:{owner.port or 5432}').geturl()
+    write(WORK/'cedar-owner-db-url',authz_db)
+    write(WORK/'cedar-db-url',runtime_db)
+    run('sudo','chown','root:root',WORK/'rauthy-reader',WORK/'cedar-db-url',WORK/'cedar-owner-db-url')
+    run('sudo','chmod','0440',WORK/'rauthy-reader',WORK/'cedar-db-url',WORK/'cedar-owner-db-url')
+    migrate_authz(ca)
     tls = leaf('cedar')
     container('cedar','localhost/authz-serve:s1',['serve'],env={
         'AUTHZ_TLS_CERT':'/tls/cert.pem','AUTHZ_TLS_KEY':'/tls/key.pem','AUTHZ_KEY_FILE':'/run/cedar-key',
-        'AUTHZ_TRINO_KEY_FILE':'/run/trino-key','AUTHZ_DATABASE_URL_FILE':'/run/cedar-db-url','AUTHZ_DATABASE_CA_FILE':'/ca/ca.pem',
+        'AUTHZ_DECISION_KEY_FILE':'/run/gateway-key','AUTHZ_TRINO_KEY_FILE':'/run/trino-key','AUTHZ_DATABASE_URL_FILE':'/run/cedar-db-url','AUTHZ_DATABASE_CA_FILE':'/ca/ca.pem',
         'AUTHZ_RAUTHY_USERS_URL':provider.base+'/auth/v1/users','AUTHZ_RAUTHY_CA_FILE':'/ca/ca.pem',
         'AUTHZ_RAUTHY_KEY_FILE':'/run/rauthy-reader','AUTHZ_MACHINE_PRINCIPALS':','.join(('oidc~operator','oidc~lakekeeper','oidc~expiry', *machine_principals))},
-        mounts=[(WORK/'trino-key','/run/trino-key'),(tls,'/tls'),(WORK/'cedar-key','/run/cedar-key'),(WORK/'rauthy-reader','/run/rauthy-reader'),
+        mounts=[(WORK/'trino-key','/run/trino-key'),(WORK/'gateway-key','/run/gateway-key'),(tls,'/tls'),(WORK/'cedar-key','/run/cedar-key'),(WORK/'rauthy-reader','/run/rauthy-reader'),
                 (WORK/'cedar-db-url','/run/cedar-db-url'),(ca,'/ca/ca.pem')],network='container:fga-postgres')
     address = backend_address()
     run('sudo','tee','/etc/hosts',input=Path('/etc/hosts').read_text()+f'{address} cedar # idp-bakeoff\n')
     http = HTTPS(ca)
     wait(lambda:http.request('POST','https://cedar:8443/decide',headers={'Authorization':'Bearer '+key},json=[]).status_code==200)
     record('cedar_tls',lambda:transport('cedar',8443,ca),required=True)
-    env.update({'AUTHZ_ENDPOINT':'https://cedar:8443','AUTHZ_CA_FILE':'/ca/ca.pem','AUTHZ_KEY_FILE':'/run/cedar-key','LAKEKEEPER__AUTHZ_BACKEND':'datopsis','LAKEKEEPER__DEFAULT_PROJECT_ID':'00000000-0000-0000-0000-000000000000'})
+    env.update({'AUTHZ_ENDPOINT':'https://cedar:8443','AUTHZ_CA_FILE':'/ca/ca.pem','AUTHZ_KEY_FILE':'/run/cedar-key','LAKEKEEPER__AUTHZ_BACKEND':'datopsis','AUTHZ_BOOTSTRAP_PRINCIPAL':'oidc~operator','LAKEKEEPER__DEFAULT_PROJECT_ID':'00000000-0000-0000-0000-000000000000'})
     storage = Storage(ca)
     record('storage_tls',storage.start,required=True)
     catalog = CedarCatalog(provider,env,storage)

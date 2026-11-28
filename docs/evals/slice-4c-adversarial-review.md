@@ -122,3 +122,44 @@ Native per-architecture results are in the PR and in `reports/s4c/`.
   docs/SAIL.md) is a documented deployment requirement and is not exercised.
 - `token-broker` is unimplemented and refuses startup. The existing image checks
   cover that refusal.
+
+## Fix status (slice 4c fixes, stacked on the review PR)
+
+Owner decision 2026-11-28: fix F1–F6 and O1–O5. No review test was changed,
+weakened or removed. The serve harness setup (not its assertions) gained the
+owner/runtime login split that F4 requires.
+
+| ID | Fix | Regression tests (in addition to the review tests) |
+| --- | --- | --- |
+| F1 | Identifiers are validated at write time: control characters or over 1024 bytes give a 400 on `/mutate`, and a 400 on `/permissions`. Empty IDs are refused before delete. Policies use typed Cedar UIDs, so any stored ID text round-trips. A stored grant that still cannot be represented is skipped, which only removes its own permit | `f1_control_characters_are_rejected_at_write_time`, `f1_a_stored_unusual_record_cannot_break_unrelated_decisions`, `f3_admin_and_gateway_credentials_are_separate` (400 path) |
+| F2 | The catalog adapter sends `unbind_trino` for a table once its rename or drop is authorized, before the catalog commits. docs/TRINO.md is corrected | `f2_rename_and_drop_invalidate_sql_names_other_actions_do_not`, `f5_trino_names_are_folded_like_trino_identifiers` (unbind) |
+| F3 | Three credentials: admin `AUTHZ_KEY_FILE` (mutate, snapshot, permissions, decide), gateway `AUTHZ_DECISION_KEY_FILE` (`/sail/groups`, `/decide`) and Trino. All must differ | `f3_admin_and_gateway_credentials_are_separate`, harness `gateway_key_cannot_administer` |
+| F4 | `serve` and `sail-gateway` run no DDL and refuse to start with an owner, superuser or over-privileged login. `migrate` is a separate owner step that grants the runtime role least privilege and fails closed | harness `runtime_login_is_least_privilege`, `serve_refuses_owner_or_overprivileged_login`, `gateway_refuses_owner_or_overprivileged_login`, `migrate_fails_closed`; `runtime_role_names_are_plain_identifiers` |
+| F5 | SQL names are folded at bind time. Mask columns compare case-insensitively | `f5_trino_names_are_folded_like_trino_identifiers` |
+| F6 | Only `[A-Za-z0-9._@+-]{1,256}` subjects (not `.` or `..`) reach Rauthy | `f6_only_plain_subjects_reach_the_identity_provider` |
+| O1 | A cached-JWKS pre-check refuses unverifiable tokens without IdP contact, with at most one refresh per endpoint per second. Invalid-token audit rows use a token bucket (burst 50, 20/s); suppressed refusals are logged | `o1_unverifiable_tokens_cannot_force_more_than_one_refresh_per_interval`, `o1_unauthenticated_audit_rows_are_rate_limited` |
+| O2 | Constant-time credential comparison on every route and the OPA `serviceKey` | `o2_secret_comparison_is_exact_and_length_checked` |
+| O3 | `AUTHZ_BOOTSTRAP_PRINCIPAL` (`oidc~<subject>`) is required; there is no default | `o3_bootstrap_principal_is_required_and_explicit` |
+| O4 | Mid-upload expiry keeps the verified subject, with reason `sail_token_expired` | `o4_mid_upload_expiry_keeps_the_verified_subject` |
+| O5 | Unknown or malformed principals are audited as `unknown_principal`. The response stays a fail-closed 503 | `o5_unknown_principals_are_not_reported_as_idp_outages`, harness `unknown_principal_reason_is_accurate` |
+
+### Follow-up for datopsis/lakehouse-integration (not pushed there)
+
+T13 and any fixture that starts these images must:
+
+1. Create a separate runtime database login. Run `datopsis-authz migrate` with the
+   schema-owner URL and `AUTHZ_RUNTIME_ROLE=<runtime login>` before `serve`, and
+   give `serve` and `sail-gateway` only the runtime URL. The `openfga` owner must
+   no longer be serve's login.
+2. Write a separate gateway decision key. Mount it into serve as
+   `AUTHZ_DECISION_KEY_FILE` and into the gateway as its `AUTHZ_KEY_FILE`. Direct
+   `/sail/groups` probes must use it; the admin key now gets 401 there.
+3. Set `AUTHZ_BOOTSTRAP_PRINCIPAL` explicitly for the catalog (the fixture uses
+   `oidc~operator`).
+4. Expect a bound Trino name to deny after a rename or drop of its table until it
+   is explicitly rebound.
+5. Expect a 400 for mutations whose IDs contain control characters. Audit reason
+   sets may now include `unknown_principal` and `sail_token_expired`.
+6. Update `docs/diagrams/` there to show the three serve credentials (admin:
+   catalog adapter; decision: Sail gateway; Trino OPA key) and the owner `migrate`
+   job versus the runtime login used by serve and the gateway.

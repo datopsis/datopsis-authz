@@ -23,6 +23,107 @@ impl Drop for Driver {
 }
 
 const SERVICE: &str = "/spark.connect.SparkConnectService/";
+/// Last successfully fetched JWKS per endpoint. Used only to refuse tokens that
+/// cannot verify without contacting the IdP; every admitted RPC still validates
+/// against a fresh fetch, so key revocation is not delayed.
+const JWKS_PRECHECK_TTL: Duration = Duration::from_secs(60);
+/// At most one IdP refresh per endpoint per interval for tokens the cached set
+/// cannot verify (unknown kid / rotated key). Others are refused (fail closed).
+const JWKS_REFRESH_INTERVAL: Duration = Duration::from_secs(1);
+#[derive(Default)]
+struct JwksState {
+    keys: Option<(std::time::Instant, JwkSet)>,
+    last_refresh: Option<std::time::Instant>,
+}
+static JWKS_CACHE: std::sync::Mutex<std::collections::BTreeMap<String, JwksState>> =
+    std::sync::Mutex::new(std::collections::BTreeMap::new());
+/// Token bucket for durable audit rows of unauthenticated refusals, so a flood
+/// of invalid tokens cannot grow the audit without bound. Suppressed refusals
+/// are still refused and counted in a log event.
+const AUDIT_BURST: f64 = 50.0;
+const AUDIT_PER_SECOND: f64 = 20.0;
+struct Bucket {
+    tokens: f64,
+    at: Option<std::time::Instant>,
+    suppressed: u64,
+}
+static UNAUTHENTICATED_AUDIT: std::sync::Mutex<Bucket> = std::sync::Mutex::new(Bucket {
+    tokens: AUDIT_BURST,
+    at: None,
+    suppressed: 0,
+});
+fn take_unauthenticated_audit(now: std::time::Instant) -> std::result::Result<(), u64> {
+    let mut b = UNAUTHENTICATED_AUDIT
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    let elapsed =
+        b.at.map_or(0.0, |at| now.saturating_duration_since(at).as_secs_f64());
+    b.tokens = (b.tokens + elapsed * AUDIT_PER_SECOND).min(AUDIT_BURST);
+    b.at = Some(now);
+    if b.tokens >= 1.0 {
+        b.tokens -= 1.0;
+        Ok(())
+    } else {
+        b.suppressed += 1;
+        Err(b.suppressed)
+    }
+}
+/// What the cached key set says about a token before any IdP contact.
+#[derive(Debug, PartialEq)]
+enum Precheck {
+    /// Verifies against cached keys: do the authoritative fresh fetch.
+    Verified,
+    /// Signature verifies but a claim is invalid: refuse now.
+    Invalid,
+    /// No usable cached key: refresh if the per-endpoint limit allows.
+    Unknown,
+}
+fn precheck(
+    endpoint: &str,
+    kid: &str,
+    now: std::time::Instant,
+    verify: impl Fn(&JwkSet) -> Option<bool>,
+) -> Precheck {
+    let cache = JWKS_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    let Some((at, set)) = cache.get(endpoint).and_then(|s| s.keys.as_ref()) else {
+        return Precheck::Unknown;
+    };
+    if now.saturating_duration_since(*at) >= JWKS_PRECHECK_TTL || set.find(kid).is_none() {
+        return Precheck::Unknown;
+    }
+    match verify(set) {
+        Some(true) => Precheck::Verified,
+        Some(false) => Precheck::Invalid,
+        None => Precheck::Unknown,
+    }
+}
+fn refresh_allowed(endpoint: &str, now: std::time::Instant) -> bool {
+    let mut cache = JWKS_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    let state = cache.entry(endpoint.to_owned()).or_default();
+    if state
+        .last_refresh
+        .is_some_and(|at| now.saturating_duration_since(at) < JWKS_REFRESH_INTERVAL)
+    {
+        return false;
+    }
+    state.last_refresh = Some(now);
+    true
+}
+fn remember_jwks(endpoint: &str, set: &JwkSet, now: std::time::Instant) {
+    let mut cache = JWKS_CACHE.lock().unwrap_or_else(|e| e.into_inner());
+    cache.entry(endpoint.to_owned()).or_default().keys = Some((now, set.clone()));
+}
+fn admission_reason(code: u8, verified_subject: bool) -> &'static str {
+    match code {
+        0 => "sail_team_permit",
+        // A verified token that expired while the request was being uploaded.
+        16 if verified_subject => "sail_token_expired",
+        16 => "sail_invalid_token",
+        7 => "sail_team_deny",
+        14 => "sail_dependency_unavailable",
+        _ => "sail_invalid_request",
+    }
+}
 
 #[derive(Clone)]
 struct Gateway {
@@ -143,18 +244,38 @@ impl Gateway {
             return Err(16);
         }
         let kid = header.kid.ok_or(16u8)?;
-        // Fetch on each RPC: no stale-key cache or unknown-kid fallback.
-        let jwks: JwkSet =
-            serde_json::from_slice(&self.call(&self.jwks, None).await.map_err(|_| 14u8)?)
-                .map_err(|_| 14u8)?;
-        let jwk = jwks.find(&kid).ok_or(16u8)?;
-        let key = DecodingKey::from_jwk(jwk).map_err(|_| 16u8)?;
         let mut validation = Validation::new(Algorithm::RS256);
         validation.set_issuer(&[&self.issuer]);
         validation.set_audience(&self.audiences);
         validation.set_required_spec_claims(&["sub", "iss", "aud", "exp"]);
         validation.leeway = 0;
         validation.validate_nbf = true;
+        let verify = |set: &JwkSet| -> Option<bool> {
+            let key = DecodingKey::from_jwk(set.find(&kid)?).ok()?;
+            match decode::<Claims>(token, &key, &validation) {
+                Ok(c) => Some(!c.claims.sub.is_empty()),
+                Err(e) if matches!(e.kind(), jsonwebtoken::errors::ErrorKind::InvalidSignature) => {
+                    None
+                }
+                Err(_) => Some(false),
+            }
+        };
+        // Unverifiable tokens never cost an IdP round trip beyond the refresh limit.
+        let endpoint = self.jwks.to_string();
+        let now = std::time::Instant::now();
+        match precheck(&endpoint, &kid, now, verify) {
+            Precheck::Verified => (),
+            Precheck::Invalid => return Err(16),
+            Precheck::Unknown if refresh_allowed(&endpoint, now) => (),
+            Precheck::Unknown => return Err(16),
+        }
+        // Authoritative fetch for this RPC: no stale-key admission.
+        let jwks: JwkSet =
+            serde_json::from_slice(&self.call(&self.jwks, None).await.map_err(|_| 14u8)?)
+                .map_err(|_| 14u8)?;
+        remember_jwks(&endpoint, &jwks, std::time::Instant::now());
+        let jwk = jwks.find(&kid).ok_or(16u8)?;
+        let key = DecodingKey::from_jwk(jwk).map_err(|_| 16u8)?;
         let claims = decode::<Claims>(token, &key, &validation)
             .map_err(|_| 16u8)?
             .claims;
@@ -183,6 +304,16 @@ impl Gateway {
         code: u8,
         method: &str,
     ) -> Result<()> {
+        if code == 16
+            && claims.is_none()
+            && let Err(suppressed) = take_unauthenticated_audit(std::time::Instant::now())
+        {
+            println!(
+                "{}",
+                serde_json::json!({"event":"gateway_audit_suppressed","grpc_status":code,"suppressed_total":suppressed})
+            );
+            return Ok(());
+        }
         let check = Check {
             principal: claims
                 .map(|c| format!("oidc~{}", c.sub))
@@ -204,13 +335,7 @@ impl Gateway {
                 .map(|t| vec![format!("team:{}", t.id)])
                 .unwrap_or_default(),
         };
-        let reason = match code {
-            0 => "sail_team_permit",
-            16 => "sail_invalid_token",
-            7 => "sail_team_deny",
-            14 => "sail_dependency_unavailable",
-            _ => "sail_invalid_request",
-        };
+        let reason = admission_reason(code, claims.is_some());
         let mut tx = self.db.0.begin().await?;
         sqlx_core::query::query("SET LOCAL statement_timeout = '2s'")
             .execute(&mut *tx)
@@ -433,7 +558,12 @@ async fn forward(
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(true, |now| now.as_secs() >= claims.exp)
     {
-        let code = if app.audit(None, Some(team), 16, &method).await.is_ok() {
+        // Keep the verified subject: the token was valid at admission.
+        let code = if app
+            .audit(Some(claims), Some(team), 16, &method)
+            .await
+            .is_ok()
+        {
             16
         } else {
             14
@@ -721,3 +851,80 @@ mod tests {
 #[cfg(test)]
 #[path = "adversarial/gateway.rs"]
 mod adversarial;
+#[cfg(test)]
+mod fixes_4c {
+    use super::*;
+    use std::time::Instant;
+    #[test]
+    fn o1_unverifiable_tokens_cannot_force_more_than_one_refresh_per_interval() {
+        let endpoint = "https://o1.test/jwks";
+        let now = Instant::now();
+        // No cached set yet: the first unknown token may refresh, the flood may not.
+        assert_eq!(
+            precheck(endpoint, "kid", now, |_| Some(true)),
+            Precheck::Unknown
+        );
+        assert!(refresh_allowed(endpoint, now));
+        for i in 0..1000 {
+            assert!(!refresh_allowed(
+                endpoint,
+                now + Duration::from_millis(i % 900)
+            ));
+        }
+        assert!(refresh_allowed(endpoint, now + JWKS_REFRESH_INTERVAL));
+        // With a cached set: a verifying token goes on to the fresh fetch, a
+        // verified-but-invalid token is refused, a bad signature is Unknown.
+        let set: JwkSet = serde_json::from_value(serde_json::json!({"keys":[
+            {"kty":"RSA","kid":"kid","n":"AQAB","e":"AQAB"}]}))
+        .unwrap();
+        remember_jwks(endpoint, &set, now);
+        assert_eq!(
+            precheck(endpoint, "kid", now, |_| Some(true)),
+            Precheck::Verified
+        );
+        assert_eq!(
+            precheck(endpoint, "kid", now, |_| Some(false)),
+            Precheck::Invalid
+        );
+        assert_eq!(precheck(endpoint, "kid", now, |_| None), Precheck::Unknown);
+        assert_eq!(
+            precheck(endpoint, "other", now, |_| Some(true)),
+            Precheck::Unknown
+        );
+        assert_eq!(
+            precheck(endpoint, "kid", now + JWKS_PRECHECK_TTL, |_| Some(true)),
+            Precheck::Unknown,
+            "stale cache must not pre-verify"
+        );
+    }
+    #[test]
+    fn o1_unauthenticated_audit_rows_are_rate_limited() {
+        let start = Instant::now();
+        let mut written = 0;
+        let mut suppressed = 0;
+        for _ in 0..1000 {
+            match take_unauthenticated_audit(start) {
+                Ok(()) => written += 1,
+                Err(_) => suppressed += 1,
+            }
+        }
+        assert!(written <= AUDIT_BURST as usize && suppressed >= 1000 - AUDIT_BURST as usize);
+        assert!(
+            take_unauthenticated_audit(start + Duration::from_secs(1)).is_ok(),
+            "bucket refills"
+        );
+    }
+    #[test]
+    fn o4_mid_upload_expiry_keeps_the_verified_subject() {
+        assert_eq!(admission_reason(16, true), "sail_token_expired");
+        assert_eq!(admission_reason(16, false), "sail_invalid_token");
+        for (code, reason) in [
+            (0, "sail_team_permit"),
+            (7, "sail_team_deny"),
+            (14, "sail_dependency_unavailable"),
+            (12, "sail_invalid_request"),
+        ] {
+            assert_eq!(admission_reason(code, true), reason);
+        }
+    }
+}

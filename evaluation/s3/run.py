@@ -115,12 +115,12 @@ def launch(catalog, key, team_tokens):
     config = WORK/'teams.json'
     config.write_text(json.dumps(teams)); config.chmod(0o444)
     container('gateway','localhost/authz-serve:s1',['sail-gateway'],env={
-        'AUTHZ_TLS_CERT':'/tls/cert.pem','AUTHZ_TLS_KEY':'/tls/key.pem','AUTHZ_KEY_FILE':'/run/cedar-key',
+        'AUTHZ_TLS_CERT':'/tls/cert.pem','AUTHZ_TLS_KEY':'/tls/key.pem','AUTHZ_KEY_FILE':'/run/gateway-key',
         'AUTHZ_CA_FILE':'/ca/ca.pem','AUTHZ_ENDPOINT':'https://cedar:8443',
         'AUTHZ_DATABASE_URL_FILE':'/run/cedar-db-url','AUTHZ_DATABASE_CA_FILE':'/ca/ca.pem',
         'SAIL_TEAMS_FILE':'/teams.json','SAIL_JWKS_URL':catalog.provider.discovery['jwks_uri'],
         'SAIL_ISSUER':catalog.provider.issuer,'SAIL_AUDIENCE':'lakekeeper,expiry','AUTHZ_LISTEN':'0.0.0.0:50051'},
-        mounts=[(leaf('sail'),'/tls'),(catalog.provider.ca,'/ca/ca.pem'),(WORK/'cedar-key','/run/cedar-key'),
+        mounts=[(leaf('sail'),'/tls'),(catalog.provider.ca,'/ca/ca.pem'),(WORK/'gateway-key','/run/gateway-key'),
             (WORK/'cedar-db-url','/run/cedar-db-url'),(config,'/teams.json'),
             (WORK/'team-a/socket','/teams/a'),(WORK/'team-b/socket','/teams/b')],
         network=BACKEND_NETWORK,extra=restricted+['--user','999:0'])
@@ -233,8 +233,9 @@ def evaluate():
         finally:
             run('docker','start',target)
         wait(lambda:provider.http.request('GET',provider.base+'/auth/v1/health').status_code==200,180)
+        gateway_key = run('sudo','cat',WORK/'gateway-key').strip()
         wait(lambda:provider.http.request('POST','https://cedar:8443/sail/groups',
-            headers={'Authorization':'Bearer '+key},json='oidc~'+decode(tokens['a'])[1]['sub']).status_code==200)
+            headers={'Authorization':'Bearer '+gateway_key},json='oidc~'+decode(tokens['a'])[1]['sub']).status_code==200)
         return dict(unreachable=refusal,recovered=probe(paths['a'],'OK'))
     record('authz_outage',lambda:outage('cedar'))
     record('rauthy_outage',lambda:outage(provider.container))

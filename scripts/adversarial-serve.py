@@ -6,6 +6,7 @@ run; results go to reports/s4c/serve-harness.json; any FAIL exits non-zero.
 
 Usage: python3 scripts/adversarial-serve.py [path/to/authz-serve-binary]
 """
+import getpass
 import glob
 import json
 import os
@@ -60,7 +61,8 @@ def main():
         (root/'extensions').write_text('basicConstraints=CA:FALSE\nsubjectAltName=DNS:localhost\nextendedKeyUsage=serverAuth\n')
         command('openssl', 'x509', '-req', '-in', str(root/'leaf.csr'), '-CA', str(root/'ca.pem'), '-CAkey', str(root/'ca-key.pem'),
                 '-CAcreateserial', '-days', '1', '-extfile', str(root/'extensions'), '-out', str(root/'cert.pem'))
-        for name in ('secret', 'trino-key', 'db-password', 'service-password', 'reader-key'):
+        for name in ('secret', 'trino-key', 'db-password', 'service-password', 'reader-key', 'owner-password', 'gateway-key',
+                     'over-password'):
             (root/name).write_text(os.urandom(32).hex())
             (root/name).chmod(0o600)
         command(str(pg_bin/'initdb'), '-D', str(root/'pg'), '--auth-local=trust', '--auth-host=scram-sha-256', '--pwfile', str(root/'db-password'))
@@ -86,11 +88,15 @@ def main():
                     time.sleep(.1)
             else:
                 raise AssertionError('PostgreSQL readiness failed')
-            # Least privilege a deployment would plausibly use: a dedicated,
-            # non-superuser login that owns only its own database.
+            # Setup (slice 4c fixes, F4): a schema-owner login that owns the
+            # database and runs `migrate`, and the separate runtime login
+            # authz_service that serve uses. The tamper assertions below still
+            # run as authz_service, byte-for-byte unchanged.
+            sql("CREATE ROLE authz_owner LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD '"
+                + (root/'owner-password').read_text() + "'", database='postgres')
             sql("CREATE ROLE authz_service LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD '"
                 + (root/'service-password').read_text() + "'", database='postgres')
-            sql('CREATE DATABASE authz OWNER authz_service', database='postgres')
+            sql('CREATE DATABASE authz OWNER authz_owner', database='postgres')
 
             idp = {'users': {'alice': ['readers'], 'bob': [], 'carol': []}, 'modes': {}, 'seen': []}
 
@@ -143,12 +149,22 @@ def main():
             url = (f'postgres://authz_service:{(root/"service-password").read_text()}@localhost:{dbport}/authz?sslmode=verify-full')
             (root/'db-url').write_text(url)
             (root/'db-url').chmod(0o600)
+            for login in ('owner', 'over'):
+                (root/f'{login}-url').write_text(f'postgres://authz_{login}:{(root/(login + "-password")).read_text()}'
+                                                 f'@localhost:{dbport}/authz?sslmode=verify-full')
+                (root/f'{login}-url').chmod(0o600)
+            (root/'superuser-url').write_text(f'postgres://{getpass.getuser()}:{(root/"db-password").read_text()}'
+                                              f'@localhost:{dbport}/authz?sslmode=verify-full')
+            (root/'superuser-url').chmod(0o600)
+            migrate_env = dict(os.environ, AUTHZ_DATABASE_URL_FILE=str(root/'owner-url'), AUTHZ_DATABASE_CA_FILE=str(root/'ca.pem'),
+                               AUTHZ_RUNTIME_ROLE='authz_service')
+            command(str(BINARY), 'migrate', env=migrate_env)
             env = dict(os.environ, AUTHZ_LISTEN=f'127.0.0.1:{serviceport}', AUTHZ_TLS_CERT=str(root/'cert.pem'),
                        AUTHZ_TLS_KEY=str(root/'key.pem'), AUTHZ_KEY_FILE=str(root/'secret'), AUTHZ_TRINO_KEY_FILE=str(root/'trino-key'),
                        AUTHZ_DATABASE_URL_FILE=str(root/'db-url'), AUTHZ_DATABASE_CA_FILE=str(root/'ca.pem'),
                        AUTHZ_RAUTHY_USERS_URL=f'https://localhost:{server.server_port}/auth/v1/users',
                        AUTHZ_RAUTHY_CA_FILE=str(root/'ca.pem'), AUTHZ_RAUTHY_KEY_FILE=str(root/'reader-key'),
-                       AUTHZ_MACHINE_PRINCIPALS='oidc~machine')
+                       AUTHZ_MACHINE_PRINCIPALS='oidc~machine', AUTHZ_DECISION_KEY_FILE=str(root/'gateway-key'))
             client_ctx = ssl.create_default_context(cafile=str(root/'ca.pem'))
             key = (root/'secret').read_text()
             trino = (root/'trino-key').read_text()
@@ -418,6 +434,93 @@ def main():
                 assert not leaks, leaks
                 return {'scanned': sorted(texts), 'bytes': {t: len(v) for t, v in texts.items()}}
             record('logs_and_audit_contain_no_credentials', no_credentials)
+
+            # ---- Slice 4c fixes: setup-drift guards and refuse-to-start checks ----
+            def least_privilege():
+                row = json.loads(sql(
+                    "SELECT json_build_object("
+                    "'owns_audit', pg_has_role('authz_service', (SELECT tableowner FROM pg_tables WHERE tablename='authz_audit'), 'USAGE'),"
+                    "'owns_state', pg_has_role('authz_service', (SELECT tableowner FROM pg_tables WHERE tablename='authz_state'), 'USAGE'),"
+                    "'audit_update', has_table_privilege('authz_service','authz_audit','UPDATE'),"
+                    "'audit_delete', has_table_privilege('authz_service','authz_audit','DELETE'),"
+                    "'audit_truncate', has_table_privilege('authz_service','authz_audit','TRUNCATE'),"
+                    "'schema_create', has_schema_privilege('authz_service','public','CREATE'),"
+                    "'audit_insert', has_table_privilege('authz_service','authz_audit','INSERT'))"))
+                assert not any(row[k] for k in ('owns_audit', 'owns_state', 'audit_update', 'audit_delete', 'audit_truncate',
+                                                'schema_create')), row
+                assert row['audit_insert'], row
+                return row
+            record('runtime_login_is_least_privilege', least_privilege)
+
+            def outcome(args, extra, seconds=8):
+                """'exited: <reason>' if the process refuses to run, else 'running'."""
+                proc = subprocess.Popen([str(BINARY), *args], env=dict(env, AUTHZ_LISTEN=f'127.0.0.1:{port()}', **extra),
+                                        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+                try:
+                    proc.wait(timeout=seconds)
+                    return 'exited: ' + proc.stderr.read()[-300:].replace('\n', ' ')
+                except subprocess.TimeoutExpired:
+                    return 'running'
+                finally:
+                    if proc.poll() is None:
+                        proc.terminate()
+                        proc.wait(timeout=10)
+            sql("CREATE ROLE authz_over LOGIN PASSWORD '" + (root/'over-password').read_text() + "'", database='postgres')
+            sql('GRANT SELECT, INSERT, DELETE ON authz_audit TO authz_over; GRANT SELECT, UPDATE ON authz_state TO authz_over')
+            (root/'teams.json').write_text(json.dumps([{'id': 'a', 'group': 'team-a', 'socket': str(root/'a.sock')}]))
+            gateway = {'AUTHZ_CA_FILE': str(root/'ca.pem'), 'AUTHZ_KEY_FILE': str(root/'gateway-key'),
+                       'AUTHZ_ENDPOINT': f'https://localhost:{serviceport}', 'SAIL_JWKS_URL': 'https://localhost:1/jwks',
+                       'SAIL_ISSUER': 'https://idp.test/', 'SAIL_AUDIENCE': 'sail', 'SAIL_TEAMS_FILE': str(root/'teams.json')}
+
+            def refuses(role, extra):
+                evidence = {}
+                for login in ('owner', 'over', 'superuser'):
+                    result = outcome([role], {**extra, 'AUTHZ_DATABASE_URL_FILE': str(root/f'{login}-url')})
+                    evidence[login] = result
+                    assert result.startswith('exited'), f'{role} started with the {login} login'
+                control = outcome([role], extra)
+                evidence['runtime_control'] = control
+                assert control == 'running', f'{role} did not start with the least-privilege login: {control}'
+                return evidence
+            record('serve_refuses_owner_or_overprivileged_login', lambda: refuses('serve', {}))
+            record('gateway_refuses_owner_or_overprivileged_login', lambda: refuses('sail-gateway', gateway))
+
+            def migrate_fails_closed():
+                evidence = {}
+                for name, change in (('no_runtime_role', {'AUTHZ_RUNTIME_ROLE': ''}),
+                                     ('unknown_role', {'AUTHZ_RUNTIME_ROLE': 'authz_missing'}),
+                                     ('role_is_migration_login', {'AUTHZ_RUNTIME_ROLE': 'authz_owner'}),
+                                     ('unsafe_role_name', {'AUTHZ_RUNTIME_ROLE': 'x"; DROP TABLE authz_audit; --'}),
+                                     ('runtime_login_cannot_migrate', {'AUTHZ_DATABASE_URL_FILE': str(root/'db-url')})):
+                    result = command(str(BINARY), 'migrate', env=dict(migrate_env, **change), check=False)
+                    evidence[name] = result.returncode
+                    assert result.returncode != 0, f'migrate succeeded: {name}'
+                assert int(sql("SELECT count(*) FROM pg_tables WHERE tablename LIKE 'authz_%'")) == 2
+                return evidence
+            record('migrate_fails_closed', migrate_fails_closed)
+
+            def gateway_key():
+                gateway_credential = (root/'gateway-key').read_text()
+                evidence = {}
+                for path, body in (('mutate', {'op': 'set_region', 'principal': 'oidc~alice', 'region': 'all'}), ('snapshot', {}),
+                                   ('permissions', {'check': check('oidc~alice', table('t1'), 'manage_grants'), 'grant': None})):
+                    status, _ = post(path, body, credential=gateway_credential)
+                    evidence[path] = status
+                    assert status in (401, 403), f'gateway key reached /{path}: {status}'
+                status, groups = post('sail/groups', 'oidc~alice', credential=gateway_credential)
+                assert status == 200 and groups == ['readers'], (status, groups)
+                assert post('sail/groups', 'oidc~alice')[0] == 401, 'admin key accepted on the gateway route'
+                assert post('decide', [check('oidc~bob', table('t2'))], credential=gateway_credential)[0] == 200
+                evidence.update({'sail_groups': status, 'admin_on_sail_groups': 401})
+                return evidence
+            record('gateway_key_cannot_administer', gateway_key)
+
+            def unknown_reason():
+                status, _ = decide(check('oidc~ghost', table('t2')))
+                reason = last_reason()
+                assert status == 503 and reason == 'unknown_principal', (status, reason)
+                return {'status': status, 'reason': reason}
+            record('unknown_principal_reason_is_accurate', unknown_reason)
         finally:
             if service and service.poll() is None:
                 service.terminate()

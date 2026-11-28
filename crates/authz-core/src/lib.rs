@@ -1,12 +1,13 @@
 //! Cedar evaluation of a transactionally loaded relationship graph.
 use anyhow::{Result, bail};
 use cedar_policy::{
-    Authorizer, Context, Decision, Entities, Policy, PolicyId, PolicySet, Request, Schema,
-    ValidationMode, Validator,
+    Authorizer, Context, Decision, Entities, EntityId, EntityTypeName, EntityUid, Policy, PolicyId,
+    PolicySet, Request, Schema, ValidationMode, Validator,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
+use std::str::FromStr;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Resource {
@@ -26,13 +27,35 @@ impl Resource {
     pub fn key(&self) -> String {
         format!("{}:{}", self.kind, self.id)
     }
-    fn cedar(&self) -> String {
-        format!(
-            "{}::{}",
-            self.kind,
-            serde_json::to_string(&self.id).unwrap()
-        )
+    /// Typed Cedar entity UID. Cedar renders it with its own escaping, so any
+    /// identifier text round-trips into generated policies.
+    fn entity(&self) -> Result<EntityUid> {
+        Ok(EntityUid::from_type_name_and_id(
+            EntityTypeName::from_str(&self.kind)?,
+            EntityId::new(&self.id),
+        ))
     }
+}
+
+/// Longest accepted identifier, attribute or SQL name, in bytes.
+pub const MAX_IDENTIFIER_BYTES: usize = 1024;
+/// Write-time identifier rule: bounded length and no control characters.
+/// Emptiness is checked by the callers that require a value.
+pub fn validate_text(value: &str, what: &str) -> Result<()> {
+    anyhow::ensure!(
+        value.len() <= MAX_IDENTIFIER_BYTES && !value.chars().any(char::is_control),
+        "invalid {what}: too long or contains control characters"
+    );
+    Ok(())
+}
+fn validate_resource(resource: &Resource, what: &str) -> Result<()> {
+    validate_text(&resource.kind, what)?;
+    validate_text(&resource.id, what)
+}
+/// Trino folds every SQL identifier to lower case; bindings follow that rule so
+/// a differently spelled catalog name can neither miss a mask nor alias a table.
+pub fn sql_name(value: &str) -> String {
+    value.to_lowercase()
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Check {
@@ -78,6 +101,11 @@ pub enum Mutation {
         name: Vec<String>,
         binding: TrinoBinding,
     },
+    /// Remove every SQL name bound to a table, e.g. before a catalog rename
+    /// or drop. Missing bindings deny until an administrator rebinds.
+    UnbindTrino {
+        resource: Resource,
+    },
     SetRegion {
         principal: String,
         region: String,
@@ -95,8 +123,56 @@ pub enum Mutation {
         remove: bool,
     },
 }
+/// Reject malformed identifiers before any state is read or changed.
+pub fn validate_mutation(mutation: &Mutation) -> Result<()> {
+    match mutation {
+        Mutation::BindTrino { name, binding } => {
+            for part in name {
+                validate_text(part, "SQL name")?;
+            }
+            validate_resource(&binding.resource, "binding resource")?;
+            for column in [&binding.region_column, &binding.sensitive_column]
+                .into_iter()
+                .flatten()
+            {
+                validate_text(column, "column")?;
+            }
+        }
+        Mutation::UnbindTrino { resource } => validate_resource(resource, "resource")?,
+        Mutation::SetRegion { principal, region } => {
+            validate_text(principal, "principal")?;
+            validate_text(region, "region")?;
+        }
+        Mutation::Put {
+            resource,
+            parent,
+            owner,
+        } => {
+            validate_resource(resource, "resource")?;
+            anyhow::ensure!(!resource.id.is_empty(), "empty resource ID");
+            if let Some(parent) = parent {
+                validate_resource(parent, "parent")?;
+                anyhow::ensure!(!parent.id.is_empty(), "empty parent ID");
+            }
+            if let Some(owner) = owner {
+                validate_text(owner, "owner")?;
+            }
+        }
+        Mutation::Delete { resource } => {
+            validate_resource(resource, "resource")?;
+            anyhow::ensure!(!resource.id.is_empty(), "empty resource ID before delete");
+        }
+        Mutation::Grant { grant, .. } => {
+            validate_resource(&grant.subject, "grant subject")?;
+            validate_resource(&grant.resource, "grant resource")?;
+            validate_text(&grant.access, "access")?;
+        }
+    }
+    Ok(())
+}
 impl Store {
     pub fn mutate(&mut self, mutation: Mutation) -> Result<()> {
+        validate_mutation(&mutation)?;
         match mutation {
             Mutation::BindTrino { name, binding } => {
                 anyhow::ensure!(
@@ -114,7 +190,13 @@ impl Store {
                             .is_none_or(|s| !s.is_empty() && !s.contains('\0'))),
                     "invalid column"
                 );
+                let name: Vec<String> = name.iter().map(|s| sql_name(s)).collect();
+                // Column names stay as written: the row filter quotes them and
+                // Trino resolves identifiers case-insensitively; masks compare folded.
                 self.trino.insert(serde_json::to_string(&name)?, binding);
+            }
+            Mutation::UnbindTrino { resource } => {
+                self.trino.retain(|_, b| b.resource != resource);
             }
             Mutation::SetRegion { principal, region } => {
                 anyhow::ensure!(
@@ -247,7 +329,23 @@ impl Store {
             } else {
                 "[\"read_data\", \"get_metadata\", \"list_tables\", \"list_views\", \"list_namespaces\", \"include_in_list\", \"use\", \"get_config\"].contains(context.operation)"
             };
-            policies.add(Policy::parse(Some(PolicyId::new(format!("grant-{i}"))), format!("@id(\"grant-{i}\") permit(principal in {}, action, resource) when {{ ({actions}) && (resource in {} || {}) }};\n", g.subject.cedar(), g.resource.cedar(), upward))?)?;
+            // Grants only permit. A stored record that cannot be represented is
+            // skipped: that can only remove its own access, never block others.
+            let policy = (|| -> Result<Policy> {
+                Ok(Policy::parse(
+                    Some(PolicyId::new(format!("grant-{i}"))),
+                    format!(
+                        "@id(\"grant-{i}\") permit(principal in {}, action, resource) when {{ ({actions}) && (resource in {} || {}) }};\n",
+                        g.subject.entity()?,
+                        g.resource.entity()?,
+                        upward
+                    ),
+                )?)
+            })();
+            match policy {
+                Ok(policy) => policies.add(policy)?,
+                Err(error) => eprintln!("skipping unrepresentable grant {i}: {error}"),
+            }
         }
         let validation = Validator::new(schema()?).validate(&policies, ValidationMode::Strict);
         anyhow::ensure!(
@@ -255,9 +353,9 @@ impl Store {
             "generated policy failed schema validation"
         );
         let request = Request::new(
-            Resource::new("User", &check.principal).cedar().parse()?,
+            Resource::new("User", &check.principal).entity()?,
             "Action::\"check\"".parse()?,
-            check.resource.cedar().parse()?,
+            check.resource.entity()?,
             Context::from_json_value(json!({"operation":check.action}), None)?,
             None,
         )?;
@@ -434,3 +532,116 @@ mod tests {
 }
 #[cfg(test)]
 mod adversarial;
+#[cfg(test)]
+mod fixes_4c {
+    use super::*;
+    fn check(principal: &str, resource: Resource) -> Check {
+        Check {
+            deny: false,
+            principal: principal.into(),
+            groups: vec![],
+            action: "read_data".into(),
+            resource,
+        }
+    }
+    #[test]
+    fn f1_control_characters_are_rejected_at_write_time() {
+        let mut s = Store::default();
+        let t = Resource::new("Table", "t");
+        for m in [
+            Mutation::Grant {
+                grant: Grant {
+                    subject: Resource::new("User", "x\u{1}y"),
+                    resource: t.clone(),
+                    access: "select".into(),
+                },
+                remove: false,
+            },
+            Mutation::Put {
+                resource: Resource::new("Table", "a\nb"),
+                parent: None,
+                owner: None,
+            },
+            Mutation::Put {
+                resource: t.clone(),
+                parent: None,
+                owner: Some("o\u{7f}".into()),
+            },
+            Mutation::SetRegion {
+                principal: "oidc~a".into(),
+                region: "e\u{0}u".into(),
+            },
+            Mutation::Delete {
+                resource: Resource::new("Table", ""),
+            },
+            Mutation::Put {
+                resource: Resource::new("Table", "x".repeat(MAX_IDENTIFIER_BYTES + 1)),
+                parent: None,
+                owner: None,
+            },
+        ] {
+            let text = format!("{m:?}");
+            assert!(validate_mutation(&m).is_err(), "{text}");
+            assert!(s.mutate(m).is_err(), "{text}");
+        }
+    }
+    #[test]
+    fn f1_a_stored_unusual_record_cannot_break_unrelated_decisions() -> Result<()> {
+        let mut s = Store::default();
+        let t = Resource::new("Table", "t");
+        let u = Resource::new("Table", "u");
+        s.mutate(Mutation::Put {
+            resource: t.clone(),
+            parent: None,
+            owner: None,
+        })?;
+        s.mutate(Mutation::Grant {
+            grant: Grant {
+                subject: Resource::new("User", "oidc~bob"),
+                resource: t.clone(),
+                access: "select".into(),
+            },
+            remove: false,
+        })?;
+        // Records that bypassed write validation (legacy graph): typed UIDs keep
+        // them exact, and an unrepresentable kind is skipped, not fatal.
+        s.grants.push(Grant {
+            subject: Resource::new("User", "x\u{1}y\"\\"),
+            resource: u.clone(),
+            access: "select".into(),
+        });
+        s.grants.push(Grant {
+            subject: Resource::new("Not A Type", "z"),
+            resource: u.clone(),
+            access: "select".into(),
+        });
+        assert!(s.decide(&check("oidc~bob", t.clone()))?.allowed);
+        assert!(!s.decide(&check("oidc~bob", u.clone()))?.allowed);
+        assert!(s.decide(&check("x\u{1}y\"\\", u.clone()))?.allowed);
+        assert!(!s.decide(&check("x\u{1}y", u))?.allowed);
+        Ok(())
+    }
+    #[test]
+    fn f5_trino_names_are_folded_like_trino_identifiers() -> Result<()> {
+        let mut s = Store::default();
+        let t = Resource::new("Table", "t");
+        s.mutate(Mutation::Put {
+            resource: t.clone(),
+            parent: None,
+            owner: None,
+        })?;
+        s.mutate(Mutation::BindTrino {
+            name: vec!["Iceberg".into(), "Sales".into(), "Orders".into()],
+            binding: TrinoBinding {
+                resource: t.clone(),
+                region_column: None,
+                sensitive_column: Some("Email".into()),
+            },
+        })?;
+        let key = serde_json::to_string(&["iceberg", "sales", "orders"])?;
+        assert!(s.trino.contains_key(&key), "{:?}", s.trino.keys());
+        s.mutate(Mutation::UnbindTrino { resource: t })?;
+        assert!(s.trino.is_empty());
+        Ok(())
+    }
+}

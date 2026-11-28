@@ -61,11 +61,19 @@ The protected native `/mutate` API accepts:
 ```
 
 The table must already exist in the relationship graph. Bindings must be
-provisioned from trusted catalog metadata, never from user assertions. Dropping
-or detaching a table removes its bindings. A rename's detach hook therefore
-invalidates the old name; an administrator must bind the new name after the
-catalog operation completes. Missing bindings deny until provisioning finishes.
-Automatic name discovery and rename reconciliation are not implemented.
+provisioned from trusted catalog metadata, never from user assertions. SQL names
+are folded to lower case when bound, as Trino folds identifiers, and requests must
+match exactly; a sensitive column is matched case-insensitively, so a binding
+spelled `Email` still masks Trino's `email`.
+
+Lakekeeper calls no authorizer hook for a rename inside one namespace or for a
+soft delete. The catalog adapter therefore removes **all** Trino bindings of a
+table as soon as a rename or drop of that table is authorized, before the catalog
+commits (`unbind_trino`). Detach and hard delete also remove them. If the catalog
+operation then fails, the name denies until rebound (fail closed). An
+administrator must bind the new name after the catalog operation completes.
+Missing bindings deny until provisioning finishes. Automatic name discovery and
+rename reconciliation are not implemented.
 
 Row rules are deliberately bounded templates, not arbitrary SQL policies.
 `region_column` compares a quoted SQL identifier with a quoted literal from the

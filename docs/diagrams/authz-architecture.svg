@@ -18,7 +18,7 @@
 <text x="55" y="361">Trino 484 + stock OPA</text>
 <text x="440" y="277">Platform program: serve</text>
 <text x="840" y="151">Rauthy</text>
-<text x="840" y="361">PostgreSQL</text>
+<text x="840" y="361">PostgreSQL · runtime login</text>
 </g>
 <g font-size="14" fill="#cbd5e1">
 <text x="55" y="179">OIDC verification · catalog clients</text>
@@ -49,11 +49,11 @@
 <rect x="35" y="530" width="1050" height="130" rx="10" fill="#1e293b" stroke="#475569"/>
 <text x="55" y="560" font-size="17" fill="#fbbf24">Row / column rules require engine-only storage access</text>
 <text x="55" y="590" font-size="14">Direct credentials bypass SQL obligations. Withhold them from clients and non-enforcing engines.</text>
-<text x="55" y="620" font-size="14">Separate engine decision key · trusted name provisioning · rename invalidates bindings until explicitly rebound</text>
+<text x="55" y="620" font-size="14">Separate admin / gateway / Trino keys · trusted name provisioning · rename or drop unbinds until rebound</text>
 <text x="55" y="645" font-size="13" fill="#94a3b8">Deferred: scoped STS broker · hardened release images · epochs · automatic name reconciliation</text>
 <rect x="35" y="690" width="1050" height="125" rx="10" fill="#1e293b" stroke="#475569"/>
 <text x="55" y="720" font-size="18">sail-gateway → one private Sail instance per team</text>
 <text x="55" y="747" font-size="14">TLS / JWKS → serve live groups (250 ms) → unique team socket → Sail loopback → team catalog identity</text>
-<text x="55" y="774" font-size="14">Gateway commits every admission to PostgreSQL · independent HTTP/2 drivers keep PINGs moving under pressure</text>
+<text x="55" y="774" font-size="14">Gateway audits admissions (invalid-token flood rate-limited) · independent HTTP/2 drivers keep PINGs moving under pressure</text>
 <text x="55" y="800" font-size="13" fill="#fbbf24">Team members share permissions/state. No row/column-restricted tables or broad direct-storage credentials in Sail.</text>
 </g></svg>

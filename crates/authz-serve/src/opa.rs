@@ -66,6 +66,8 @@ fn binding<'a>(store: &'a Evaluation<'_>, resource: &Value) -> Result<&'a TrinoB
         .get("table")
         .or_else(|| resource.get("column"))
         .ok_or(StatusCode::BAD_REQUEST)?;
+    // Trino sends folded (lower-case) names and bindings are stored folded, so
+    // an exact match is Trino's case-insensitive match; anything else denies.
     let name = [
         field(object, "catalogName")?,
         field(object, "schemaName")?,
@@ -170,7 +172,9 @@ fn mask(store: &Evaluation<'_>, input: &Input, resource: &Value) -> Result<Value
         return Ok(json!({"expression":"NULL"}));
     }
     let column = field(&resource["column"], "columnName")?;
-    if b.sensitive_column.as_deref() == Some(column)
+    if b.sensitive_column
+        .as_deref()
+        .is_some_and(|c| authz_core::sql_name(c) == authz_core::sql_name(column))
         && !check(store, &input.context.identity, b, "unmask")?
     {
         // NULL is valid for every column type; no client-provided SQL is interpolated.
@@ -281,11 +285,14 @@ pub async fn handle(
 ) -> Result<Json<Value>> {
     // A separate decision-only credential: it cannot call mutation/native APIs.
     // Never enable opa.log-requests, which exposes this protected property.
-    if app
-        .trino_key
-        .as_ref()
-        .is_none_or(|key| query.input.context.properties.get("serviceKey") != Some(key))
-    {
+    if app.trino_key.as_ref().is_none_or(|key| {
+        !query
+            .input
+            .context
+            .properties
+            .get("serviceKey")
+            .is_some_and(|presented| crate::same_secret(presented.as_bytes(), key.as_bytes()))
+    }) {
         return Err(StatusCode::UNAUTHORIZED);
     }
     let live = app.live.groups(&query.input.context.identity.user).await;
@@ -335,8 +342,8 @@ pub async fn handle(
         &mut tx,
         &check,
         &verdict,
-        if live.is_err() {
-            "identity_provider_unavailable"
+        if let Some(reason) = crate::membership_reason(&live) {
+            reason
         } else if result.is_err() {
             "trino_invalid_or_failed_request"
         } else {

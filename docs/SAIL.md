@@ -9,8 +9,13 @@ transport helper. Sail remains unmodified at owner commit
 
 The gateway terminates TLS/HTTP2, requires RS256 JWTs from the configured Rauthy
 HTTPS JWKS, and validates signature, exact issuer, audience, subject, expiry and
-nbf with zero clock leeway. It fetches JWKS for each RPC and has no stale-key
-fallback. JWT groups and client identity headers never choose a backend.
+nbf with zero clock leeway. Every admitted RPC is validated against a JWKS fetched
+for that RPC; there is no stale-key admission. A token is first checked against
+the last fetched key set (at most 60 s old): a token whose signature verifies but
+whose claims are invalid is refused without an IdP round trip, and a token no
+cached key verifies (unknown `kid`, bad signature) may trigger at most one JWKS
+refresh per endpoint per second, otherwise it is refused. Unauthenticated
+clients therefore cannot amplify requests toward Rauthy. JWT groups and client identity headers never choose a backend.
 For every RPC, the private `/sail/groups` route uses **the same live Rauthy lookup
 as catalog and Trino**, with the same bounded 250 ms cache, two-second timeout,
 Users/read credential, verified HTTPS and fail-closed behavior. Exactly one
@@ -31,7 +36,12 @@ Every admission result, including malformed/missing JWTs, ambiguous membership,
 unsupported methods and dependency failures, is appended to `authz_audit` with
 principal, `sail:admit`, team resource, configured team policy ID, fixed reason,
 RPC method and gRPC status. Invalid JWTs have principal `unauthenticated`;
-unverified subject text and credentials are never audited. PostgreSQL uses
+unverified subject text and credentials are never audited. Durable rows for
+invalid-token refusals are rate-limited (burst 50, 20 per second per gateway
+process); suppressed refusals are still refused and counted in
+`gateway_audit_suppressed` log events. A verified token that expires while its
+request is uploading is refused with reason `sail_token_expired` and keeps its
+verified subject. PostgreSQL uses
 verify-full and the existing append-only schema. Audit commit precedes backend
 access. An audit/database failure denies with gRPC UNAVAILABLE; an unavailable
 audit database cannot durably record its own outage. Permitted admission is
@@ -85,8 +95,14 @@ must be absolute. Gateway configuration:
 
 - `AUTHZ_TLS_CERT`, `AUTHZ_TLS_KEY`, `AUTHZ_LISTEN` (default `0.0.0.0:50051`).
 - `SAIL_ISSUER`, `SAIL_AUDIENCE` (comma-separated exact audiences), `SAIL_JWKS_URL`.
-- `AUTHZ_ENDPOINT` (private serve HTTPS URL), `AUTHZ_CA_FILE`, `AUTHZ_KEY_FILE`.
-- `AUTHZ_DATABASE_URL_FILE`, `AUTHZ_DATABASE_CA_FILE` for durable admission audit.
+- `AUTHZ_ENDPOINT` (private serve HTTPS URL), `AUTHZ_CA_FILE`, `AUTHZ_KEY_FILE`:
+  the gateway's **decision-only** credential, the same file serve reads as
+  `AUTHZ_DECISION_KEY_FILE`. It is accepted only on `/sail/groups` and `/decide`,
+  never on `/mutate`, `/snapshot` or `/permissions`. Never give the gateway
+  serve's admin `AUTHZ_KEY_FILE`.
+- `AUTHZ_DATABASE_URL_FILE`, `AUTHZ_DATABASE_CA_FILE` for durable admission audit:
+  the least-privilege runtime login (README, "Database logins"). The gateway runs
+  no DDL and refuses to start with an owner, superuser or over-privileged login.
 - `SAIL_TEAMS_FILE` for the static group-to-private-socket mapping.
 
 Private JWKS and service calls use verified HTTP/2 TLS, no redirects or ambient

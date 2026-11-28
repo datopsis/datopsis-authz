@@ -34,10 +34,12 @@ impl Live {
         {
             return Ok(Some(groups.clone()));
         }
-        let _permit = self.limit.acquire().await.map_err(unavailable)?;
+        // Validate before any lookup: only plain IdP subject IDs become a URL segment.
         let subject = principal
             .strip_prefix("oidc~")
+            .filter(|s| valid_subject(s))
             .ok_or(StatusCode::FORBIDDEN)?;
+        let _permit = self.limit.acquire().await.map_err(unavailable)?;
         // No stale-on-error path. Redirects and plaintext are disabled at construction.
         let mut url =
             reqwest::Url::parse(&self.url).map_err(|_| StatusCode::SERVICE_UNAVAILABLE)?;
@@ -91,6 +93,54 @@ impl Live {
             serde_json::json!({"membership_lookup_ms": start.elapsed().as_secs_f64()*1000.0})
         );
         Ok(Some(groups))
+    }
+}
+/// Rauthy user IDs and client IDs: 1-256 of `[A-Za-z0-9._@+-]`, never `.`/`..`.
+/// Rejects empty values, path separators, query/fragment markers, percent
+/// escapes, whitespace and control characters before a URL is built.
+fn valid_subject(subject: &str) -> bool {
+    !subject.is_empty()
+        && subject.len() <= 256
+        && subject != "."
+        && subject != ".."
+        && subject
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b".-_@+".contains(&b))
+}
+/// Constant-time comparison for service credentials (length is not secret).
+fn same_secret(presented: &[u8], expected: &[u8]) -> bool {
+    if expected.is_empty() || presented.len() != expected.len() {
+        return false;
+    }
+    let diff = presented
+        .iter()
+        .zip(expected)
+        .fold(0u8, |acc, (a, b)| acc | (a ^ b));
+    std::hint::black_box(diff) == 0
+}
+fn bearer_matches(headers: &HeaderMap, key: &str) -> bool {
+    headers
+        .get("authorization")
+        .and_then(|v| v.as_bytes().strip_prefix(b"Bearer "))
+        .is_some_and(|token| same_secret(token, key.as_bytes()))
+}
+/// Administrative credential (AUTHZ_KEY_FILE): graph mutation, snapshot, grant
+/// management and native decisions. Process-wide so the decision-only `App.key`
+/// held by the Sail gateway can never be mistaken for it. Unset denies.
+static ADMIN_KEY: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+fn authenticate_admin(headers: &HeaderMap) -> Result<(), StatusCode> {
+    match ADMIN_KEY.get() {
+        Some(key) if bearer_matches(headers, key) => Ok(()),
+        _ => Err(StatusCode::UNAUTHORIZED),
+    }
+}
+/// Why a live lookup failed, for the durable audit. Unknown or malformed
+/// principals are not an identity-provider outage.
+fn membership_reason<T>(result: &Result<T, StatusCode>) -> Option<&'static str> {
+    match result {
+        Ok(_) => None,
+        Err(StatusCode::FORBIDDEN) => Some("unknown_principal"),
+        Err(_) => Some("identity_provider_unavailable"),
     }
 }
 fn parse_groups(user: &serde_json::Value, subject: &str) -> Result<Vec<String>, StatusCode> {
@@ -147,14 +197,16 @@ struct App {
     live: Live,
     db: Database,
 }
+/// Decision-only credential (AUTHZ_DECISION_KEY_FILE), held by the Sail gateway.
 fn authenticate(app: &App, headers: &HeaderMap) -> Result<(), StatusCode> {
-    if headers.get("authorization").and_then(|v| v.to_str().ok())
-        == Some(&format!("Bearer {}", app.key))
-    {
+    if bearer_matches(headers, &app.key) {
         Ok(())
     } else {
         Err(StatusCode::UNAUTHORIZED)
     }
+}
+fn authenticate_decision(app: &App, headers: &HeaderMap) -> Result<(), StatusCode> {
+    authenticate(app, headers).or_else(|_| authenticate_admin(headers))
 }
 // Trusted gateway only. Membership comes from exactly the catalog/Trino live path.
 // The gateway commits the final admission audit (including invalid JWTs) itself.
@@ -175,19 +227,24 @@ async fn decide(
     headers: HeaderMap,
     Json(checks): Json<Vec<Check>>,
 ) -> Result<Json<Vec<Verdict>>, StatusCode> {
-    authenticate(&app, &headers)?;
+    authenticate_decision(&app, &headers)?;
     let mut results = vec![];
     // Resolve membership before opening a database transaction.
     let mut resolved = vec![];
     for mut check in checks {
-        let reason = match app.live.groups(&check.principal).await {
+        let live = app.live.groups(&check.principal).await;
+        let reason = match live {
             Ok(Some(groups)) => {
                 check.groups = groups;
                 None
             }
-            _ => {
+            Ok(None) => {
                 check.deny = true;
-                Some("identity_provider_unavailable")
+                Some("unknown_principal")
+            }
+            Err(_) => {
+                check.deny = true;
+                membership_reason(&live)
             }
         };
         resolved.push((check, reason));
@@ -237,12 +294,13 @@ async fn mutate(
     headers: HeaderMap,
     Json(m): Json<Mutation>,
 ) -> Result<StatusCode, StatusCode> {
-    authenticate(&app, &headers)?;
+    authenticate_admin(&headers)?;
+    authz_core::validate_mutation(&m).map_err(|_| StatusCode::BAD_REQUEST)?;
     app.db.mutate(m).await.map_err(unavailable)?;
     Ok(StatusCode::NO_CONTENT)
 }
 async fn snapshot(State(app): State<App>, headers: HeaderMap) -> Result<Json<Store>, StatusCode> {
-    authenticate(&app, &headers)?;
+    authenticate_admin(&headers)?;
     Ok(Json(app.db.snapshot().await.map_err(unavailable)?))
 }
 #[derive(serde::Deserialize)]
@@ -257,7 +315,7 @@ async fn permissions(
     headers: HeaderMap,
     Json(mut request): Json<PermissionRequest>,
 ) -> Result<Json<Vec<authz_core::Grant>>, StatusCode> {
-    authenticate(&app, &headers)?;
+    authenticate_admin(&headers)?;
     request.check.action = "manage_grants".into();
     let live = app.live.groups(&request.check.principal).await;
     let (mut tx, mut store) = app.db.locked().await.map_err(unavailable)?;
@@ -286,8 +344,8 @@ async fn permissions(
         &verdict,
         if evaluation_failed {
             "evaluation_error"
-        } else if live.is_err() {
-            "identity_provider_unavailable"
+        } else if let Some(reason) = membership_reason(&live) {
+            reason
         } else if verdict.allowed {
             "grant_management_permit"
         } else {
@@ -340,7 +398,7 @@ async fn main() -> anyhow::Result<()> {
             return Ok(());
         }
         "migrate" => {
-            Database::from_env().await?;
+            Database::migrate_from_env().await?;
             return Ok(());
         }
         "sail-gateway" => return gateway::run().await,
@@ -351,10 +409,22 @@ async fn main() -> anyhow::Result<()> {
             "supported roles: serve, migrate, policy, sail-gateway, sail-socket; token-broker is unsupported"
         ),
     }
-    let key = std::fs::read_to_string(std::env::var("AUTHZ_KEY_FILE")?)?
+    let admin = std::fs::read_to_string(std::env::var("AUTHZ_KEY_FILE")?)?
         .trim()
         .to_owned();
-    anyhow::ensure!(key.len() >= 32, "service credential too short");
+    anyhow::ensure!(admin.len() >= 32, "service credential too short");
+    // The Sail gateway gets a separate decision-only credential. Without one,
+    // /sail/groups rejects every request.
+    let key = std::env::var("AUTHZ_DECISION_KEY_FILE")
+        .ok()
+        .map(std::fs::read_to_string)
+        .transpose()?
+        .map(|s| s.trim().to_owned())
+        .unwrap_or_default();
+    anyhow::ensure!(
+        key.is_empty() || (key.len() >= 32 && key != admin),
+        "the gateway decision credential must be at least 32 characters and differ from AUTHZ_KEY_FILE"
+    );
     let tls = axum_server::tls_rustls::RustlsConfig::from_pem_file(
         std::env::var("AUTHZ_TLS_CERT")?,
         std::env::var("AUTHZ_TLS_KEY")?,
@@ -396,10 +466,13 @@ async fn main() -> anyhow::Result<()> {
         .map(|s| s.trim().to_owned());
     if let Some(ref trino_key) = trino_key {
         anyhow::ensure!(
-            trino_key.len() >= 32 && trino_key != &key,
+            trino_key.len() >= 32 && trino_key != &admin && trino_key != &key,
             "Trino needs a separate decision-only credential of at least 32 characters"
         );
     }
+    ADMIN_KEY
+        .set(admin)
+        .map_err(|_| anyhow::anyhow!("credential initialised twice"))?;
     let app = App {
         trino_key,
         key,
@@ -426,3 +499,172 @@ async fn main() -> anyhow::Result<()> {
 }
 #[cfg(test)]
 mod adversarial;
+#[cfg(test)]
+mod fixes_4c {
+    use super::*;
+    use axum::extract::State as S;
+    fn headers(value: &str) -> HeaderMap {
+        let mut h = HeaderMap::new();
+        h.insert("authorization", value.parse().unwrap());
+        h
+    }
+    fn app(decision: &str) -> App {
+        let port = std::net::TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap()
+            .port();
+        App {
+            key: decision.into(),
+            trino_key: Some("t".repeat(40)),
+            live: Live {
+                client: reqwest::Client::new(),
+                url: format!("http://127.0.0.1:{port}/auth/v1/users"),
+                key: "r".into(),
+                cache: Default::default(),
+                machines: vec![],
+                limit: Arc::new(tokio::sync::Semaphore::new(1)),
+            },
+            db: Database(
+                sqlx_postgres::PgPoolOptions::new()
+                    .acquire_timeout(Duration::from_millis(300))
+                    .connect_lazy_with(
+                        sqlx_postgres::PgConnectOptions::new()
+                            .host("127.0.0.1")
+                            .port(port),
+                    ),
+            ),
+        }
+    }
+    const ADMIN: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    #[tokio::test]
+    async fn f3_admin_and_gateway_credentials_are_separate() {
+        let admin = ADMIN_KEY.get_or_init(|| ADMIN.into()).clone();
+        let gateway = "g".repeat(40);
+        let a_app = self::app(&gateway);
+        let g = headers(&format!("Bearer {gateway}"));
+        let a = headers(&format!("Bearer {admin}"));
+        let m = || Mutation::SetRegion {
+            principal: "oidc~x".into(),
+            region: "eu".into(),
+        };
+        assert_eq!(
+            mutate(S(a_app.clone()), g.clone(), Json(m())).await.err(),
+            Some(StatusCode::UNAUTHORIZED)
+        );
+        assert_eq!(
+            snapshot(S(a_app.clone()), g.clone()).await.err(),
+            Some(StatusCode::UNAUTHORIZED)
+        );
+        let request: PermissionRequest = serde_json::from_value(serde_json::json!({
+            "check":{"principal":"oidc~x","groups":[],"action":"manage_grants","resource":{"kind":"Table","id":"t"}},"grant":null}))
+        .unwrap();
+        assert_eq!(
+            permissions(S(a_app.clone()), g.clone(), Json(request))
+                .await
+                .err(),
+            Some(StatusCode::UNAUTHORIZED)
+        );
+        // The admin key is not the gateway's credential, and vice versa.
+        assert_eq!(
+            sail_groups(S(a_app.clone()), a.clone(), Json("oidc~x".into()))
+                .await
+                .err(),
+            Some(StatusCode::UNAUTHORIZED)
+        );
+        assert_ne!(
+            sail_groups(S(a_app.clone()), g.clone(), Json("oidc~x".into()))
+                .await
+                .err(),
+            Some(StatusCode::UNAUTHORIZED)
+        );
+        assert_ne!(
+            snapshot(S(a_app.clone()), a.clone()).await.err(),
+            Some(StatusCode::UNAUTHORIZED)
+        );
+        // Both credentials pass /decide authentication (the unreachable test
+        // database then answers 503).
+        for h in [g, a.clone()] {
+            assert_ne!(
+                decide(S(a_app.clone()), h, Json(vec![])).await.err(),
+                Some(StatusCode::UNAUTHORIZED)
+            );
+        }
+        // An absent gateway credential never matches anything.
+        let none = self::app("");
+        assert_eq!(
+            sail_groups(S(none), headers("Bearer "), Json("oidc~x".into()))
+                .await
+                .err(),
+            Some(StatusCode::UNAUTHORIZED)
+        );
+        // F1: malformed identifiers are a 400 before any database access.
+        let bad = Mutation::Grant {
+            grant: authz_core::Grant {
+                subject: authz_core::Resource::new("User", "x\u{1}y"),
+                resource: authz_core::Resource::new("Table", "t"),
+                access: "select".into(),
+            },
+            remove: false,
+        };
+        assert_eq!(
+            mutate(S(a_app), a, Json(bad)).await.err(),
+            Some(StatusCode::BAD_REQUEST)
+        );
+    }
+    #[test]
+    fn o2_secret_comparison_is_exact_and_length_checked() {
+        assert!(same_secret(b"abc", b"abc"));
+        for bad in [&b"abd"[..], b"ab", b"abcd", b"", b"ABC"] {
+            assert!(!same_secret(bad, b"abc"));
+        }
+        assert!(
+            !same_secret(b"", b""),
+            "an empty configured key never matches"
+        );
+        assert!(bearer_matches(&headers("Bearer abc"), "abc"));
+        assert!(!bearer_matches(&headers("bearer abc"), "abc"));
+        assert!(!bearer_matches(&headers("Bearer abc "), "abc"));
+    }
+    #[test]
+    fn f6_only_plain_subjects_reach_the_identity_provider() {
+        for good in [
+            "alice",
+            "8RpxQRYzVHbmX6Zs7jCi",
+            "sail-team-a",
+            "a.b",
+            "a_b@c+d",
+        ] {
+            assert!(valid_subject(good), "{good}");
+        }
+        for bad in [
+            "",
+            ".",
+            "..",
+            "a/b",
+            "a\\b",
+            "a?b",
+            "a#b",
+            "a%2Fb",
+            "a b",
+            "a\nb",
+            "a\u{0}",
+            "\u{e9}",
+            &"a".repeat(257),
+        ] {
+            assert!(!valid_subject(bad), "{bad:?}");
+        }
+    }
+    #[test]
+    fn o5_unknown_principals_are_not_reported_as_idp_outages() {
+        assert_eq!(membership_reason::<()>(&Ok(())), None);
+        assert_eq!(
+            membership_reason::<()>(&Err(StatusCode::FORBIDDEN)),
+            Some("unknown_principal")
+        );
+        assert_eq!(
+            membership_reason::<()>(&Err(StatusCode::SERVICE_UNAVAILABLE)),
+            Some("identity_provider_unavailable")
+        );
+    }
+}

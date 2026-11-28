@@ -6,7 +6,7 @@ Lakekeeper Azure/quick-xml advisories remain honestly red; there are no ignores.
 
 | Image | Binary | Commands |
 | --- | --- | --- |
-| authz | datopsis-authz | serve, sail-gateway, policy; migrate and private sail-socket helper |
+| authz | datopsis-authz | serve, sail-gateway, policy; migrate (owner login, separate step) and private sail-socket helper |
 | lakekeeper-authz | lakekeeper-datopsis | serve, migrate, version |
 
 Each deployment selects a command; both default to serve. `token-broker` is

@@ -32,7 +32,11 @@ its separate extension-enabled image, pinned to the merged 18.7 owner commit
 `1054729c5fa934e2a801a36d81a8b2b264aa8829`. The wrapper selects these immutable
 inputs in memory; the external acceptance checkout is not edited. Both database
 connections use verified TLS.
-`migrations/0001_catalog.sql` runs transactionally under an advisory lock.
+`migrations/0001_catalog.sql` runs transactionally under an advisory lock, only in
+the explicit `migrate` step with the schema-owner login. That step grants the
+separate runtime login exactly `SELECT, INSERT` on the audit and `SELECT, UPDATE`
+on the graph. `serve` and `sail-gateway` verify those privileges at startup and
+refuse an owner, superuser or over-privileged login (README, "Database logins").
 The MVP stores its serialized graph in a single PostgreSQL row; mutation and
 check/audit transactions acquire its row lock, so multiple service processes
 cannot lose writes or evaluate stale local snapshots. This deliberately simple

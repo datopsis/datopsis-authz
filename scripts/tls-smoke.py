@@ -35,7 +35,7 @@ def main():
         command('openssl','req','-new','-newkey','rsa:2048','-nodes','-keyout',str(root/'key.pem'),'-out',str(root/'leaf.csr'),'-subj','/CN=localhost')
         (root/'extensions').write_text('basicConstraints=CA:FALSE\nsubjectAltName=DNS:localhost\nextendedKeyUsage=serverAuth\n')
         command('openssl','x509','-req','-in',str(root/'leaf.csr'),'-CA',str(root/'ca.pem'),'-CAkey',str(root/'ca-key.pem'),'-CAcreateserial','-days','1','-extfile',str(root/'extensions'),'-out',str(root/'cert.pem'))
-        for name in ('secret','db-password','reader-key'):
+        for name in ('secret','db-password','reader-key','runtime-password'):
             (root/name).write_text(os.urandom(32).hex())
         command(str(pg_bin/'initdb'),'-D',str(root/'pg'),'--auth-local=trust','--auth-host=scram-sha-256','--pwfile',str(root/'db-password'))
         dbport, serviceport = port(), port()
@@ -74,12 +74,16 @@ def main():
             threading.Thread(target=server.serve_forever,daemon=True).start()
             url = f'postgres://{getpass.getuser()}:{(root/"db-password").read_text()}@localhost:{dbport}/postgres?sslmode=verify-full'
             (root/'db-url').write_text(url)
-            env = dict(os.environ,AUTHZ_LISTEN=f'127.0.0.1:{serviceport}',AUTHZ_TLS_CERT=str(root/'cert.pem'),AUTHZ_TLS_KEY=str(root/'key.pem'),AUTHZ_KEY_FILE=str(root/'secret'),AUTHZ_DATABASE_URL_FILE=str(root/'db-url'),AUTHZ_DATABASE_CA_FILE=str(root/'ca.pem'),AUTHZ_RAUTHY_USERS_URL=f'https://localhost:{server.server_port}/auth/v1/users',AUTHZ_RAUTHY_CA_FILE=str(root/'ca.pem'),AUTHZ_RAUTHY_KEY_FILE=str(root/'reader-key'))
+            # Owner login migrates; serve runs as a separate least-privilege login.
+            sql("CREATE ROLE authz_runtime LOGIN PASSWORD '"+(root/'runtime-password').read_text()+"'")
+            (root/'runtime-url').write_text(f'postgres://authz_runtime:{(root/"runtime-password").read_text()}@localhost:{dbport}/postgres?sslmode=verify-full')
+            owner_env = dict(os.environ,AUTHZ_DATABASE_URL_FILE=str(root/'db-url'),AUTHZ_DATABASE_CA_FILE=str(root/'ca.pem'),AUTHZ_RUNTIME_ROLE='authz_runtime')
+            env = dict(os.environ,AUTHZ_LISTEN=f'127.0.0.1:{serviceport}',AUTHZ_TLS_CERT=str(root/'cert.pem'),AUTHZ_TLS_KEY=str(root/'key.pem'),AUTHZ_KEY_FILE=str(root/'secret'),AUTHZ_DATABASE_URL_FILE=str(root/'runtime-url'),AUTHZ_DATABASE_CA_FILE=str(root/'ca.pem'),AUTHZ_RAUTHY_USERS_URL=f'https://localhost:{server.server_port}/auth/v1/users',AUTHZ_RAUTHY_CA_FILE=str(root/'ca.pem'),AUTHZ_RAUTHY_KEY_FILE=str(root/'reader-key'))
             # verify-full must reject both an unknown CA and a wrong hostname.
             command('openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',str(root/'other-key.pem'),'-out',str(root/'other.pem'),'-days','1','-subj','/CN=unknown')
-            invalid = [dict(env,AUTHZ_DATABASE_CA_FILE=str(root/'other.pem'))]
+            invalid = [dict(owner_env,AUTHZ_DATABASE_CA_FILE=str(root/'other.pem'))]
             (root/'wrong-url').write_text(url.replace('@localhost:', '@127.0.0.1:'))
-            invalid.append(dict(env,AUTHZ_DATABASE_URL_FILE=str(root/'wrong-url')))
+            invalid.append(dict(owner_env,AUTHZ_DATABASE_URL_FILE=str(root/'wrong-url')))
             for bad_env in invalid:
                 result = subprocess.run(['target/debug/authz-serve','migrate'],env=bad_env,capture_output=True,timeout=15)
                 assert result.returncode != 0, 'PostgreSQL TLS downgrade accepted'
@@ -101,6 +105,7 @@ def main():
                 try: fn()
                 except urllib.error.HTTPError as exc: assert exc.code == status, exc.code
                 else: raise AssertionError('Expected HTTP rejection')
+            command('target/debug/authz-serve','migrate',env=owner_env)
             start()
             check = {'principal':'oidc~alice','groups':['forged'],'action':'read_data','resource':{'kind':'Table','id':'one'}}
             try:
@@ -119,7 +124,7 @@ def main():
             before = post('snapshot',{})
             service.terminate(); service.wait(timeout=10); start()
             assert post('snapshot',{}) == before
-            for _ in range(2): command('target/debug/authz-serve','migrate',env=env)
+            for _ in range(2): command('target/debug/authz-serve','migrate',env=owner_env)
             assert post('snapshot',{}) == before
             assert post('decide',[check])[0]['allowed'] is True
             state['outage'] = True

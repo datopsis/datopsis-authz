@@ -30,6 +30,7 @@ pub struct CedarAuthorizer {
     client: reqwest::Client,
     endpoint: String,
     key: String,
+    bootstrap_principal: String,
 }
 
 #[async_trait]
@@ -99,9 +100,7 @@ impl Authorizer for CedarAuthorizer {
         let server = Resource::new("Server", self.server_id);
         if !matches!(metadata.actor(), lakekeeper::service::Actor::Principal(_))
             || metadata.user_id().map(ToString::to_string).as_deref()
-                != Some(
-                    &std::env::var("AUTHZ_BOOTSTRAP_PRINCIPAL").unwrap_or("oidc~operator".into()),
-                )
+                != Some(self.bootstrap_principal.as_str())
         {
             self.check_denied(metadata, vec![(server, "bootstrap".into())])
                 .await
@@ -331,25 +330,44 @@ impl Authorizer for CedarAuthorizer {
                 )
                 .await;
         }
-        self.check(
-            _metadata,
-            None,
-            actions
-                .iter()
-                .map(|(_, a)| {
-                    (
-                        Resource::new("Table", a.info.table_id()),
-                        a.action
-                            .clone()
-                            .into()
-                            .action_descriptor()
-                            .action_name
-                            .to_owned(),
-                    )
+        let decisions = self
+            .check(
+                _metadata,
+                None,
+                actions
+                    .iter()
+                    .map(|(_, a)| {
+                        (
+                            Resource::new("Table", a.info.table_id()),
+                            a.action
+                                .clone()
+                                .into()
+                                .action_descriptor()
+                                .action_name
+                                .to_owned(),
+                        )
+                    })
+                    .collect(),
+            )
+            .await?;
+        // A rename or drop changes what a SQL name refers to, and Lakekeeper calls
+        // no hook for in-place renames or soft deletes. Remove the table's Trino
+        // bindings once the operation is authorized, before the catalog commits.
+        // If the operation then fails, the name denies until rebound (fail closed).
+        for ((_, a), decision) in actions.iter().zip(&decisions) {
+            if decision.allowed && invalidates_sql_names(&a.action.clone().into()) {
+                self.mutate(Mutation::UnbindTrino {
+                    resource: Resource::new("Table", a.info.table_id()),
                 })
-                .collect(),
-        )
-        .await
+                .await
+                .map_err(|_| {
+                    AuthorizationBackendUnavailable::new(std::io::Error::other(
+                        "Trino binding invalidation unavailable",
+                    ))
+                })?;
+            }
+        }
+        Ok(decisions)
     }
 
     async fn are_allowed_view_actions_impl<A: Into<Self::ViewAction> + Send + Clone + Sync>(
@@ -670,8 +688,29 @@ use authz_core::{Check, Mutation, Resource, Verdict};
 use lakekeeper::service::authz::{
     AuthorizationBackendUnavailable, AuthorizationCountMismatch, CatalogAction,
 };
+/// Catalog operations after which a table's SQL names must no longer resolve to it.
+fn invalidates_sql_names(action: &CatalogTableAction) -> bool {
+    matches!(
+        action,
+        CatalogTableAction::Rename | CatalogTableAction::Drop { .. }
+    )
+}
+/// The one principal allowed to bootstrap the server. Required: there is no
+/// default identity that the first caller could claim.
+fn bootstrap_principal(value: Option<String>) -> anyhow::Result<String> {
+    let value = value.unwrap_or_default();
+    anyhow::ensure!(
+        value.len() > "oidc~".len()
+            && value.starts_with("oidc~")
+            && !value.chars().any(|c| c.is_control() || c.is_whitespace()),
+        "AUTHZ_BOOTSTRAP_PRINCIPAL must name the bootstrap principal (oidc~<subject>)"
+    );
+    Ok(value)
+}
 impl CedarAuthorizer {
     pub fn from_env(server_id: ServerId) -> anyhow::Result<Self> {
+        let bootstrap_principal =
+            bootstrap_principal(std::env::var("AUTHZ_BOOTSTRAP_PRINCIPAL").ok())?;
         anyhow::ensure!(
             lakekeeper::CONFIG.instance_admins.is_empty(),
             "instance-admin bypass is unsupported: use audited Cedar owner grants"
@@ -694,6 +733,7 @@ impl CedarAuthorizer {
             client,
             endpoint,
             key,
+            bootstrap_principal,
         })
     }
     async fn mutate(&self, m: Mutation) -> Result<()> {
@@ -943,4 +983,48 @@ async fn permission_request(
             .await
             .map_err(|e| AuthorizationBackendUnavailable::new(e).into_error_model())?,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn o3_bootstrap_principal_is_required_and_explicit() {
+        for bad in [
+            None,
+            Some(""),
+            Some("oidc~"),
+            Some("operator"),
+            Some("oidc~a b"),
+            Some(
+                "oidc~a
+b",
+            ),
+        ] {
+            assert!(bootstrap_principal(bad.map(Into::into)).is_err(), "{bad:?}");
+        }
+        assert_eq!(
+            bootstrap_principal(Some("oidc~operator".into())).unwrap(),
+            "oidc~operator"
+        );
+    }
+    #[test]
+    fn f2_rename_and_drop_invalidate_sql_names_other_actions_do_not() {
+        assert!(invalidates_sql_names(&CatalogTableAction::Rename));
+        for (force, purge) in [(false, false), (true, false), (false, true), (true, true)] {
+            assert!(invalidates_sql_names(&CatalogTableAction::Drop {
+                force,
+                purge
+            }));
+        }
+        for action in [
+            CatalogTableAction::ReadData,
+            CatalogTableAction::WriteData,
+            CatalogTableAction::GetMetadata,
+            CatalogTableAction::IncludeInList,
+            CatalogTableAction::Undrop,
+        ] {
+            assert!(!invalidates_sql_names(&action));
+        }
+    }
 }

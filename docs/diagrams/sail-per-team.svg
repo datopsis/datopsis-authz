@@ -29,7 +29,7 @@
 <text x="418" y="360">Private socket → loopback :50052</text><text x="418" y="390">Sail B · only catalog token B</text>
 <text x="418" y="420">Users in B share permissions/state</text><text x="418" y="449">No published backend port</text>
 <text x="788" y="360">Separate grants for identities A / B</text><text x="788" y="390">Verified TLS catalog requests</text>
-<text x="788" y="420">PostgreSQL · verify-full</text><text x="788" y="449">Durable append-only admission audit</text>
+<text x="788" y="420">PostgreSQL · verify-full</text><text x="788" y="449">Append-only audit · no-DDL runtime login</text>
 </g>
 <g fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)">
 <path d="M265 168 H335"/><path d="M685 168 H770"/><path d="M440 230 L185 300"/>

@@ -63,13 +63,34 @@ work at each step's end. No external source repository is modified.
 
 For `serve`, configure `AUTHZ_TLS_CERT`, `AUTHZ_TLS_KEY`, `AUTHZ_KEY_FILE`,
 `AUTHZ_DATABASE_URL_FILE`, `AUTHZ_DATABASE_CA_FILE`, `AUTHZ_RAUTHY_USERS_URL`,
-`AUTHZ_RAUTHY_CA_FILE`, `AUTHZ_RAUTHY_KEY_FILE`. `migrate` needs the database
-variables only. All secret files must be protected. `AUTHZ_LISTEN` defaults to
+`AUTHZ_RAUTHY_CA_FILE`, `AUTHZ_RAUTHY_KEY_FILE`. All secret files must be protected.
+
+Three separate credentials, each at least 32 characters, must all differ:
+
+| File | Holder | Accepted on |
+| --- | --- | --- |
+| `AUTHZ_KEY_FILE` (admin) | Lakekeeper adapter, operators | `/mutate`, `/snapshot`, `/permissions`, `/decide` |
+| `AUTHZ_DECISION_KEY_FILE` (optional) | Sail gateway (as its `AUTHZ_KEY_FILE`) | `/sail/groups`, `/decide` |
+| `AUTHZ_TRINO_KEY_FILE` (optional) | Trino `opa.context-file` | `/opa/*` |
+
+Without a decision key, `/sail/groups` rejects every request. Credentials are
+compared in constant time.
+
+**Database logins.** `serve` and `sail-gateway` never run DDL. Run `migrate` as a
+separate step with the schema-owner login in `AUTHZ_DATABASE_URL_FILE`, and set
+`AUTHZ_RUNTIME_ROLE` to the separate runtime login (`[a-z_][a-z0-9_]*`).
+`migrate` grants it `SELECT, INSERT` on `authz_audit` and `SELECT, UPDATE` on
+`authz_state`, revokes schema `CREATE`, and fails unless the result is least
+privilege. `serve` and `sail-gateway` refuse to start if their login is a superuser,
+owns either table, or can `UPDATE`, `DELETE` or `TRUNCATE` the audit or create
+objects in the schema. A table owner can always disable triggers, so only this
+split makes the append-only audit tamper-resistant against the service credential. `AUTHZ_LISTEN` defaults to
 `0.0.0.0:8443`. The database URL is read from a file; do not put credentials on
 command lines. Verification cannot be downgraded by URL options.
 
 The adapter needs `AUTHZ_ENDPOINT=https://…`, `AUTHZ_CA_FILE`, `AUTHZ_KEY_FILE`.
-`AUTHZ_BOOTSTRAP_PRINCIPAL` defaults to `oidc~operator`. Explicit machine subjects
+`AUTHZ_BOOTSTRAP_PRINCIPAL` (`oidc~<subject>`) is required; the catalog refuses
+to start without it. Explicit machine subjects
 must be provisioned in `AUTHZ_MACHINE_PRINCIPALS` (comma-separated); they never
 receive group membership from a missing-user response. There are no default
 service credentials. Keep serve isolated from catalog clients.
